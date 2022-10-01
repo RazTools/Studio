@@ -1363,6 +1363,10 @@ namespace AssetStudio
                 m_Legacy = true;
             }
             m_Compressed = reader.ReadBoolean();
+            if (m_Compressed && reader.Game.Name != "ToT")
+            {
+                m_Compressed = false;
+            }
             if (version[0] > 4 || (version[0] == 4 && version[1] >= 3))//4.3 and up
             {
                 m_UseHighQualityCurve = reader.ReadBoolean();
