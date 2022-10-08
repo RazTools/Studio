@@ -15,10 +15,10 @@ namespace AssetStudio
             animationClip.m_ScaleCurves = converter.Scales.Union(animationClip.m_ScaleCurves).ToArray();
             animationClip.m_FloatCurves = converter.Floats.Union(animationClip.m_FloatCurves).ToArray();
             animationClip.m_PPtrCurves = converter.PPtrs.Union(animationClip.m_PPtrCurves).ToArray();
-            return ConvertSerializedAnimationClip(animationClip, game);
+            return ConvertSerializedAnimationClip(animationClip);
         }
 
-        public static string ConvertSerializedAnimationClip(AnimationClip animationClip, Game game)
+        public static string ConvertSerializedAnimationClip(AnimationClip animationClip)
         {
             var sb = new StringBuilder();
             using (var stringWriter = new StringWriter(sb))

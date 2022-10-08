@@ -194,8 +194,10 @@ namespace AssetStudio
                     value = reader.ReadSByte();
                     break;
                 case "UInt8":
-                case "char":
                     value = reader.ReadByte();
+                    break;
+                case "char":
+                    value = BitConverter.ToChar(reader.ReadBytes(2), 0);
                     break;
                 case "short":
                 case "SInt16":

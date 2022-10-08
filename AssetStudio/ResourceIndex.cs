@@ -31,35 +31,38 @@ namespace AssetStudio
         }
         public static void FromFile(string path)
         {
-            Logger.Info(string.Format("Parsing...."));
-            try
+            if (!string.IsNullOrEmpty(path))
             {
-                Clear();
-
-                using (var stream = File.OpenRead(path))
+                Logger.Info(string.Format("Parsing...."));
+                try
                 {
-                    var bytes = new byte[stream.Length];
-                    var count = stream.Read(bytes, 0, bytes.Length);
+                    Clear();
 
-                    if (count != bytes.Length) 
-                        throw new Exception("Error While Reading AssetIndex");
-
-                    var json = Encoding.UTF8.GetString(bytes);
-
-                    var obj = JsonConvert.DeserializeObject<AssetIndex>(json);
-                    if (obj != null)
+                    using (var stream = File.OpenRead(path))
                     {
-                        MapToResourceIndex(obj);
+                        var bytes = new byte[stream.Length];
+                        var count = stream.Read(bytes, 0, bytes.Length);
+
+                        if (count != bytes.Length)
+                            throw new Exception("Error While Reading AssetIndex");
+
+                        var json = Encoding.UTF8.GetString(bytes);
+
+                        var obj = JsonConvert.DeserializeObject<AssetIndex>(json);
+                        if (obj != null)
+                        {
+                            MapToResourceIndex(obj);
+                        }
                     }
                 }
+                catch (Exception e)
+                {
+                    Logger.Error("AssetIndex was not loaded");
+                    Console.WriteLine(e.ToString());
+                    return;
+                }
+                Logger.Info("Loaded !!");
             }
-            catch (Exception e)
-            {
-                Logger.Error("AssetIndex was not loaded");
-                Console.WriteLine(e.ToString());
-                return;
-            }
-            Logger.Info("Loaded !!");
         }
         public static void Clear()
         {

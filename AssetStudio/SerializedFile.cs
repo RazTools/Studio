@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -30,8 +31,6 @@ namespace AssetStudio
         public List<FileIdentifier> m_Externals;
         public List<SerializedType> m_RefTypes;
         public string userInformation;
-
-        private static int DecryptClassId(int id) => (id ^ 0x23746FBE) - 3;
 
         public SerializedFile(FileReader reader, AssetsManager assetsManager, string path = null)
         {
@@ -238,12 +237,9 @@ namespace AssetStudio
             var type = new SerializedType();
 
             type.classID = reader.ReadInt32();
-
-            if ((type.classID > 0xFFFF || type.classID <= 0x0) && !Enum.IsDefined(typeof(ClassIDType), type.classID))
+            if (BitConverter.ToBoolean(header.m_Reserved, 0))
             {
-                byte[] classIdBytes = BitConverter.GetBytes(type.classID);
-                Array.Reverse(classIdBytes);
-                type.classID = DecryptClassId(BitConverter.ToInt32(classIdBytes, 0));
+                type.classID = DecodeClassID(type.classID);
             }
 
             if (header.m_Version >= SerializedFileFormatVersion.RefactoredClassId)
@@ -385,6 +381,12 @@ namespace AssetStudio
             ObjectsDic.Add(obj.m_PathID, obj);
         }
 
+        private int DecodeClassID(int value)
+        {
+            var bytes = BitConverter.GetBytes(value);
+            value = BinaryPrimitives.ReadInt32BigEndian(bytes);
+            return (value ^ 0x23746FBE) - 3;
+        }
         public bool IsVersionStripped => unityVersion == strippedVersion;
 
         private const string strippedVersion = "0.0.0";

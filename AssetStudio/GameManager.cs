@@ -43,7 +43,6 @@ namespace AssetStudio
         public static Game[] GetGames() => Games.Values.ToArray();
         public static string[] GetGameNames() => Games.Values.Select(x => x.Name).ToArray();
         public static string SupportedGames() => $"Supported Games:\n{string.Join("\n", Games.Values.Select(x => $"{x.Name} ({x.DisplayName})"))}";
-        public static string ToString() => string.Join("\n", Games.Values);
     }
 
     public abstract class Game
