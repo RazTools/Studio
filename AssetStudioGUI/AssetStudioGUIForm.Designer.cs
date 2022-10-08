@@ -312,7 +312,7 @@
             this.toolStripMenuItem16.Name = "toolStripMenuItem16";
             this.toolStripMenuItem16.Size = new System.Drawing.Size(225, 22);
             this.toolStripMenuItem16.Text = "Specify AI version";
-            this.toolStripMenuItem16.MouseHover += new System.EventHandler(this.toolStripMenuItem16_MouseHover);
+            this.toolStripMenuItem16.DropDownOpening += new System.EventHandler(this.toolStripMenuItem16_DropDownOpening);
             // 
             // specifyAIVersion
             // 

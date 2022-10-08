@@ -107,26 +107,6 @@ namespace AssetStudioGUI
             return true;
         }
 
-        public static bool ExportAssetBundle(AssetItem item, string exportPath)
-        {
-            if (!TryExportFile(exportPath, item, ".json", out var exportFullPath))
-                return false;
-            var m_AssetBundle = (AssetBundle)item.Asset;
-            var str = JsonConvert.SerializeObject(m_AssetBundle, Formatting.Indented);
-            File.WriteAllText(exportFullPath, str);
-            return true;
-        }
-
-        public static bool ExportIndexObject(AssetItem item, string exportPath)
-        {
-            if (!TryExportFile(exportPath, item, ".json", out var exportFullPath))
-                return false;
-            var m_IndexObject = (IndexObject)item.Asset;
-            var str = JsonConvert.SerializeObject(m_IndexObject, Formatting.Indented);
-            File.WriteAllText(exportFullPath, str);
-            return true;
-        }
-
         public static bool ExportMiHoYoBinData(AssetItem item, string exportPath)
         {
             string exportFullPath;
@@ -301,14 +281,20 @@ namespace AssetStudioGUI
             return false;
         }
 
-        public static bool ExportMaterial(AssetItem item, string exportPath)
+        public static bool ExportJsonFile(AssetItem item, string exportPath)
         {
             if (!TryExportFile(exportPath, item, ".json", out var exportFullPath))
                 return false;
-            var m_Material = (Material)item.Asset;
-            var str = JsonConvert.SerializeObject(m_Material, Formatting.Indented);
+            var str = JsonConvert.SerializeObject(item.Asset, Formatting.Indented);
+            if (!string.IsNullOrEmpty(str) && str != "{}")
+            {
             File.WriteAllText(exportFullPath, str);
             return true;
+        }
+            else
+            {
+                return ExportRawFile(item, exportPath);
+            }
         }
 
         public static bool ExportRawFile(AssetItem item, string exportPath)
@@ -440,20 +426,14 @@ namespace AssetStudioGUI
                     return ExportMovieTexture(item, exportPath);
                 case ClassIDType.Sprite:
                     return ExportSprite(item, exportPath);
-                case ClassIDType.Material:
-                    return ExportMaterial(item, exportPath);
                 case ClassIDType.Animator:
                     return ExportAnimator(item, exportPath);
                 case ClassIDType.AnimationClip:
                     return ExportAnimationClip(item, exportPath);
-                case ClassIDType.AssetBundle:
-                    return ExportAssetBundle(item, exportPath);
-                case ClassIDType.IndexObject:
-                    return ExportIndexObject(item, exportPath);
                 case ClassIDType.MiHoYoBinData:
                     return ExportMiHoYoBinData(item, exportPath);
                 default:
-                    return ExportRawFile(item, exportPath);
+                    return ExportJsonFile(item, exportPath);
             }
         }
 

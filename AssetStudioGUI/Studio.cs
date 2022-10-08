@@ -459,12 +459,19 @@ namespace AssetStudioGUI
                     Progress.Report(++i, objectCount);
                 }
             }
+
+            StatusStripUpdate("Building container list...");
+
+            i = 0;
+            Progress.Reset();
+            var containersCount = containers.Count;
             foreach ((var pptr, var container) in containers)
             {
                 if (pptr.TryGet(out var obj))
                 {
                     objectAssetItemDic[obj].Container = container;
                 }
+                Progress.Report(++i, containersCount);
             }
             foreach (var tmp in exportableAssets)
             {

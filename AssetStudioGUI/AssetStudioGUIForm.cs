@@ -139,7 +139,6 @@ namespace AssetStudioGUI
             specifyGame.SelectedIndexChanged += new EventHandler(toolStripComboBox2_SelectedIndexChanged);
             Logger.Info($"Target Game is {Studio.Game.DisplayName}");
             CABManager.LoadMap(Studio.Game);
-            Task.Run(() => AIVersionManager.FetchVersions());
         }
 
         private void AssetStudioGUIForm_DragEnter(object sender, DragEventArgs e)
@@ -788,30 +787,22 @@ namespace AssetStudioGUI
                     case Sprite m_Sprite:
                         PreviewSprite(assetItem, m_Sprite);
                         break;
-                    case Material m_Material:
-                        PreviewMaterial(m_Material);
-                        StatusStripUpdate("Can be exported to JSON file.");
-                        break;
                     case Animator _:
                         StatusStripUpdate("Can be exported to FBX file.");
-                        break;
+                        goto default;
                     case AnimationClip _:
                         StatusStripUpdate("Can be exported with Animator or Objects or .anim file.");
                         break;
-                    case AssetBundle m_AssetBundle:
-                        PreviewAssetBundle(m_AssetBundle);
-                        StatusStripUpdate("Can be exported to JSON file.");
-                        break;
-                    case IndexObject m_IndexObject:
-                        PreviewIndexObject(m_IndexObject);
-                        StatusStripUpdate("Can be exported to JSON file.");
-                        break;
                     case MiHoYoBinData m_MiHoYoBinData:
-                        PreviewMiHoYoBinData(m_MiHoYoBinData);
+                        PreviewText(m_MiHoYoBinData.Str);
                         StatusStripUpdate("Can be exported/previewed as JSON if data is a valid JSON (check XOR).");
                         break;
                     default:
                         var str = assetItem.Asset.Dump();
+                        if (string.IsNullOrEmpty(str))
+                        {
+                            str = JsonConvert.SerializeObject(assetItem.Asset, Formatting.Indented);
+                        }
                         if (str != null)
                         {
                             textPreviewBox.Text = str;
@@ -1041,23 +1032,6 @@ namespace AssetStudioGUI
             PreviewText(str);
         }
 
-        private void PreviewAssetBundle(AssetBundle m_AssetBundle)
-        {
-            var str = JsonConvert.SerializeObject(m_AssetBundle, Formatting.Indented);
-            PreviewText(str);
-        }
-
-        private void PreviewIndexObject(IndexObject m_IndexObject)
-        {
-            var str = JsonConvert.SerializeObject(m_IndexObject, Formatting.Indented);
-            PreviewText(str);
-        }
-
-        private void PreviewMiHoYoBinData(MiHoYoBinData m_MiHoYoBinData)
-        {
-            PreviewText(m_MiHoYoBinData.Str);
-        }
-
         private void PreviewFont(Font m_Font)
         {
             if (m_Font.m_FontData != null)
@@ -1271,12 +1245,6 @@ namespace AssetStudioGUI
             {
                 StatusStripUpdate("Unsupported sprite for preview.");
             }
-        }
-
-        private void PreviewMaterial(Material m_Material)
-        {
-            var str = JsonConvert.SerializeObject(m_Material, Formatting.Indented);
-            PreviewText(str);
         }
 
         private void PreviewTexture(DirectBitmap bitmap)
@@ -2190,40 +2158,51 @@ namespace AssetStudioGUI
             }
         }
 
-        private void toolStripMenuItem16_MouseHover(object sender, EventArgs e)
+        private async void toolStripMenuItem16_DropDownOpening(object sender, EventArgs e)
         {
-            if (specifyAIVersion.Items.Count == 1 && AIVersionManager.Loaded)
+            if (specifyAIVersion.Enabled && await AIVersionManager.FetchVersions())
             {
-                specifyAIVersion.Items.AddRange(AIVersionManager.GetVersions());
+                UpdateVersionList();
             }
         }
 
         private async void toolStripComboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (specifyAIVersion.SelectedIndex == 0) return;
-            optionsToolStripMenuItem.DropDown.Visible = false;
-            string version = specifyAIVersion.SelectedItem.ToString();
-
-            Logger.Info($"Loading AI v{version}");
-            specifyAIVersion.Enabled = false;
-            var path = AIVersionManager.GetAIPath(version);
-            if (string.IsNullOrEmpty(path))
+            if (specifyAIVersion.SelectedIndex == 0)
             {
-                Logger.Warning("Invalid version, Aborting...");
-                specifyAIVersion.SelectedIndex = 0;
-                SpecifyAIVersionUpdate(true);
                 return;
             }
-            var needDownload = await AIVersionManager.NeedDownload(version);
-            if (needDownload)
+            optionsToolStripMenuItem.DropDown.Visible = false;
+            var version = specifyAIVersion.SelectedItem.ToString();
+            
+            if (version.Contains(" "))
             {
-                Logger.Info($"AI v{version} not found !");
-                var json = await AIVersionManager.DownloadAI(version);
-                
-                File.WriteAllText(path, json);
+                version = version.Split(' ')[0];
             }
+
+            Logger.Info($"Loading AI v{version}");
+            SpecifyAIVersionUpdate(false);
+            var path = await AIVersionManager.FetchAI(version);
             await Task.Run(() => ResourceIndex.FromFile(path));
+            UpdateVersionList();
             SpecifyAIVersionUpdate(true);
+        }
+
+        private void UpdateVersionList()
+        {
+            var selectedIndex = specifyAIVersion.SelectedIndex;
+            specifyAIVersion.Items.Clear();
+            specifyAIVersion.Items.Add("None");
+
+            var versions = AIVersionManager.GetVersions();
+            foreach (var version in versions)
+            {
+                specifyAIVersion.Items.Add(version.Item1 + (version.Item2 ? " (cached)" : ""));
+            }
+
+            specifyAIVersion.SelectedIndexChanged -= new EventHandler(toolStripComboBox1_SelectedIndexChanged);
+            specifyAIVersion.SelectedIndex = selectedIndex;
+            specifyAIVersion.SelectedIndexChanged += new EventHandler(toolStripComboBox1_SelectedIndexChanged);
         }
 
         private void toolStripComboBox2_SelectedIndexChanged(object sender, EventArgs e)
