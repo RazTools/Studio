@@ -588,7 +588,7 @@ namespace AssetStudio
         }
         public PPtrKeyframe(float time, PPtr<Object> script)
         {
-            time = time;
+            this.time = time;
             value = script;
         }
 

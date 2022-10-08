@@ -24,7 +24,7 @@ namespace AssetStudio
         public PPtr<Material>[] m_Materials;
         public StaticBatchInfo m_StaticBatchInfo;
         public uint[] m_SubsetIndices;
-        public bool isNewHeader = false;
+        private bool isNewHeader = false;
         protected Renderer(ObjectReader reader) : base(reader)
         {
             if (version[0] < 5) //5.0 down
@@ -77,10 +77,10 @@ namespace AssetStudio
                             var m_IsTerrainTessInfo = reader.ReadByte();
                             if (isNewHeader)
                             {
-                                var m_AllowPerMaterialProp = reader.ReadByte();
-                                var m_IsHQDynamicAOOccluder = reader.ReadByte();
                                 var m_UseVertexLightInForward = reader.ReadByte();
                                 var m_CombineSubMeshInGeoPass = reader.ReadByte();
+                                var m_AllowPerMaterialProp = reader.ReadByte();
+                                var m_IsHQDynamicAOOccluder = reader.ReadByte();
                             }
                         }
                     }

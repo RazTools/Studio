@@ -65,14 +65,12 @@ namespace AssetStudio
             }
             if (reader.Game.Name == "CB1" || reader.Game.Name == "CB2")
             {
-                reader.AlignStream();
                 IsStreamedScenessetBundle = reader.ReadBoolean();
                 reader.AlignStream();
                 PathFlags = reader.ReadInt32();
             }
             else if (reader.Game.Name == "CB3")
             {
-                reader.AlignStream();
                 IsStreamedScenessetBundle = reader.ReadBoolean();
                 reader.AlignStream();
                 ExplicitDataLayout = reader.ReadInt32();
@@ -80,7 +78,6 @@ namespace AssetStudio
             }
             else if (reader.Game.Name == "GI")
             {
-                reader.AlignStream();
                 IsStreamedScenessetBundle = reader.ReadBoolean();
                 reader.AlignStream();
                 ExplicitDataLayout = reader.ReadInt32();

@@ -588,10 +588,10 @@ namespace AssetStudio
             var m_Controller = new ControllerConstant(reader);
 
             int tosSize = reader.ReadInt32();
-            var m_TOS = new KeyValuePair<uint, string>[tosSize];
+            var m_TOS = new Dictionary<uint, string>(tosSize);
             for (int i = 0; i < tosSize; i++)
             {
-                m_TOS[i] = new KeyValuePair<uint, string>(reader.ReadUInt32(), reader.ReadAlignedString());
+                m_TOS.Add(reader.ReadUInt32(), reader.ReadAlignedString());
             }
 
             int numClips = reader.ReadInt32();

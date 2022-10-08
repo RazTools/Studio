@@ -704,29 +704,25 @@ namespace AssetStudio
                 var m_CompressLevelTexCoordinates = reader.ReadInt32();
             }
 
-            if (version[0] > 2018 || (version[0] == 2018 && version[1] >= 2)) //2018.2 and up
+            if (reader.Game.Name == "GI" || reader.Game.Name == "CB1" || reader.Game.Name == "CB2" || reader.Game.Name == "CB3"
+                || version[0] > 2018 || (version[0] == 2018 && version[1] >= 2)) //2018.2 and up
             {
                 var m_MeshMetrics = new float[2];
                 m_MeshMetrics[0] = reader.ReadSingle();
                 m_MeshMetrics[1] = reader.ReadSingle();
             }
 
-            if (reader.Game.Name == "GI" || reader.Game.Name == "CB2" || reader.Game.Name == "CB3")
+            if (reader.Game.Name == "GI" || reader.Game.Name == "CB1" || reader.Game.Name == "CB2" || reader.Game.Name == "CB3")
             {
                 var m_MetricsDirty = reader.ReadBoolean();
                 reader.AlignStream();
-                var m_CloseMeshDynamicCompression = reader.ReadInt32();
+                var m_CloseMeshDynamicCompression = reader.ReadBoolean();
                 reader.AlignStream();
-                var m_IsStreamingMesh = reader.ReadInt32();
-                reader.AlignStream();
-            }
-
-            if (reader.Game.Name == "CB1")
-            {
-                var m_MetricsDirty = reader.ReadBoolean();
-                reader.AlignStream();
-                var m_CloseMeshDynamicCompression = reader.ReadInt32();
-                reader.AlignStream();
+                if (reader.Game.Name != "CB1")
+                {
+                    var m_IsStreamingMesh = reader.ReadBoolean();
+                    reader.AlignStream();
+                }
             }
 
             if (version[0] > 2018 || (version[0] == 2018 && version[1] >= 3)) //2018.3 and up
