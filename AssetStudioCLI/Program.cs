@@ -80,7 +80,7 @@ namespace AssetStudioCLI
                     }
 
                     Logger.Info("Scanning for files");
-                    var files = o.Input.Attributes == FileAttributes.Directory ? Directory.GetFiles(o.Input.FullName, $"*{game.Extension}", SearchOption.AllDirectories).OrderBy(x => x.Length).ToArray() : new string[] { o.Input.FullName };
+                    var files = o.Input.Attributes.HasFlag(FileAttributes.Directory) ? Directory.GetFiles(o.Input.FullName, $"*{game.Extension}", SearchOption.AllDirectories).OrderBy(x => x.Length).ToArray() : new string[] { o.Input.FullName };
                     Logger.Info(string.Format("Found {0} file(s)", files.Count()));
 
                     if (o.MapOp.Equals(MapOpType.None))
