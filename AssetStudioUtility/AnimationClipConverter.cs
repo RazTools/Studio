@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace AssetStudio
 {
     public class AnimationClipConverter
     {
         private readonly AnimationClip animationClip;
+
+        public static readonly Regex UnknownPathRegex = new Regex($@"^path_[0-9]{{1,10}}$", RegexOptions.Compiled);
 
         private readonly Dictionary<Vector3Curve, List<Keyframe<Vector3>>> m_translations = new Dictionary<Vector3Curve, List<Keyframe<Vector3>>>();
         private readonly Dictionary<QuaternionCurve, List<Keyframe<Quaternion>>> m_rotations = new Dictionary<QuaternionCurve, List<Keyframe<Quaternion>>>();
@@ -122,6 +125,10 @@ namespace AssetStudio
                         {
                             AddAnimatorMuscleCurve(binding, frame.time, frame.keyList[curveIndex].value);
                         }
+                        else if (binding.customType == 20)
+                        {
+                            AddBlendShapeCurve(binding, path, frame.time, frame.keyList[curveIndex].value);
+                        }
                         curveIndex = GetNextCurve(frame, curveIndex);
                     }
                 }
@@ -155,6 +162,10 @@ namespace AssetStudio
                         if (binding.customType == 8)
                         {
                             AddAnimatorMuscleCurve(binding, time, dense.m_SampleArray[framePosition]);
+                        }
+                        else if (binding.customType == 20)
+                        {
+                            AddBlendShapeCurve(binding, path, time, dense.m_SampleArray[framePosition]);
                         }
                         curveIndex++;
                     }
@@ -200,6 +211,10 @@ namespace AssetStudio
                         {
                             AddAnimatorMuscleCurve(binding, time, values[framePosition]);
                         }
+                        else if (binding.customType == 20)
+                        {
+                            AddBlendShapeCurve(binding, path, time, values[framePosition]);
+                        }
                         curveIndex++;
                     }
                 }
@@ -235,6 +250,10 @@ namespace AssetStudio
                         if (binding.customType == 8)
                         {
                             AddAnimatorMuscleCurve(binding, time, constant.data[curveIndex]);
+                        }
+                        else if (binding.customType == 20)
+                        {
+                            AddBlendShapeCurve(binding, path, time, constant.data[curveIndex]);
                         }
                         curveIndex++;
                     }
@@ -374,6 +393,50 @@ namespace AssetStudio
         private void AddAnimatorMuscleCurve(GenericBinding binding, float time, float value)
         {
             FloatCurve curve = new FloatCurve(string.Empty, binding.GetClipMuscle(), ClassIDType.Animator, new PPtr<MonoScript>(0, 0, null));
+            AddFloatKeyframe(curve, time, value);
+        }
+
+        private void AddBlendShapeCurve(GenericBinding binding, string path, float time, float value)
+        {
+            var attribute = "";
+            const string Prefix = "blendShape.";
+            if (UnknownPathRegex.IsMatch(path))
+            {
+                attribute = Prefix + binding.attribute;
+            }
+
+            foreach (GameObject root in animationClip.FindRoots().ToArray())
+            {
+                Transform rootTransform = root.GetTransform();
+                Transform child = rootTransform.FindChild(path);
+                if (child == null)
+                {
+                    continue;
+                }
+                SkinnedMeshRenderer skin = null;
+                if (child.m_GameObject.TryGet(out var gameObject))
+                {
+                    skin = gameObject.FindComponent<SkinnedMeshRenderer>();
+                }
+                if (skin == null)
+                {
+                    continue;
+                }
+                if (!skin.m_Mesh.TryGet(out var mesh))
+                {
+                    continue;
+                }
+                string shapeName = mesh.FindBlendShapeNameByCRC(binding.attribute);
+                if (shapeName == null)
+                {
+                    continue;
+                }
+
+                attribute = Prefix + shapeName;
+            }
+            attribute = Prefix + attribute;
+
+            FloatCurve curve = new FloatCurve(path, attribute, binding.typeID, binding.script.CastTo<MonoScript>());
             AddFloatKeyframe(curve, time, value);
         }
 
