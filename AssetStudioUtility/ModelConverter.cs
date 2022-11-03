@@ -884,7 +884,7 @@ namespace AssetStudio
                     var m_ClipBindingConstant = animationClip.m_ClipBindingConstant ?? m_Clip.ConvertValueArrayToGenericBinding();
                     var m_ACLClip = m_Clip.m_ACLClip;
                     var aclCount = m_ACLClip.m_CurveCount;
-                    if (m_ACLClip.m_CurveCount != 0 && Game.Name != "SR")
+                    if (m_ACLClip.m_CurveCount != 0 && Game.Name != "SR_CB2" && Game.Name != "SR_CB3")
                     {
                         m_ACLClip.Process(out var values, out var times);
                         for (int frameIndex = 0; frameIndex < times.Length; frameIndex++)
@@ -906,7 +906,7 @@ namespace AssetStudio
                         for (int curveIndex = 0; curveIndex < frame.keyList.Length;)
                         {
                             var index = frame.keyList[curveIndex].index;
-                            if (Game.Name != "SR")
+                            if (Game.Name != "SR_CB2" && Game.Name != "SR_CB3")
                                 index += (int)aclCount;
                             ReadCurveData(iAnim, m_ClipBindingConstant, (int)index, frame.time, streamedValues, 0, ref curveIndex);
                         }
@@ -920,12 +920,12 @@ namespace AssetStudio
                         for (int curveIndex = 0; curveIndex < m_DenseClip.m_CurveCount;)
                         {
                             var index = streamCount + curveIndex;
-                            if (Game.Name != "SR")
+                            if (Game.Name != "SR_CB2" && Game.Name != "SR_CB3")
                                 index += aclCount;
                             ReadCurveData(iAnim, m_ClipBindingConstant, (int)index, time, m_DenseClip.m_SampleArray, (int)frameOffset, ref curveIndex);
                         }
                     }
-                    if (m_ACLClip.m_CurveCount != 0 && Game.Name == "SR")
+                    if (m_ACLClip.m_CurveCount != 0 && Game.Name == "SR_CB2" && Game.Name != "SR_CB3")
                     {
                         m_ACLClip.ProcessSR(out var values, out var times);
                         for (int frameIndex = 0; frameIndex < times.Length; frameIndex++)

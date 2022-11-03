@@ -2,12 +2,12 @@
 
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
-		<TargetFrameworks>net472;net5.0-windows;net6.0-windows</TargetFrameworks>
+		<TargetFramework>net6.0-windows</TargetFramework>
 		<UseWindowsForms>true</UseWindowsForms>
 		<ApplicationIcon>Resources\as.ico</ApplicationIcon>
-		<Version>0.18.30</Version>
-		<AssemblyVersion>0.18.30</AssemblyVersion>
-		<FileVersion>0.18.30</FileVersion>
+		<Version>0.18.60</Version>
+		<AssemblyVersion>0.18.60</AssemblyVersion>
+		<FileVersion>0.18.60</FileVersion>
 		<Copyright>Copyright © Razmoth 2022; Copyright © Perfare 2018-2022</Copyright>
 		<DebugType>embedded</DebugType>
 	</PropertyGroup>
@@ -74,21 +74,12 @@
 		</ContentWithTargetPath>
 	</ItemGroup>
 
-	<ItemGroup Condition=" '$(TargetFramework)' != 'net472' ">
-		<PackageReference Include="OpenTK" Version="4.6.7" />
+	<ItemGroup>
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.2-beta2" />
+		<PackageReference Include="OpenTK" Version="5.0.0-pre.8" />
 		<Reference Include="OpenTK.WinForms">
 			<HintPath>Libraries\OpenTK.WinForms.dll</HintPath>
 		</Reference>
-	</ItemGroup>
-
-	<ItemGroup Condition=" '$(TargetFramework)' == 'net472' ">
-		<PackageReference Include="OpenTK" Version="3.1.0" />
-		<PackageReference Include="OpenTK.GLControl" Version="3.1.0" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<PackageReference Include="CommandLineParser" Version="2.9.1" />
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
 	</ItemGroup>
 	
 	<Target Name="CopyExtraFiles" AfterTargets="AfterBuild">

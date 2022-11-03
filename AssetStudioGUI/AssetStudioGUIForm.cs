@@ -1,6 +1,6 @@
 ﻿using AssetStudio;
 using Newtonsoft.Json;
-using OpenTK;
+using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
 using System;
 using System.Collections.Generic;
@@ -20,14 +20,11 @@ using System.Timers;
 using System.Windows.Forms;
 using static AssetStudioGUI.Studio;
 using Font = AssetStudio.Font;
-#if NET472
-using Vector3 = OpenTK.Vector3;
-using Vector4 = OpenTK.Vector4;
-#else
 using Vector3 = OpenTK.Mathematics.Vector3;
 using Vector4 = OpenTK.Mathematics.Vector4;
 using Matrix4 = OpenTK.Mathematics.Matrix4;
-#endif
+using OpenTK.Mathematics;
+using SpirV;
 
 namespace AssetStudioGUI
 {
@@ -54,14 +51,14 @@ namespace AssetStudioGUI
         private bool glControlLoaded;
         private int mdx, mdy;
         private bool lmdown, rmdown;
-        private int pgmID, pgmColorID, pgmBlackID;
+        private ProgramHandle pgmID, pgmColorID, pgmBlackID;
         private int attributeVertexPosition;
         private int attributeNormalDirection;
         private int attributeVertexColor;
         private int uniformModelMatrix;
         private int uniformViewMatrix;
         private int uniformProjMatrix;
-        private int vao;
+        private VertexArrayHandle vao;
         private Vector3[] vertexData;
         private Vector3[] normalData;
         private Vector3[] normal2Data;
@@ -137,7 +134,7 @@ namespace AssetStudioGUI
             Studio.Game = GameManager.GetGame(Properties.Settings.Default.selectedGame);
             specifyGame.SelectedIndex = Properties.Settings.Default.selectedGame;
             specifyGame.SelectedIndexChanged += new EventHandler(toolStripComboBox2_SelectedIndexChanged);
-            Logger.Info($"Target Game is {Studio.Game.DisplayName}");
+            Logger.Info($"Target Game is {Studio.Game.Name}");
             CABManager.LoadMap(Studio.Game);
         }
 
@@ -248,7 +245,7 @@ namespace AssetStudioGUI
             }
             else
             {
-                Text = $"Studio v{Application.ProductVersion} - {Studio.Game.DisplayName} - {Path.GetFileName(assetsManager.assetsFileList[0].originalPath)} - {assetsManager.assetsFileList[0].unityVersion} - {assetsManager.assetsFileList[0].m_TargetPlatform}";
+                Text = $"Studio v{Application.ProductVersion} - {Studio.Game.Name} - {Path.GetFileName(assetsManager.assetsFileList[0].originalPath)} - {assetsManager.assetsFileList[0].unityVersion} - {assetsManager.assetsFileList[0].m_TargetPlatform}";
             }
 
             assetListView.VirtualListSize = visibleAssets.Count;
@@ -317,7 +314,7 @@ namespace AssetStudioGUI
 
         private void AssetStudioForm_KeyDown(object sender, KeyEventArgs e)
         {
-            if (glControl1.Visible)
+            if (glControl.Visible)
             {
                 if (e.Control)
                 {
@@ -326,18 +323,18 @@ namespace AssetStudioGUI
                         case Keys.W:
                             //Toggle WireFrame
                             wireFrameMode = (wireFrameMode + 1) % 3;
-                            glControl1.Invalidate();
+                            glControl.Invalidate();
                             break;
                         case Keys.S:
                             //Toggle Shade
                             shadeMode = (shadeMode + 1) % 2;
-                            glControl1.Invalidate();
+                            glControl.Invalidate();
                             break;
                         case Keys.N:
                             //Normal mode
                             normalMode = (normalMode + 1) % 2;
                             CreateVAO();
-                            glControl1.Invalidate();
+                            glControl.Invalidate();
                             break;
                     }
                 }
@@ -701,7 +698,7 @@ namespace AssetStudioGUI
             textPreviewBox.Visible = false;
             fontPreviewBox.Visible = false;
             FMODpanel.Visible = false;
-            glControl1.Visible = false;
+            glControl.Visible = false;
             StatusStripUpdate("");
 
             FMODreset();
@@ -734,7 +731,7 @@ namespace AssetStudioGUI
             textPreviewBox.Visible = false;
             fontPreviewBox.Visible = false;
             FMODpanel.Visible = false;
-            glControl1.Visible = false;
+            glControl.Visible = false;
             StatusStripUpdate("");
             if (e.IsSelected)
             {
@@ -744,10 +741,10 @@ namespace AssetStudioGUI
 
         private void preview_Resize(object sender, EventArgs e)
         {
-            if (glControlLoaded && glControl1.Visible)
+            if (glControlLoaded && glControl.Visible)
             {
-                ChangeGLSize(glControl1.Size);
-                glControl1.Invalidate();
+                ChangeGLSize(glControl.Size);
+                glControl.Invalidate();
             }
         }
 
@@ -1219,7 +1216,7 @@ namespace AssetStudioGUI
                     }
                 }
                 #endregion
-                glControl1.Visible = true;
+                glControl.Visible = true;
                 CreateVAO();
                 StatusStripUpdate("Using OpenGL Version: " + GL.GetString(StringName.Version) + "\n"
                                   + "'Mouse Left'=Rotate | 'Mouse Right'=Move | 'Mouse Wheel'=Zoom \n"
@@ -1308,7 +1305,7 @@ namespace AssetStudioGUI
             assetInfoLabel.Text = null;
             textPreviewBox.Visible = false;
             fontPreviewBox.Visible = false;
-            glControl1.Visible = false;
+            glControl.Visible = false;
             lastSelectedItem = null;
             sortColumn = -1;
             reverseSort = false;
@@ -1954,11 +1951,11 @@ namespace AssetStudioGUI
         #region GLControl
         private void InitOpenTK()
         {
-            ChangeGLSize(glControl1.Size);
-            GL.ClearColor(System.Drawing.Color.CadetBlue);
+            ChangeGLSize(glControl.Size);
+            GL.ClearColor(Color4.Dimgray);
             pgmID = GL.CreateProgram();
-            LoadShader("vs", ShaderType.VertexShader, pgmID, out int vsID);
-            LoadShader("fs", ShaderType.FragmentShader, pgmID, out int fsID);
+            LoadShader("vs", ShaderType.VertexShader, pgmID, out var vsID);
+            LoadShader("fs", ShaderType.FragmentShader, pgmID, out var fsID);
             GL.LinkProgram(pgmID);
 
             pgmColorID = GL.CreateProgram();
@@ -1979,7 +1976,7 @@ namespace AssetStudioGUI
             uniformProjMatrix = GL.GetUniformLocation(pgmID, "projMatrix");
         }
 
-        private static void LoadShader(string filename, ShaderType type, int program, out int address)
+        private static void LoadShader(string filename, ShaderType type, ProgramHandle program, out ShaderHandle address)
         {
             address = GL.CreateShader(type);
             var str = (string)Properties.Resources.ResourceManager.GetObject(filename);
@@ -1989,50 +1986,47 @@ namespace AssetStudioGUI
             GL.DeleteShader(address);
         }
 
-        private static void CreateVBO(out int vboAddress, Vector3[] data, int address)
+        private static void CreateVBO(out BufferHandle vboAddress, Vector3[] data, int address)
         {
-            GL.GenBuffers(1, out vboAddress);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, vboAddress);
-            GL.BufferData(BufferTarget.ArrayBuffer,
-                                    (IntPtr)(data.Length * Vector3.SizeInBytes),
+            GL.CreateBuffer(out vboAddress);
+            GL.BindBuffer(BufferTargetARB.ArrayBuffer, vboAddress);
+            GL.BufferData(BufferTargetARB.ArrayBuffer,
                                     data,
-                                    BufferUsageHint.StaticDraw);
-            GL.VertexAttribPointer(address, 3, VertexAttribPointerType.Float, false, 0, 0);
-            GL.EnableVertexAttribArray(address);
+                                    BufferUsageARB.StaticDraw);
+            GL.VertexAttribPointer((uint)address, 3, VertexAttribPointerType.Float, false, 0, 0);
+            GL.EnableVertexAttribArray((uint)address);
         }
 
-        private static void CreateVBO(out int vboAddress, Vector4[] data, int address)
+        private static void CreateVBO(out BufferHandle vboAddress, Vector4[] data, int address)
         {
-            GL.GenBuffers(1, out vboAddress);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, vboAddress);
-            GL.BufferData(BufferTarget.ArrayBuffer,
-                                    (IntPtr)(data.Length * Vector4.SizeInBytes),
+            GL.CreateBuffer(out vboAddress);
+            GL.BindBuffer(BufferTargetARB.ArrayBuffer, vboAddress);
+            GL.BufferData(BufferTargetARB.ArrayBuffer,
                                     data,
-                                    BufferUsageHint.StaticDraw);
-            GL.VertexAttribPointer(address, 4, VertexAttribPointerType.Float, false, 0, 0);
-            GL.EnableVertexAttribArray(address);
+                                    BufferUsageARB.StaticDraw);
+            GL.VertexAttribPointer((uint)address, 4, VertexAttribPointerType.Float, false, 0, 0);
+            GL.EnableVertexAttribArray((uint)address);
         }
 
-        private static void CreateVBO(out int vboAddress, Matrix4 data, int address)
+        private static void CreateVBO(out BufferHandle vboAddress, Matrix4 data, int address)
         {
-            GL.GenBuffers(1, out vboAddress);
-            GL.UniformMatrix4(address, false, ref data);
+            GL.CreateBuffer(out vboAddress);
+            GL.UniformMatrix4f(address, false, data);
         }
 
-        private static void CreateEBO(out int address, int[] data)
+        private static void CreateEBO(out BufferHandle address, int[] data)
         {
-            GL.GenBuffers(1, out address);
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, address);
-            GL.BufferData(BufferTarget.ElementArrayBuffer,
-                            (IntPtr)(data.Length * sizeof(int)),
+            GL.CreateBuffer(out address);
+            GL.BindBuffer(BufferTargetARB.ElementArrayBuffer, address);
+            GL.BufferData(BufferTargetARB.ElementArrayBuffer,
                             data,
-                            BufferUsageHint.StaticDraw);
+                            BufferUsageARB.StaticDraw);
         }
 
         private void CreateVAO()
         {
             GL.DeleteVertexArray(vao);
-            GL.GenVertexArrays(1, out vao);
+            GL.CreateVertexArray(out vao);
             GL.BindVertexArray(vao);
             CreateVBO(out var vboPositions, vertexData, attributeVertexPosition);
             if (normalMode == 0)
@@ -2049,8 +2043,8 @@ namespace AssetStudioGUI
             CreateVBO(out var vboViewMatrix, viewMatrixData, uniformViewMatrix);
             CreateVBO(out var vboProjMatrix, projMatrixData, uniformProjMatrix);
             CreateEBO(out var eboElements, indiceData);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-            GL.BindVertexArray(0);
+            GL.BindBuffer(BufferTargetARB.ArrayBuffer, BufferHandle.Zero);
+            GL.BindVertexArray(VertexArrayHandle.Zero);
         }
 
         private void ChangeGLSize(Size size)
@@ -2077,7 +2071,7 @@ namespace AssetStudioGUI
 
         private void glControl1_Paint(object sender, PaintEventArgs e)
         {
-            glControl1.MakeCurrent();
+            glControl.MakeCurrent();
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             GL.Enable(EnableCap.DepthTest);
             GL.DepthFunc(DepthFunction.Lequal);
@@ -2085,11 +2079,11 @@ namespace AssetStudioGUI
             if (wireFrameMode == 0 || wireFrameMode == 2)
             {
                 GL.UseProgram(shadeMode == 0 ? pgmID : pgmColorID);
-                GL.UniformMatrix4(uniformModelMatrix, false, ref modelMatrixData);
-                GL.UniformMatrix4(uniformViewMatrix, false, ref viewMatrixData);
-                GL.UniformMatrix4(uniformProjMatrix, false, ref projMatrixData);
-                GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
-                GL.DrawElements(BeginMode.Triangles, indiceData.Length, DrawElementsType.UnsignedInt, 0);
+                GL.UniformMatrix4f(uniformModelMatrix, false, modelMatrixData);
+                GL.UniformMatrix4f(uniformViewMatrix, false, viewMatrixData);
+                GL.UniformMatrix4f(uniformProjMatrix, false, projMatrixData);
+                GL.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Fill);
+                GL.DrawElements(PrimitiveType.Triangles, indiceData.Length, DrawElementsType.UnsignedInt, 0);
             }
             //Wireframe
             if (wireFrameMode == 1 || wireFrameMode == 2)
@@ -2097,16 +2091,16 @@ namespace AssetStudioGUI
                 GL.Enable(EnableCap.PolygonOffsetLine);
                 GL.PolygonOffset(-1, -1);
                 GL.UseProgram(pgmBlackID);
-                GL.UniformMatrix4(uniformModelMatrix, false, ref modelMatrixData);
-                GL.UniformMatrix4(uniformViewMatrix, false, ref viewMatrixData);
-                GL.UniformMatrix4(uniformProjMatrix, false, ref projMatrixData);
-                GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
-                GL.DrawElements(BeginMode.Triangles, indiceData.Length, DrawElementsType.UnsignedInt, 0);
+                GL.UniformMatrix4f(uniformModelMatrix, false, modelMatrixData);
+                GL.UniformMatrix4f(uniformViewMatrix, false, viewMatrixData);
+                GL.UniformMatrix4f(uniformProjMatrix, false, projMatrixData);
+                GL.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Line);
+                GL.DrawElements(PrimitiveType.Triangles, indiceData.Length, DrawElementsType.UnsignedInt, 0);
                 GL.Disable(EnableCap.PolygonOffsetLine);
             }
-            GL.BindVertexArray(0);
+            GL.BindVertexArray(VertexArrayHandle.Zero);
             GL.Flush();
-            glControl1.SwapBuffers();
+            glControl.SwapBuffers();
         }
 
         private void tabControl2_SelectedIndexChanged(object sender, EventArgs e)
@@ -2212,7 +2206,7 @@ namespace AssetStudioGUI
             Properties.Settings.Default.Save();
 
             Studio.Game = GameManager.GetGame(Properties.Settings.Default.selectedGame);
-            Logger.Info($"Target Game is {Studio.Game.DisplayName}");
+            Logger.Info($"Target Game is {Studio.Game.Name}");
 
             ResetForm();
             assetsManager.SpecifyUnityVersion = specifyUnityVersion.Text;
@@ -2234,10 +2228,10 @@ namespace AssetStudioGUI
 
         private void glControl1_MouseWheel(object sender, MouseEventArgs e)
         {
-            if (glControl1.Visible)
+            if (glControl.Visible)
             {
                 viewMatrixData *= Matrix4.CreateScale(1 + e.Delta / 1000f);
-                glControl1.Invalidate();
+                glControl.Invalidate();
             }
         }
 
@@ -2276,7 +2270,7 @@ namespace AssetStudioGUI
                     dy *= 0.003f;
                     viewMatrixData *= Matrix4.CreateTranslation(-dx, dy, 0);
                 }
-                glControl1.Invalidate();
+                glControl.Invalidate();
             }
         }
 

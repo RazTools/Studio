@@ -189,7 +189,7 @@ namespace AssetStudio
         public uint m_ConstCurveCount;
         public ACLClip(ObjectReader reader)
         {
-            if (reader.Game.Name == "SR")
+            if (reader.Game.Name == "SR_CB2" || reader.Game.Name == "SR_CB3")
             {
                 m_ClipDataUint = reader.ReadUInt32Array();
             }
@@ -201,7 +201,7 @@ namespace AssetStudio
 
             m_CurveCount = reader.ReadUInt32();
 
-            if (reader.Game.Name == "SR")
+            if (reader.Game.Name == "SR_CB2" || reader.Game.Name == "SR_CB3")
             {
                 m_ConstCurveCount = reader.ReadUInt32();
             }
@@ -970,7 +970,7 @@ namespace AssetStudio
             var version = reader.version;
             m_StreamedClip = new StreamedClip(reader);
             m_DenseClip = new DenseClip(reader);
-            if (reader.Game.Name == "SR")
+            if (reader.Game.Name == "SR_CB2" || reader.Game.Name == "SR_CB3")
             {
                 m_ACLClip = new ACLClip(reader);
             }
@@ -978,7 +978,7 @@ namespace AssetStudio
             {
                 m_ConstantClip = new ConstantClip(reader);
             }
-            if (reader.Game.Name != "SR" && reader.Game.Name != "TOT")
+            if (reader.Game.Name != "SR_CB2" && reader.Game.Name != "SR_CB3" && reader.Game.Name != "TOT")
             {
                 m_ACLClip = new ACLClip(reader);
             }
@@ -1440,7 +1440,7 @@ namespace AssetStudio
             }
             if (version[0] > 4 || (version[0] == 4 && version[1] >= 3)) //4.3 and up
             {
-                if (reader.Game.Name == "SR")
+                if (reader.Game.Name == "SR_CB2" || reader.Game.Name == "SR_CB3")
                 {
                     m_AclClipData = reader.ReadUInt8Array();
                     var aclBindingsCount = reader.ReadInt32();

@@ -2,17 +2,17 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-	<TargetFrameworks>net472;net5.0-windows;net6.0-windows</TargetFrameworks>
+	<TargetFramework>net6.0-windows</TargetFramework>
 	<ApplicationIcon>Resources\as.ico</ApplicationIcon>
-	<Version>0.18.30</Version>
-	<AssemblyVersion>0.18.30</AssemblyVersion>
-	<FileVersion>0.18.30</FileVersion>
+	<Version>0.18.60</Version>
+	<AssemblyVersion>0.18.60</AssemblyVersion>
+	<FileVersion>0.18.60</FileVersion>
 	<Copyright>Copyright © Razmoth 2022</Copyright>
 	<BaseOutputPath>..\AssetStudioGUI\bin</BaseOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2-beta2" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
   </ItemGroup>
 

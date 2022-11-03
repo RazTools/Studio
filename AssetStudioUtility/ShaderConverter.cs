@@ -44,7 +44,7 @@ namespace AssetStudio
                     var compressedLength = shader.compressedLengths[i][j];
                     var decompressedLength = shader.decompressedLengths[i][j];
                     var decompressedBytes = new byte[decompressedLength];
-                    if (game.Name == "GI" || game.Name == "CB2" || game.Name == "CB3")
+                    if (game.Name == "GI" || game.Name == "GI_CB2" || game.Name == "GI_CB3")
                     {
                         Buffer.BlockCopy(shader.compressedBlob, (int)offset, decompressedBytes, 0, (int)decompressedLength);
                     }

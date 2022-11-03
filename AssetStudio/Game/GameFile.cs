@@ -27,17 +27,17 @@ namespace AssetStudio
                     var giFile = new GIFile(reader);
                     bundles = giFile.Bundles;
                     break;
-                case "CB1":
-                    var cb1 = GameManager.GetGame("CB1");
-                    if (ext != cb1.Extension)
+                case "GI_CB1":
+                    var gi_cb1 = GameManager.GetGame("GI_CB1");
+                    if (ext != gi_cb1.Extension)
                         goto default;
 
-                    var cb1File = new CB1File(reader);
-                    bundles = cb1File.Bundles;
+                    var gi_cb1File = new CB1File(reader);
+                    bundles = gi_cb1File.Bundles;
                     break;
-                case "CB2":
-                    var cb2 = GameManager.GetGame("CB2");
-                    if (ext != cb2.Extension)
+                case "GI_CB2":
+                    var gi_cb2 = GameManager.GetGame("GI_CB2");
+                    if (ext != gi_cb2.Extension)
                         goto default;
 
                     Blk.ExpansionKey = Crypto.CBXExpansionKey;
@@ -45,12 +45,12 @@ namespace AssetStudio
                     Blk.ConstKey = Crypto.CBXConstKey;
                     Blk.ConstVal = Crypto.CBXConstVal;
 
-                    var cb2File = new CBXFile(reader);
-                    bundles = cb2File.Bundles;
+                    var gi_cb2File = new CBXFile(reader);
+                    bundles = gi_cb2File.Bundles;
                     break;
-                case "CB3":
-                    var cb3 = GameManager.GetGame("CB3");
-                    if (ext != cb3.Extension)
+                case "GI_CB3":
+                    var gi_cb3 = GameManager.GetGame("GI_CB3");
+                    if (ext != gi_cb3.Extension)
                         goto default;
 
                     Blk.ExpansionKey = Crypto.CBXExpansionKey;
@@ -58,8 +58,8 @@ namespace AssetStudio
                     Blk.ConstKey = Crypto.CBXConstKey;
                     Blk.ConstVal = Crypto.CBXConstVal;
 
-                    var cb3File = new CBXFile(reader);
-                    bundles = cb3File.Bundles;
+                    var gi_cb3File = new CBXFile(reader);
+                    bundles = gi_cb3File.Bundles;
                     break;
                 case "BH3":
                     var bh3 = GameManager.GetGame("BH3");
@@ -75,8 +75,8 @@ namespace AssetStudio
                     var wmvFile = new WMVFile(reader);
                     bundles = wmvFile.Bundles;
                     break;
-                case "ZZZ":
-                    var zzz = GameManager.GetGame("ZZZ");
+                case "ZZZ_CB1":
+                    var zzz = GameManager.GetGame("ZZZ_CB1");
                     if (ext != zzz.Extension)
                         goto default;
 
@@ -89,9 +89,9 @@ namespace AssetStudio
                     var zzzFile = new BundleFile(reader);
                     bundles.Add(0, zzzFile.FileList);
                     break;
-                case "SR":
-                    var sr = GameManager.GetGame("SR");
-                    if (ext != sr.Extension)
+                case "SR_CB2":
+                    var sr_cb2 = GameManager.GetGame("SR_CB2");
+                    if (ext != sr_cb2.Extension)
                         goto default;
 
                     Mr0k.ExpansionKey = Crypto.Mr0kExpansionKey;
@@ -100,8 +100,22 @@ namespace AssetStudio
                     Mr0k.SBox = null;
                     Mr0k.BlockKey = null;
 
-                    var srFile = new BundleFile(reader);
-                    bundles.Add(0, srFile.FileList);
+                    var sr_cb2File = new BundleFile(reader);
+                    bundles.Add(0, sr_cb2File.FileList);
+                    break;
+                case "SR_CB3":
+                    var sr_cb3 = GameManager.GetGame("SR_CB3");
+                    if (ext != sr_cb3.Extension)
+                        goto default;
+
+                    Mr0k.ExpansionKey = Crypto.Mr0kExpansionKey;
+                    Mr0k.Key = Crypto.Mr0kKey;
+                    Mr0k.ConstKey = Crypto.Mr0kConstKey;
+                    Mr0k.SBox = null;
+                    Mr0k.BlockKey = null;
+
+                    var sr_cb3File = new BlocksFile(reader);
+                    bundles = sr_cb3File.Bundles;
                     break;
                 case "TOT":
                     var tot = GameManager.GetGame("TOT");

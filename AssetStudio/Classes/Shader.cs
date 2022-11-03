@@ -985,7 +985,7 @@ namespace AssetStudio
                     decompressedLengths = reader.ReadUInt32Array().Select(x => new[] { x }).ToArray();
                 }
                 compressedBlob = reader.ReadUInt8Array();
-                if (reader.Game.Name == "GI" || reader.Game.Name == "CB2" || reader.Game.Name == "CB3")
+                if (reader.Game.Name == "GI" || reader.Game.Name == "GI_CB2" || reader.Game.Name == "GI_CB3")
                 {
                     if (BitConverter.ToInt32(compressedBlob, 0) == -1)
                         compressedBlob = reader.ReadUInt8Array();

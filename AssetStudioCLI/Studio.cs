@@ -143,7 +143,7 @@ namespace AssetStudioCLI
             return extractedCount;
         }
 
-        public static List<AssetEntry> BuildAssetMap(List<string> files, ClassIDType[] formats, Regex[] filters)
+        public static List<AssetEntry> BuildAssetMap(List<string> files, ClassIDType[] typeFilters, Regex[] nameFilters, Regex[] containerFilters)
         {
             var assets = new List<AssetEntry>();
             for (int i = 0; i < files.Count; i++)
@@ -195,7 +195,7 @@ namespace AssetStudioCLI
                                                 var preloadEnd = preloadIndex + preloadSize;
                                                 for (int k = preloadIndex; k < preloadEnd; k++)
                                                 {
-                                                    if (Game.Name == "GI" || Game.Name == "CB2" || Game.Name == "CB3")
+                                                    if (Game.Name == "GI" || Game.Name == "GI_CB2" || Game.Name == "GI_CB3")
                                                     {
                                                         if (long.TryParse(m_Container.Key, out var containerValue))
                                                         {
@@ -258,8 +258,8 @@ namespace AssetStudioCLI
                                         objectAssetItemDic.Add(obj, asset);
                                         assetsFile.AddObject(obj);
                                     }
-                                    var isMatchRegex = filters.Length == 0 || filters.Any(x => x.IsMatch(asset.Name) || asset.Type == ClassIDType.Animator);
-                                    var isFilteredType = formats.Length == 0 || formats.Contains(asset.Type) || asset.Type == ClassIDType.Animator;
+                                    var isMatchRegex = nameFilters.Length == 0 || nameFilters.Any(x => x.IsMatch(asset.Name) || asset.Type == ClassIDType.Animator);
+                                    var isFilteredType = typeFilters.Length == 0 || typeFilters.Contains(asset.Type) || asset.Type == ClassIDType.Animator;
                                     if (isMatchRegex && isFilteredType && exportable)
                                     {
                                         assets.Add(asset);
@@ -267,7 +267,7 @@ namespace AssetStudioCLI
                                 }
                                 foreach (var pair in animators)
                                 {
-                                    if (pair.Item1.TryGet(out var gameObject) && gameObject is GameObject && (filters.Length == 0 || filters.Any(x => x.IsMatch(gameObject.m_Name))) && (formats.Length == 0 || formats.Contains(pair.Item2.Type)))
+                                    if (pair.Item1.TryGet(out var gameObject) && gameObject is GameObject && (nameFilters.Length == 0 || nameFilters.Any(x => x.IsMatch(gameObject.m_Name))) && (typeFilters.Length == 0 || typeFilters.Contains(pair.Item2.Type)))
                                     {
                                         pair.Item2.Name = gameObject.m_Name;
                                     }
@@ -280,7 +280,15 @@ namespace AssetStudioCLI
                                 {
                                     if (pptr.TryGet(out var obj))
                                     {
-                                        objectAssetItemDic[obj].Container = container;
+                                        var item = objectAssetItemDic[obj];
+                                        if (containerFilters.Length == 0 || containerFilters.Any(x => x.IsMatch(container)))
+                                        {
+                                            item.Container = container;
+                                        }
+                                        else
+                                        {
+                                            assets.Remove(item);
+                                        }
                                     }
                                 }
                                 assetsManager.assetsFileList.Clear();
@@ -296,7 +304,7 @@ namespace AssetStudioCLI
             return assets;
         }
 
-        public static void BuildAssetData(ClassIDType[] formats, Regex[] filters, ref int i)
+        public static void BuildAssetData(ClassIDType[] typeFilters, Regex[] nameFilters, Regex[] containerFilters, ref int i)
         {
             string productName = null;
             var objectCount = assetsManager.assetsFileList.Sum(x => x.Objects.Count);
@@ -373,7 +381,7 @@ namespace AssetStudioCLI
                                 var preloadEnd = preloadIndex + preloadSize;
                                 for (int k = preloadIndex; k < preloadEnd; k++)
                                 {
-                                    if (Game.Name == "GI" || Game.Name == "CB2" || Game.Name == "CB3")
+                                    if (Game.Name == "GI" || Game.Name == "GI_CB2" || Game.Name == "GI_CB3")
                                     {
                                         if (long.TryParse(m_Container.Key, out var containerValue))
                                         {
@@ -440,8 +448,8 @@ namespace AssetStudioCLI
                     {
                         assetItem.Text = assetItem.TypeString + assetItem.UniqueID;
                     }
-                    var isMatchRegex = filters.Length == 0 || filters.Any(x => x.IsMatch(assetItem.Text));
-                    var isFilteredType = formats.Length == 0 || formats.Contains(assetItem.Asset.type);
+                    var isMatchRegex = nameFilters.Length == 0 || nameFilters.Any(x => x.IsMatch(assetItem.Text));
+                    var isFilteredType = typeFilters.Length == 0 || typeFilters.Contains(assetItem.Asset.type);
                     if (isMatchRegex && isFilteredType && exportable)
                     {
                         exportableAssets.Add(assetItem);
@@ -453,7 +461,15 @@ namespace AssetStudioCLI
             {
                 if (pptr.TryGet(out var obj))
                 {
-                    objectAssetItemDic[obj].Container = container;
+                    var item = objectAssetItemDic[obj];
+                    if (containerFilters.Length == 0 || containerFilters.Any(x => x.IsMatch(container)))
+                    {
+                        item.Container = container;
+                    }
+                    else
+                    {
+                        exportableAssets.Remove(item);
+                    }
                 }
             }
             containers.Clear();
@@ -474,7 +490,7 @@ namespace AssetStudioCLI
                     case AssetGroupOption.ByContainer: //container path
                         if (!string.IsNullOrEmpty(asset.Container))
                         {
-                            exportPath = Path.HasExtension(asset.Container) ? Path.Combine(savePath, Path.GetDirectoryName(asset.Container)) : Path.Combine(savePath, asset.Container);
+                            exportPath = Path.HasExtension(asset.Container) ? Path.Combine(savePath, Path.GetFileNameWithoutExtension(asset.Container)) : Path.Combine(savePath, asset.Container);
                         }
                         else
                         {

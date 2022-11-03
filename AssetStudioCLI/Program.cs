@@ -6,6 +6,7 @@ using System.CommandLine.Binding;
 using System.Text.RegularExpressions;
 using static AssetStudioCLI.Studio;
 using AssetStudio;
+using System.CommandLine.Parsing;
 
 namespace AssetStudioCLI 
 {
@@ -23,8 +24,9 @@ namespace AssetStudioCLI
             var rootCommand = new RootCommand()
             {
                 optionsBinder.Silent,
-                optionsBinder.Types,
-                optionsBinder.Filters,
+                optionsBinder.TypeFilter,
+                optionsBinder.NameFilter,
+                optionsBinder.ContainerFilter,
                 optionsBinder.GameName,
                 optionsBinder.MapOp,
                 optionsBinder.MapType,
@@ -74,7 +76,7 @@ namespace AssetStudioCLI
                         }
                     }
 
-                    if (o.AIFile != null && game.Name == "GI" || game.Name == "CB2" || game.Name == "CB3")
+                    if (o.AIFile != null && game.Name == "GI" || game.Name == "GI_CB2" || game.Name == "GI_CB3")
                     {
                         ResourceIndex.FromFile(o.AIFile.FullName);
                     }
@@ -89,7 +91,7 @@ namespace AssetStudioCLI
                         foreach (var file in files)
                         {
                             assetsManager.LoadFiles(file);
-                            BuildAssetData(o.Types, o.Filters, ref i);
+                            BuildAssetData(o.TypeFilter, o.NameFilter, o.ContainerFilter, ref i);
                             ExportAssets(o.Output.FullName, exportableAssets, o.GroupAssetsType);
                             exportableAssets.Clear();
                             assetsManager.Clear();
@@ -105,7 +107,7 @@ namespace AssetStudioCLI
                         {
                             throw new Exception("Unable to build AssetMap with input_path as a file !!");
                         }
-                        var assets = BuildAssetMap(files.ToList(), o.Types, o.Filters);
+                        var assets = BuildAssetMap(files.ToList(), o.TypeFilter, o.NameFilter, o.ContainerFilter);
                         if (!o.Output.Exists)
                         {
                             o.Output.Create();
@@ -131,8 +133,9 @@ namespace AssetStudioCLI
     public class Options
     {
         public bool Silent { get; set; }
-        public ClassIDType[] Types { get; set; }
-        public Regex[] Filters { get; set; }
+        public ClassIDType[] TypeFilter { get; set; }
+        public Regex[] NameFilter { get; set; }
+        public Regex[] ContainerFilter { get; set; }
         public string GameName { get; set; }
         public MapOpType MapOp { get; set; }
         public ExportListType MapType { get; set; }
@@ -149,8 +152,9 @@ namespace AssetStudioCLI
     public class OptionsBinder : BinderBase<Options>
     {
         public readonly Option<bool> Silent;
-        public readonly Option<ClassIDType[]> Types;
-        public readonly Option<Regex[]> Filters;
+        public readonly Option<ClassIDType[]> TypeFilter;
+        public readonly Option<Regex[]> NameFilter;
+        public readonly Option<Regex[]> ContainerFilter;
         public readonly Option<string> GameName;
         public readonly Option<MapOpType> MapOp;
         public readonly Option<ExportListType> MapType;
@@ -166,8 +170,9 @@ namespace AssetStudioCLI
         public OptionsBinder()
         {
             Silent = new Option<bool>("--silent", "Hide log messages.");
-            Types = new Option<ClassIDType[]>("--type", "Specify unity class type(s)") { AllowMultipleArgumentsPerToken = true, ArgumentHelpName = "Texture2D|Sprite|etc.." };
-            Filters = new Option<Regex[]>("--filter", result => result.Tokens.Select(x => new Regex(x.Value, RegexOptions.IgnoreCase)).ToArray(), false, "Specify regex filter(s).") { AllowMultipleArgumentsPerToken = true };
+            TypeFilter = new Option<ClassIDType[]>("--types", "Specify unity class type(s)") { AllowMultipleArgumentsPerToken = true, ArgumentHelpName = "Texture2D|Sprite|etc.." };
+            NameFilter = new Option<Regex[]>("--names", result => result.Tokens.Select(x => new Regex(x.Value, RegexOptions.IgnoreCase)).ToArray(), false, "Specify name regex filter(s).") { AllowMultipleArgumentsPerToken = true };
+            ContainerFilter = new Option<Regex[]>("--containers", result => result.Tokens.Select(x => new Regex(x.Value, RegexOptions.IgnoreCase)).ToArray(), false, "Specify container regex filter(s).") { AllowMultipleArgumentsPerToken = true };
             GameName = new Option<string>("--game", $"Specify Game.") { IsRequired = true };
             MapOp = new Option<MapOpType>("--map_op", "Specify which map to build.");
             MapType = new Option<ExportListType>("--map_type", "AssetMap output type.");
@@ -193,29 +198,9 @@ namespace AssetStudioCLI
                 }
             }, false, "XOR key to decrypt MiHoYoBinData.");
 
-            Filters.AddValidator(result =>
-            {
-                var values = result.Tokens.Select(x => x.Value).ToArray();
-                foreach(var val in values)
-                {
-                    if (string.IsNullOrWhiteSpace(val))
-                    {
-                        result.ErrorMessage = "Empty string.";
-                        return;
-                    }
-
-                    try
-                    {
-                        Regex.Match("", val, RegexOptions.IgnoreCase);
-                    }
-                    catch (ArgumentException e)
-                    {
-                        result.ErrorMessage = "Invalid Regex.\n" + e.Message;
-                        return;
-                    }
-                }
-            });
-
+            TypeFilter.AddValidator(FilterValidator);
+            NameFilter.AddValidator(FilterValidator);
+            ContainerFilter.AddValidator(FilterValidator);
             XorByte.AddValidator(result =>
             {
                 var value = result.Tokens.Single().Value;
@@ -244,12 +229,38 @@ namespace AssetStudioCLI
             MapType.SetDefaultValue(ExportListType.XML);
         }
 
+        public void FilterValidator(OptionResult result)
+        {
+            {
+                var values = result.Tokens.Select(x => x.Value).ToArray();
+                foreach (var val in values)
+                {
+                    if (string.IsNullOrWhiteSpace(val))
+                    {
+                        result.ErrorMessage = "Empty string.";
+                        return;
+                    }
+
+                    try
+                    {
+                        Regex.Match("", val, RegexOptions.IgnoreCase);
+                    }
+                    catch (ArgumentException e)
+                    {
+                        result.ErrorMessage = "Invalid Regex.\n" + e.Message;
+                        return;
+                    }
+                }
+            }
+        }
+
         protected override Options GetBoundValue(BindingContext bindingContext) =>
         new Options
         {
             Silent = bindingContext.ParseResult.GetValueForOption(Silent),
-            Types = bindingContext.ParseResult.GetValueForOption(Types),
-            Filters = bindingContext.ParseResult.GetValueForOption(Filters),
+            TypeFilter = bindingContext.ParseResult.GetValueForOption(TypeFilter),
+            NameFilter = bindingContext.ParseResult.GetValueForOption(NameFilter),
+            ContainerFilter = bindingContext.ParseResult.GetValueForOption(ContainerFilter),
             GameName = bindingContext.ParseResult.GetValueForOption(GameName),
             MapOp = bindingContext.ParseResult.GetValueForOption(MapOp),
             MapType = bindingContext.ParseResult.GetValueForOption(MapType),

@@ -45,9 +45,9 @@ namespace AssetStudio
 
         public static byte[] ConvertToBytes<TPixel>(this Image<TPixel> image) where TPixel : unmanaged, IPixel<TPixel>
         {
-            if (image.TryGetSinglePixelSpan(out var pixelSpan))
+            if (image.DangerousTryGetSinglePixelMemory(out var pixelSpan))
             {
-                return MemoryMarshal.AsBytes(pixelSpan).ToArray();
+                return MemoryMarshal.AsBytes(pixelSpan.Span).ToArray();
             }
             return null;
         }

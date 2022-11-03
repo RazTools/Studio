@@ -209,7 +209,7 @@ namespace AssetStudioGUI
                                                 var preloadEnd = preloadIndex + preloadSize;
                                                 for (int k = preloadIndex; k < preloadEnd; k++)
                                                 {
-                                                    if (Game.Name == "GI" || Game.Name == "CB2" || Game.Name == "CB3")
+                                                    if (Game.Name == "GI" || Game.Name == "GI_CB2" || Game.Name == "GI_CB3")
                                                     {
                                                         if (long.TryParse(m_Container.Key, out var containerValue))
                                                         {
@@ -392,7 +392,7 @@ namespace AssetStudioGUI
                                 var preloadEnd = preloadIndex + preloadSize;
                                 for (int k = preloadIndex; k < preloadEnd; k++)
                                 {
-                                    if (Game.Name == "GI" || Game.Name == "CB2" || Game.Name == "CB3")
+                                    if (Game.Name == "GI" || Game.Name == "GI_CB2" || Game.Name == "GI_CB3")
                                     {
                                         if (long.TryParse(m_Container.Key, out var containerValue))
                                         {
@@ -617,7 +617,7 @@ namespace AssetStudioGUI
                         case AssetGroupOption.ByContainer: //container path
                             if (!string.IsNullOrEmpty(asset.Container))
                             {
-                                exportPath = Game.Name == "GI" || Game.Name == "CB2" || Game.Name == "CB3" ? Path.Combine(savePath, Path.GetDirectoryName(asset.Container)) : Path.Combine(savePath, asset.Container);
+                                exportPath = Path.HasExtension(asset.Container) ? Path.Combine(savePath, Path.GetFileNameWithoutExtension(asset.Container)) : Path.Combine(savePath, asset.Container);
                             }
                             else
                             {

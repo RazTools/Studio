@@ -1,17 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net472;netstandard2.0;net5.0;net6.0</TargetFrameworks>
-    <Version>0.18.30</Version>
-    <AssemblyVersion>0.18.30</AssemblyVersion>
-    <FileVersion>0.18.30</FileVersion>
+    <TargetFramework>net6.0</TargetFramework>
+    <Version>0.18.60</Version>
+    <AssemblyVersion>0.18.60</AssemblyVersion>
+    <FileVersion>0.18.60</FileVersion>
     <Copyright>Copyright © Razmoth 2022; Copyright © Perfare 2018-2022</Copyright>
 	<DebugType>embedded</DebugType>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Mono.Cecil" Version="0.11.3" />
-    <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="1.0.0-beta13" />
+    <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="1.0.0-beta15" />
   </ItemGroup>
 
   <ItemGroup>

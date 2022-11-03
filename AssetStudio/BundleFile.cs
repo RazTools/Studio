@@ -77,7 +77,7 @@ namespace AssetStudio
                 m_Header.unityVersion = "5.x.x";
                 m_Header.unityRevision = "2017.4.18f1";
             }
-            else if (reader.Game.Name == "SR")
+            else if (reader.Game.Name == "SR_CB2" || reader.Game.Name == "SR_CB3")
             {
                 var readHeader = m_Header.signature != "ENCR";
                 
@@ -120,7 +120,7 @@ namespace AssetStudio
                 case "UnityFS":
                 case "ENCR":
                     ReadHeader(reader);
-                    if (reader.Game.Name == "ZZZ")
+                    if (reader.Game.Name == "ZZZ_CB1")
                     {
                         reader.AlignStream(0x10);
                     }
@@ -282,7 +282,7 @@ namespace AssetStudio
         private void ReadBlocksInfoAndDirectory(EndianBinaryReader reader)
         {
             byte[] blocksInfoBytes;
-            if (m_Header.version >= 7 && reader.Game.Name != "SR")
+            if (m_Header.version >= 7 && reader.Game.Name != "SR_CB2" && reader.Game.Name != "SR_CB3")
             {
                 reader.AlignStream(16);
             }
@@ -341,7 +341,7 @@ namespace AssetStudio
             }
             using (var blocksInfoReader = new EndianBinaryReader(blocksInfoUncompresseddStream))
             {
-                if (reader.Game.Name != "SR" || m_Header.signature != "ENCR")
+                if ((reader.Game.Name != "SR_CB2" && reader.Game.Name != "SR_CB3") || m_Header.signature != "ENCR")
                 {
                     var uncompressedDataHash = blocksInfoReader.ReadBytes(16);
                 }

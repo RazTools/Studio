@@ -15,7 +15,7 @@ namespace AssetStudio
         {
             m_Avatar = new PPtr<Avatar>(reader);
             m_Controller = new PPtr<RuntimeAnimatorController>(reader);
-            if (reader.Game.Name == "GI" || reader.Game.Name == "CB2" || reader.Game.Name == "CB3")
+            if (reader.Game.Name == "GI" || reader.Game.Name == "GI_CB2" || reader.Game.Name == "GI_CB3")
             {
                 var m_FBIKAvatar = new PPtr<Object>(reader); //FBIKAvatar placeholder
             }

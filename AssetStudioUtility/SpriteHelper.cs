@@ -84,20 +84,19 @@ namespace AssetStudio
                             var matrix = Matrix3x2.CreateScale(m_Sprite.m_PixelsToUnits);
                             matrix *= Matrix3x2.CreateTranslation(m_Sprite.m_Rect.width * m_Sprite.m_Pivot.X - textureRectOffset.X, m_Sprite.m_Rect.height * m_Sprite.m_Pivot.Y - textureRectOffset.Y);
                             path = path.Transform(matrix);
-                            var graphicsOptions = new GraphicsOptions
-                            {
-                                Antialias = false,
-                                AlphaCompositionMode = PixelAlphaCompositionMode.DestOut
-                            };
                             var options = new DrawingOptions
                             {
-                                GraphicsOptions = graphicsOptions
+                                GraphicsOptions = new GraphicsOptions
+                                {
+                                    Antialias = false,
+                                    AlphaCompositionMode = PixelAlphaCompositionMode.DestOut
+                                }
                             };
                             using (var mask = new Image<Bgra32>(rect.Width, rect.Height, SixLabors.ImageSharp.Color.Black))
                             {
                                 mask.Mutate(x => x.Fill(options, SixLabors.ImageSharp.Color.Red, path));
                                 var bursh = new ImageBrush(mask);
-                                spriteImage.Mutate(x => x.Fill(graphicsOptions, bursh));
+                                spriteImage.Mutate(x => x.Fill(options, bursh));
                                 spriteImage.Mutate(x => x.Flip(FlipMode.Vertical));
                                 return spriteImage;
                             }

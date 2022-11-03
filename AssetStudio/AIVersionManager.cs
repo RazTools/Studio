@@ -12,8 +12,8 @@ namespace AssetStudio
 {
     public static class AIVersionManager
     {
-        private const string BaseUrl = "https://raw.githubusercontent.com/radioegor146/gi-asset-indexes/master/";
-        private const string CommitsUrl = "https://api.github.com/repos/radioegor146/gi-asset-indexes/commits?path=";
+        private const string BaseUrl = "https://raw.githubusercontent.com/14eyes/gi-asset-indexes/master/";
+        private const string CommitsUrl = "https://api.github.com/repos/14eyes/gi-asset-indexes/commits?path=";
         private const string VersionIndexName = "version-index.json";
         private const string VersionIndexKey = "index";
 
@@ -220,7 +220,7 @@ namespace AssetStudio
             return commit;
         }
 
-        internal class VersionIndex
+        internal record VersionIndex
         {
             public string MappedPath = "";
             public string RawPath = "";

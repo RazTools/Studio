@@ -52,7 +52,7 @@ namespace AssetStudio
                         {
                             var m_AllowHalfResolution = reader.ReadByte();
                         }
-                        else if (reader.Game.Name == "CB3")
+                        else if (reader.Game.Name == "GI_CB3")
                         {
                             var m_ReceiveDecals = reader.ReadByte();
                             var m_EnableShadowCulling = reader.ReadByte();
@@ -88,7 +88,7 @@ namespace AssetStudio
                     {
                         var m_StaticShadowCaster = reader.ReadByte();
                     }
-                    if (reader.Game.Name == "CB2")
+                    if (reader.Game.Name == "GI_CB2")
                     {
                         var m_ReceiveDecals = reader.ReadByte();
                         var m_EnableShadowCulling = reader.ReadByte();
@@ -97,7 +97,7 @@ namespace AssetStudio
                         var m_IsRainOccluder = reader.ReadByte();
                         var m_IsDynamic = reader.ReadByte();
                     }
-                    if (reader.Game.Name == "CB1")
+                    if (reader.Game.Name == "GI_CB1")
                     {
                         var m_ReceiveDecals = reader.ReadByte();
                         var m_EnableShadowCulling = reader.ReadByte();
@@ -115,7 +115,7 @@ namespace AssetStudio
                     {
                         var m_RayTraceProcedural = reader.ReadByte();
                     }
-                    if (reader.Game.Name == "GI" || reader.Game.Name == "CB3")
+                    if (reader.Game.Name == "GI" || reader.Game.Name == "GI_CB3")
                     {
                         var m_MeshShowQuality = reader.ReadByte();
                     }
@@ -142,7 +142,7 @@ namespace AssetStudio
 
                 var m_LightmapIndex = reader.ReadInt16();
                 var m_LightmapIndexDynamic = reader.ReadInt16();
-                if (reader.Game.Name == "GI" || reader.Game.Name == "CB1" || reader.Game.Name == "CB2" || reader.Game.Name == "CB3")
+                if (reader.Game.Name == "GI" || reader.Game.Name == "GI_CB1" || reader.Game.Name == "GI_CB2" || reader.Game.Name == "GI_CB3")
                 {
                     if (m_LightmapIndex != -1 || m_LightmapIndexDynamic != -1)
                         throw new Exception("Not Supported !! skipping....");
@@ -159,7 +159,7 @@ namespace AssetStudio
                 var m_LightmapTilingOffsetDynamic = reader.ReadVector4();
             }
 
-            if (reader.Game.Name == "GI" || reader.Game.Name == "CB1" || reader.Game.Name == "CB2" || reader.Game.Name == "CB3")
+            if (reader.Game.Name == "GI" || reader.Game.Name == "GI_CB1" || reader.Game.Name == "GI_CB2" || reader.Game.Name == "GI_CB3")
             {
                 var m_ViewDistanceRatio = reader.ReadSingle();
                 var m_ShaderLODDistanceRatio = reader.ReadSingle();
@@ -188,7 +188,7 @@ namespace AssetStudio
 
                 var m_StaticBatchRoot = new PPtr<Transform>(reader);
             }
-            if (reader.Game.Name == "GI" || reader.Game.Name == "CB1" || reader.Game.Name == "CB2" || reader.Game.Name == "CB3")
+            if (reader.Game.Name == "GI" || reader.Game.Name == "GI_CB1" || reader.Game.Name == "GI_CB2" || reader.Game.Name == "GI_CB3")
             {
                 var m_MatLayers = reader.ReadInt32();
             }
@@ -226,9 +226,14 @@ namespace AssetStudio
                 //SInt16 m_SortingLayer 5.6 and up
                 var m_SortingOrder = reader.ReadInt16();
                 reader.AlignStream();
-                if (reader.Game.Name == "GI" || reader.Game.Name == "CB1" || reader.Game.Name == "CB2" || reader.Game.Name == "CB3" || reader.Game.Name == "BH3")
+                if (reader.Game.Name == "GI" || reader.Game.Name == "GI_CB1" || reader.Game.Name == "GI_CB2" || reader.Game.Name == "GI_CB3" || reader.Game.Name == "BH3")
                 {
                     var m_UseHighestMip = reader.ReadBoolean();
+                    reader.AlignStream();
+                }
+                if (reader.Game.Name == "SR_CB3")
+                {
+                    var _RenderFlag = reader.ReadUInt32();
                     reader.AlignStream();
                 }
             }

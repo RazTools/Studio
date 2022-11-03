@@ -50,7 +50,7 @@ namespace AssetStudio
                 Container[i] = new KeyValuePair<string, AssetInfo>(reader.ReadAlignedString(), new AssetInfo(reader));
             }
 
-            if (reader.Game.Name == "GI" || reader.Game.Name == "CB1" || reader.Game.Name == "CB2" || reader.Game.Name == "CB3")
+            if (reader.Game.Name == "GI" || reader.Game.Name == "GI_CB1" || reader.Game.Name == "GI_CB2" || reader.Game.Name == "GI_CB3")
             {
                 MainAsset = new AssetInfo(reader);
                 RuntimeComaptability = reader.ReadUInt32();
@@ -63,13 +63,13 @@ namespace AssetStudio
             {
                 Dependencies[k] = reader.ReadAlignedString();
             }
-            if (reader.Game.Name == "CB1" || reader.Game.Name == "CB2")
+            if (reader.Game.Name == "GI_CB1" || reader.Game.Name == "GI_CB2")
             {
                 IsStreamedScenessetBundle = reader.ReadBoolean();
                 reader.AlignStream();
                 PathFlags = reader.ReadInt32();
             }
-            else if (reader.Game.Name == "CB3")
+            else if (reader.Game.Name == "GI_CB3")
             {
                 IsStreamedScenessetBundle = reader.ReadBoolean();
                 reader.AlignStream();

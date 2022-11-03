@@ -120,7 +120,7 @@
             this.FMODpauseButton = new System.Windows.Forms.Button();
             this.FMODplayButton = new System.Windows.Forms.Button();
             this.fontPreviewBox = new System.Windows.Forms.RichTextBox();
-            this.glControl1 = new OpenTK.GLControl();
+            this.glControl = new OpenTK.WinForms.GLControl();
             this.textPreviewBox = new System.Windows.Forms.TextBox();
             this.classTextBox = new System.Windows.Forms.TextBox();
             this.tabPage5 = new System.Windows.Forms.TabPage();
@@ -849,7 +849,7 @@
             this.previewPanel.Controls.Add(this.assetInfoLabel);
             this.previewPanel.Controls.Add(this.FMODpanel);
             this.previewPanel.Controls.Add(this.fontPreviewBox);
-            this.previewPanel.Controls.Add(this.glControl1);
+            this.previewPanel.Controls.Add(this.glControl);
             this.previewPanel.Controls.Add(this.textPreviewBox);
             this.previewPanel.Controls.Add(this.classTextBox);
             this.previewPanel.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -1008,21 +1008,24 @@
             this.fontPreviewBox.WordWrap = false;
             // 
             // glControl1
-            // 
-            this.glControl1.BackColor = System.Drawing.SystemColors.ControlDarkDark;
-            this.glControl1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.glControl1.Location = new System.Drawing.Point(0, 0);
-            this.glControl1.Name = "glControl1";
-            this.glControl1.Size = new System.Drawing.Size(768, 607);
-            this.glControl1.TabIndex = 4;
-            this.glControl1.Visible = false;
-            this.glControl1.VSync = false;
-            this.glControl1.Load += new System.EventHandler(this.glControl1_Load);
-            this.glControl1.Paint += new System.Windows.Forms.PaintEventHandler(this.glControl1_Paint);
-            this.glControl1.MouseDown += new System.Windows.Forms.MouseEventHandler(this.glControl1_MouseDown);
-            this.glControl1.MouseMove += new System.Windows.Forms.MouseEventHandler(this.glControl1_MouseMove);
-            this.glControl1.MouseUp += new System.Windows.Forms.MouseEventHandler(this.glControl1_MouseUp);
-            this.glControl1.MouseWheel += new System.Windows.Forms.MouseEventHandler(this.glControl1_MouseWheel);
+            //
+            this.glControl.API = OpenTK.Windowing.Common.ContextAPI.OpenGL;
+            this.glControl.APIVersion = new System.Version(4, 6, 0, 0);
+            this.glControl.BackColor = System.Drawing.SystemColors.ControlDarkDark;
+            this.glControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.glControl.Flags = OpenTK.Windowing.Common.ContextFlags.Default;
+            this.glControl.IsEventDriven = true;
+            this.glControl.Location = new System.Drawing.Point(0, 0);
+            this.glControl.Name = "glControl1";
+            this.glControl.Size = new System.Drawing.Size(768, 607);
+            this.glControl.TabIndex = 4;
+            this.glControl.Visible = false;
+            this.glControl.Load += new System.EventHandler(this.glControl1_Load);
+            this.glControl.Paint += new System.Windows.Forms.PaintEventHandler(this.glControl1_Paint);
+            this.glControl.MouseDown += new System.Windows.Forms.MouseEventHandler(this.glControl1_MouseDown);
+            this.glControl.MouseMove += new System.Windows.Forms.MouseEventHandler(this.glControl1_MouseMove);
+            this.glControl.MouseUp += new System.Windows.Forms.MouseEventHandler(this.glControl1_MouseUp);
+            this.glControl.MouseWheel += new System.Windows.Forms.MouseEventHandler(this.glControl1_MouseWheel);
             // 
             // textPreviewBox
             // 
@@ -1260,7 +1263,7 @@
         private System.Windows.Forms.TextBox classTextBox;
         private System.Windows.Forms.ToolStripMenuItem exportClassStructuresMenuItem;
         private System.Windows.Forms.Label FMODcopyright;
-        private OpenTK.GLControl glControl1;
+        private OpenTK.WinForms.GLControl glControl;
         private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;
         private System.Windows.Forms.ToolStripMenuItem showOriginalFileToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem exportAnimatorwithselectedAnimationClipMenuItem;

@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Reflection;
 using System.Collections.Generic;
-using System.Security.Cryptography;
 
 namespace AssetStudio
 {
@@ -11,14 +10,16 @@ namespace AssetStudio
         private static Dictionary<int, Game> Games = new Dictionary<int, Game>();
         static GameManager()
         {
-            int count = 0;
-            foreach (Type type in
-                Assembly.GetAssembly(typeof(Game)).GetTypes()
-                .Where(myType => myType.IsClass && !myType.IsAbstract && myType.IsSubclassOf(typeof(Game))))
-            {
-                var format = (Game)Activator.CreateInstance(type);
-                Games.Add(count++, format);
-            }
+            int index = 0;
+            Games.Add(index++, new("GI", ".blk", "GI_Data|YS_Data"));
+            Games.Add(index++, new("GI_CB1", ".asb", "GS_Data"));
+            Games.Add(index++, new("GI_CB2", ".blk", "G_Data"));
+            Games.Add(index++, new("GI_CB3", ".blk", "YS_Data"));
+            Games.Add(index++, new("BH3", ".wmv", "BH3_Data"));
+            Games.Add(index++, new("ZZZ_CB1", ".bundle", "Win_Data/StreamingAssets/Bundles"));
+            Games.Add(index++, new("SR_CB2", ".unity3d", "SR_Data"));
+            Games.Add(index++, new("SR_CB3", ".block", "SR_Data"));
+            Games.Add(index++, new("TOT", ".blk", "AssetbundlesCache"));
         }
         public static Game GetGame(int index)
         {
@@ -42,106 +43,20 @@ namespace AssetStudio
         }
         public static Game[] GetGames() => Games.Values.ToArray();
         public static string[] GetGameNames() => Games.Values.Select(x => x.Name).ToArray();
-        public static string SupportedGames() => $"Supported Games:\n{string.Join("\n", Games.Values.Select(x => $"{x.Name} ({x.DisplayName})"))}";
+        public static string SupportedGames() => $"Supported Games:\n{string.Join("\n", Games.Values.Select(x => x.Name))}";
     }
 
-    public abstract class Game
+    public record Game
     {
         public string Name;
-        public string DisplayName;
         public string Extension;
-        public string MapName;
         public string Path;
-        public override string ToString() => DisplayName;
-    }
-
-    public class GI : Game
-    {
-        public GI()
+        public Game(string name, string extension, string path)
         {
-            Name = "GI";
-            DisplayName = "GI";
-            MapName = "BLKMap";
-            Extension = ".blk";
-            Path = "GI_Data|YS_Data";
+            Name = name;
+            Extension = extension;
+            Path = path;
         }
-    }
-    public class CB1 : Game
-    {
-        public CB1()
-        {
-            Name = "CB1";
-            DisplayName = "GI_CB1";
-            MapName = "CB1Map";
-            Extension = ".asb";
-            Path = "GS_Data";
-        }
-    }
-    public class CB2 : Game
-    {
-        public CB2()
-        {
-            Name = "CB2";
-            DisplayName = "GI_CB2";
-            MapName = "CB2Map";
-            Extension = ".blk";
-            Path = "G_Data";
-        }
-    }
-    public class CB3 : Game
-    {
-        public CB3()
-        {
-            Name = "CB3";
-            DisplayName = "GI_CB3";
-            MapName = "CB3Map";
-            Extension = ".blk";
-            Path = "YS_Data";
-        }
-    }
-    public class BH3 : Game
-    {
-        public BH3()
-        {
-            Name = "BH3";
-            DisplayName = "HI3";
-            MapName = "WMVMap";
-            Extension = ".wmv";
-            Path = "BH3_Data";
-        }
-    }
-    public class ZZZ : Game
-    {
-        public ZZZ()
-        {
-            Name = "ZZZ";
-            DisplayName = "ZZZ";
-            MapName = "ZZZMap";
-            Extension = ".bundle";
-            Path = "Win_Data/StreamingAssets/Bundles";
-        }
-    }
-    public class SR : Game
-    {
-        public SR()
-        {
-            Name = "SR";
-            DisplayName = "SR";
-            MapName = "ENCRMap";
-            Extension = ".unity3d";
-            Path = "SR_Data";
-        }
-    }
-
-    public class TOT : Game
-    {
-        public TOT()
-        {
-            Name = "TOT";
-            DisplayName = "ToT";
-            MapName = "TOTMap";
-            Extension = ".blk";
-            Path = "AssetbundlesCache";
-        }
+        public override string ToString() => Name;
     }
 }

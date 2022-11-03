@@ -569,7 +569,7 @@ namespace AssetStudio
                     var m_KeepIndices = reader.ReadBoolean();
                 }
                 reader.AlignStream();
-                if (reader.Game.Name == "GI" || reader.Game.Name == "CB2" || reader.Game.Name == "CB3")
+                if (reader.Game.Name == "GI" || reader.Game.Name == "GI_CB2" || reader.Game.Name == "GI_CB3")
                 {
                     var m_PackSkinDataToUV2UV3 = reader.ReadBoolean();
                     reader.AlignStream();
@@ -694,7 +694,7 @@ namespace AssetStudio
                 }
             }
 
-            if (reader.Game.Name == "ZZZ")
+            if (reader.Game.Name == "ZZZ_CB1")
             {
                 var m_CloseMeshDynamicCompression = reader.ReadBoolean();
                 reader.AlignStream();
@@ -704,7 +704,7 @@ namespace AssetStudio
                 var m_CompressLevelTexCoordinates = reader.ReadInt32();
             }
 
-            if (reader.Game.Name == "GI" || reader.Game.Name == "CB1" || reader.Game.Name == "CB2" || reader.Game.Name == "CB3"
+            if (reader.Game.Name == "GI" || reader.Game.Name == "GI_CB1" || reader.Game.Name == "GI_CB2" || reader.Game.Name == "GI_CB3"
                 || version[0] > 2018 || (version[0] == 2018 && version[1] >= 2)) //2018.2 and up
             {
                 var m_MeshMetrics = new float[2];
@@ -712,13 +712,13 @@ namespace AssetStudio
                 m_MeshMetrics[1] = reader.ReadSingle();
             }
 
-            if (reader.Game.Name == "GI" || reader.Game.Name == "CB1" || reader.Game.Name == "CB2" || reader.Game.Name == "CB3")
+            if (reader.Game.Name == "GI" || reader.Game.Name == "GI_CB1" || reader.Game.Name == "GI_CB2" || reader.Game.Name == "GI_CB3")
             {
                 var m_MetricsDirty = reader.ReadBoolean();
                 reader.AlignStream();
                 var m_CloseMeshDynamicCompression = reader.ReadBoolean();
                 reader.AlignStream();
-                if (reader.Game.Name != "CB1")
+                if (reader.Game.Name != "GI_CB1")
                 {
                     var m_IsStreamingMesh = reader.ReadBoolean();
                     reader.AlignStream();

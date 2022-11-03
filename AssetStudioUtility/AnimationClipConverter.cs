@@ -50,14 +50,14 @@ namespace AssetStudio
             var lastSampleFrame = streamedFrames.Count > 1 ? streamedFrames[streamedFrames.Count - 2].time : 0.0f;
             var lastFrame = Math.Max(lastDenseFrame, lastSampleFrame);
 
-            if (m_Clip.m_ACLClip.IsSet && Game.Name != "SR")
+            if (m_Clip.m_ACLClip.IsSet && Game.Name != "SR_CB2" && Game.Name != "SR_CB3")
             {
                 var lastACLFrame = ProcessACLClip(m_Clip, bindings, tos);
                 lastFrame = Math.Max(lastFrame, lastACLFrame);
             }
             ProcessStreams(streamedFrames, bindings, tos, m_Clip.m_DenseClip.m_SampleRate);
             ProcessDenses(m_Clip, bindings, tos);
-            if (m_Clip.m_ACLClip.IsSet && Game.Name == "SR")
+            if (m_Clip.m_ACLClip.IsSet && (Game.Name == "SR_CB2" || Game.Name == "SR_CB3"))
             {
                 var lastACLFrame = ProcessACLClip(m_Clip, bindings, tos);
                 lastFrame = Math.Max(lastFrame, lastACLFrame);
@@ -96,7 +96,7 @@ namespace AssetStudio
                 {
                     var curve = frame.keyList[curveIndex];
                     var index = curve.index;
-                    if (animationClip.m_MuscleClip.m_Clip.m_ACLClip.IsSet && Game.Name != "SR")
+                    if (animationClip.m_MuscleClip.m_Clip.m_ACLClip.IsSet && Game.Name != "SR_CB2" && Game.Name != "SR_CB3")
                         index += (int)animationClip.m_MuscleClip.m_Clip.m_ACLClip.m_CurveCount;
                     var binding = bindings.FindBinding(index);
 
@@ -147,7 +147,7 @@ namespace AssetStudio
                 for (var curveIndex = 0; curveIndex < dense.m_CurveCount;)
                 {
                     var index = (int)streamCount + curveIndex;
-                    if (clip.m_ACLClip.IsSet && Game.Name != "SR")
+                    if (clip.m_ACLClip.IsSet && Game.Name != "SR_CB2" && Game.Name != "SR_CB3")
                         index += (int)clip.m_ACLClip.m_CurveCount;
                     var binding = bindings.FindBinding(index);
                     var path = GetCurvePath(tos, binding.path);
@@ -177,7 +177,7 @@ namespace AssetStudio
             float[] values;
             float[] times;
             var acl = clip.m_ACLClip;
-            if (Game.Name != "SR")
+            if (Game.Name != "SR_CB2" && Game.Name != "SR_CB3")
             {
                 acl.Process(out values, out times);
             }
@@ -195,7 +195,7 @@ namespace AssetStudio
                 for (int curveIndex = 0; curveIndex < acl.m_CurveCount;)
                 {
                     var index = curveIndex;
-                    if (Game.Name == "SR")
+                    if (Game.Name == "SR_CB2" || Game.Name == "SR_CB3")
                         index += (int)(clip.m_StreamedClip.curveCount + clip.m_DenseClip.m_CurveCount);
                     GenericBinding binding = bindings.FindBinding(index);
                     string path = GetCurvePath(tos, binding.path);
