@@ -490,7 +490,7 @@ namespace AssetStudioCLI
                     case AssetGroupOption.ByContainer: //container path
                         if (!string.IsNullOrEmpty(asset.Container))
                         {
-                            exportPath = Path.HasExtension(asset.Container) ? Path.Combine(savePath, Path.GetFileNameWithoutExtension(asset.Container)) : Path.Combine(savePath, asset.Container);
+                            exportPath = Path.HasExtension(asset.Container) ? Path.Combine(savePath, Path.GetDirectoryName(asset.Container)) : Path.Combine(savePath, asset.Container);
                         }
                         else
                         {
