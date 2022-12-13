@@ -237,7 +237,7 @@ namespace AssetStudioCLI
                                         case ClassIDType.MiHoYoBinData:
                                             if (indexObject.Names.TryGetValue(objectReader.m_PathID, out var binName))
                                             {
-                                                var path = ResourceIndex.GetContainerFromBinName(file, binName);
+                                                var path = ResourceIndex.GetContainerFromBinName(binName);
                                                 asset.Container = path;
                                                 asset.Name = !string.IsNullOrEmpty(path) ? Path.GetFileName(path) : binName;
                                             }
