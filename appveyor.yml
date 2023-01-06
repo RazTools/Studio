@@ -19,7 +19,7 @@ build_script:
 
 after_build:
     - ps: $env:TIME_STRING=(Get-Date -UFormat "%Y%m%d%H%M%S%a").ToString()
-    - 7z a -y -mx9 %File_NAME%-%TIME_STRING%.%File_Format% %APPVEYOR_BUILD_FOLDER%\AssetStudioGUI\bin\Release\net6.0-windows\publish\
+    - 7z a -y -mx9 %File_NAME%-%TIME_STRING%.%File_Format% %APPVEYOR_BUILD_FOLDER%\AssetStudioGUI\bin\Release\net7.0-windows\publish\
     - appveyor PushArtifact %APPVEYOR_BUILD_FOLDER%\%File_NAME%-%TIME_STRING%.%File_Format%
 
 # artifacts:
