@@ -2,12 +2,12 @@
 
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
-		<TargetFramework>net6.0-windows</TargetFramework>
+		<TargetFramework>net7.0-windows</TargetFramework>
 		<UseWindowsForms>true</UseWindowsForms>
 		<ApplicationIcon>Resources\as.ico</ApplicationIcon>
-		<Version>0.18.60</Version>
-		<AssemblyVersion>0.18.60</AssemblyVersion>
-		<FileVersion>0.18.60</FileVersion>
+		<Version>0.80.30</Version>
+		<AssemblyVersion>0.80.30</AssemblyVersion>
+		<FileVersion>0.80.30</FileVersion>
 		<Copyright>Copyright © Razmoth 2022; Copyright © Perfare 2018-2022</Copyright>
 		<DebugType>embedded</DebugType>
 	</PropertyGroup>
@@ -15,18 +15,6 @@
 	<ItemGroup>
 		<ProjectReference Include="..\AssetStudioUtility\AssetStudioUtility.csproj" />
 		<ProjectReference Include="..\AssetStudio\AssetStudio.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<None Include="Properties\Settings.settings">
-			<Generator>SettingsSingleFileGenerator</Generator>
-			<LastGenOutput>Settings.Designer.cs</LastGenOutput>
-		</None>
-		<Compile Update="Properties\Settings.Designer.cs">
-			<AutoGen>True</AutoGen>
-			<DependentUpon>Settings.settings</DependentUpon>
-			<DesignTimeSharedInput>True</DesignTimeSharedInput>
-		</Compile>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -38,6 +26,11 @@
 			<AutoGen>True</AutoGen>
 			<DependentUpon>Resources.resx</DependentUpon>
 			<DesignTime>True</DesignTime>
+		</Compile>
+		<Compile Update="Properties\Settings.Designer.cs">
+		  <DesignTimeSharedInput>True</DesignTimeSharedInput>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>Settings.settings</DependentUpon>
 		</Compile>
 	</ItemGroup>
 
@@ -75,13 +68,20 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.2-beta2" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
 		<PackageReference Include="OpenTK" Version="5.0.0-pre.8" />
 		<Reference Include="OpenTK.WinForms">
 			<HintPath>Libraries\OpenTK.WinForms.dll</HintPath>
 		</Reference>
 	</ItemGroup>
-	
+
+	<ItemGroup>
+	  <None Update="Properties\Settings.settings">
+	    <Generator>SettingsSingleFileGenerator</Generator>
+	    <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+	  </None>
+	</ItemGroup>
+
 	<Target Name="CopyExtraFiles" AfterTargets="AfterBuild">
 		<Copy SourceFiles="$(SolutionDir)AssetStudioFBXNative\bin\Win32\$(Configuration)\AssetStudioFBXNative.dll" DestinationFolder="$(TargetDir)x86" ContinueOnError="true" />
 		<Copy SourceFiles="$(SolutionDir)AssetStudioFBXNative\bin\x64\$(Configuration)\AssetStudioFBXNative.dll" DestinationFolder="$(TargetDir)x64" ContinueOnError="true" />

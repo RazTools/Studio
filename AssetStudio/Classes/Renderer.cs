@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,11 +19,13 @@ namespace AssetStudio
 
     public abstract class Renderer : Component
     {
-        public static bool Parsable;
+        public static bool Skipped;
+
         public PPtr<Material>[] m_Materials;
         public StaticBatchInfo m_StaticBatchInfo;
         public uint[] m_SubsetIndices;
         private bool isNewHeader = false;
+
         protected Renderer(ObjectReader reader) : base(reader)
         {
             if (version[0] < 5) //5.0 down
@@ -38,7 +39,7 @@ namespace AssetStudio
             {
                 if (version[0] > 5 || (version[0] == 5 && version[1] >= 4)) //5.4 and up
                 {
-                    if (reader.Game.Name == "GI")
+                    if (reader.Game.Type.IsGI())
                     {
                         CheckHeader(reader);
                     }
@@ -48,61 +49,50 @@ namespace AssetStudio
                     if (version[0] > 2017 || (version[0] == 2017 && version[1] >= 2)) //2017.2 and up
                     {
                         var m_DynamicOccludee = reader.ReadByte();
-                        if (reader.Game.Name == "BH3")
+                    }
+                    if (reader.Game.Type.IsBH3())
+                    {
+                        var m_AllowHalfResolution = reader.ReadByte();
+                    }
+                    if (reader.Game.Type.IsGIGroup())
+                    {
+                        var m_ReceiveDecals = reader.ReadByte();
+                        var m_EnableShadowCulling = reader.ReadByte();
+                        var m_EnableGpuQuery = reader.ReadByte();
+                        var m_AllowHalfResolution = reader.ReadByte();
+                        if (!reader.Game.Type.IsGICB1())
                         {
-                            var m_AllowHalfResolution = reader.ReadByte();
-                        }
-                        else if (reader.Game.Name == "GI_CB3")
-                        {
-                            var m_ReceiveDecals = reader.ReadByte();
-                            var m_EnableShadowCulling = reader.ReadByte();
-                            var m_EnableGpuQuery = reader.ReadByte();
-                            var m_AllowHalfResolution = reader.ReadByte();
-                            var m_IsRainOccluder = reader.ReadByte();
-                            var m_IsDynamicAOOccluder = reader.ReadByte();
-                            var m_IsDynamic = reader.ReadByte();
-                        }
-                        else if (reader.Game.Name == "GI")
-                        {
-                            var m_ReceiveDecals = reader.ReadByte();
-                            var m_EnableShadowCulling = reader.ReadByte();
-                            var m_EnableGpuQuery = reader.ReadByte();
-                            var m_AllowHalfResolution = reader.ReadByte();
-                            var m_IsRainOccluder = reader.ReadByte();
-                            var m_IsDynamicAOOccluder = reader.ReadByte();
-                            var m_IsCloudObject = reader.ReadByte();
-                            var m_IsInteriorVolume = reader.ReadByte();
-                            var m_IsDynamic = reader.ReadByte();
-                            var m_UseTessellation = reader.ReadByte();
-                            var m_IsTerrainTessInfo = reader.ReadByte();
-                            if (isNewHeader)
+                            if (reader.Game.Type.IsGI())
                             {
-                                var m_UseVertexLightInForward = reader.ReadByte();
-                                var m_CombineSubMeshInGeoPass = reader.ReadByte();
-                                var m_AllowPerMaterialProp = reader.ReadByte();
-                                var m_IsHQDynamicAOOccluder = reader.ReadByte();
+                                var m_AllowPerMaterialProp = isNewHeader ? reader.ReadByte() : 0;
+                            }
+                            var m_IsRainOccluder = reader.ReadByte();
+                            if (!reader.Game.Type.IsGICB2())
+                            {
+                                var m_IsDynamicAOOccluder = reader.ReadByte();
+                                if (reader.Game.Type.IsGI())
+                                {
+                                    var m_IsHQDynamicAOOccluder = reader.ReadByte();
+                                    var m_IsCloudObject = reader.ReadByte();
+                                    var m_IsInteriorVolume = reader.ReadByte();
+                                }
+                            }
+                            if (!reader.Game.Type.IsGIPack())
+                            {
+                                var m_IsDynamic = reader.ReadByte();
+                            }
+                            if (reader.Game.Type.IsGI())
+                            {
+                                var m_UseTessellation = reader.ReadByte();
+                                var m_IsTerrainTessInfo = isNewHeader ? reader.ReadByte() : 0;
+                                var m_UseVertexLightInForward = isNewHeader ? reader.ReadByte() : 0;
+                                var m_CombineSubMeshInGeoPass = isNewHeader ? reader.ReadByte() : 0;
                             }
                         }
                     }
                     if (version[0] >= 2021) //2021.1 and up
                     {
                         var m_StaticShadowCaster = reader.ReadByte();
-                    }
-                    if (reader.Game.Name == "GI_CB2")
-                    {
-                        var m_ReceiveDecals = reader.ReadByte();
-                        var m_EnableShadowCulling = reader.ReadByte();
-                        var m_EnableGpuQuery = reader.ReadByte();
-                        var m_AllowHalfResolution = reader.ReadByte();
-                        var m_IsRainOccluder = reader.ReadByte();
-                        var m_IsDynamic = reader.ReadByte();
-                    }
-                    if (reader.Game.Name == "GI_CB1")
-                    {
-                        var m_ReceiveDecals = reader.ReadByte();
-                        var m_EnableShadowCulling = reader.ReadByte();
-                        var m_EnableGpuQuery = reader.ReadByte();
-                        var m_AllowHalfResolution = reader.ReadByte();
                     }
                     var m_MotionVectors = reader.ReadByte();
                     var m_LightProbeUsage = reader.ReadByte();
@@ -115,7 +105,7 @@ namespace AssetStudio
                     {
                         var m_RayTraceProcedural = reader.ReadByte();
                     }
-                    if (reader.Game.Name == "GI" || reader.Game.Name == "GI_CB3")
+                    if (reader.Game.Type.IsGI() || reader.Game.Type.IsGICB3() || reader.Game.Type.IsGICB3Pre())
                     {
                         var m_MeshShowQuality = reader.ReadByte();
                     }
@@ -140,12 +130,11 @@ namespace AssetStudio
                     var m_RendererPriority = reader.ReadInt32();
                 }
 
-                var m_LightmapIndex = reader.ReadInt16();
-                var m_LightmapIndexDynamic = reader.ReadInt16();
-                if (reader.Game.Name == "GI" || reader.Game.Name == "GI_CB1" || reader.Game.Name == "GI_CB2" || reader.Game.Name == "GI_CB3")
+                var m_LightmapIndex = reader.ReadUInt16();
+                var m_LightmapIndexDynamic = reader.ReadUInt16();
+                if (reader.Game.Type.IsGIGroup() && (m_LightmapIndex != 0xFFFF || m_LightmapIndexDynamic != 0xFFFF))
                 {
-                    if (m_LightmapIndex != -1 || m_LightmapIndexDynamic != -1)
-                        throw new Exception("Not Supported !! skipping....");
+                    throw new Exception("Not Supported !! skipping....");
                 }
             }
 
@@ -159,7 +148,7 @@ namespace AssetStudio
                 var m_LightmapTilingOffsetDynamic = reader.ReadVector4();
             }
 
-            if (reader.Game.Name == "GI" || reader.Game.Name == "GI_CB1" || reader.Game.Name == "GI_CB2" || reader.Game.Name == "GI_CB3")
+            if (reader.Game.Type.IsGIGroup())
             {
                 var m_ViewDistanceRatio = reader.ReadSingle();
                 var m_ShaderLODDistanceRatio = reader.ReadSingle();
@@ -188,7 +177,8 @@ namespace AssetStudio
 
                 var m_StaticBatchRoot = new PPtr<Transform>(reader);
             }
-            if (reader.Game.Name == "GI" || reader.Game.Name == "GI_CB1" || reader.Game.Name == "GI_CB2" || reader.Game.Name == "GI_CB3")
+
+            if (reader.Game.Type.IsGIGroup())
             {
                 var m_MatLayers = reader.ReadInt32();
             }
@@ -219,21 +209,20 @@ namespace AssetStudio
                 }
                 else
                 {
-                    var m_SortingLayerID = reader.ReadInt32();
-                    var m_SortingLayer = reader.ReadInt16();
+                    var m_SortingLayerID = reader.ReadUInt32();
                 }
 
                 //SInt16 m_SortingLayer 5.6 and up
                 var m_SortingOrder = reader.ReadInt16();
                 reader.AlignStream();
-                if (reader.Game.Name == "GI" || reader.Game.Name == "GI_CB1" || reader.Game.Name == "GI_CB2" || reader.Game.Name == "GI_CB3" || reader.Game.Name == "BH3")
+                if (reader.Game.Type.IsGIGroup() || reader.Game.Type.IsBH3())
                 {
                     var m_UseHighestMip = reader.ReadBoolean();
                     reader.AlignStream();
                 }
-                if (reader.Game.Name == "SR_CB3")
+                if (reader.Game.Type.IsSRCB3())
                 {
-                    var _RenderFlag = reader.ReadUInt32();
+                    var RenderFlag = reader.ReadUInt32();
                     reader.AlignStream();
                 }
             }
@@ -241,31 +230,14 @@ namespace AssetStudio
 
         private void CheckHeader(ObjectReader reader)
         {
-            short index = 0;
+            short value = 0;
             var pos = reader.Position;
-            while (index != -1 && reader.Position <= pos + 0x1A)
-                index = reader.ReadInt16();
+            while (value != -1 && reader.Position <= pos + 0x1A)
+            {
+                value = reader.ReadInt16();
+            }
             isNewHeader = (reader.Position - pos) == 0x1A;
             reader.Position = pos;
-        }
-
-        public string FindMaterialPropertyNameByCRC28(uint crc)
-        {
-            foreach (PPtr<Material> materialPtr in m_Materials)
-            {
-                if (!materialPtr.TryGet(out var material))
-                {
-                    continue;
-                }
-                string property = material.FindPropertyNameByCRC28(crc);
-                if (property == null)
-                {
-                    continue;
-                }
-
-                return property;
-            }
-            return null;
         }
     }
 }

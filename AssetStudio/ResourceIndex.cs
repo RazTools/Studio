@@ -82,10 +82,8 @@ namespace AssetStudio
                 foreach (var subAsset in asset.Value)
                 {
                     var bundleInfo = new BundleInfo() { Bundle = asset.Key, Path = subAsset.Name };
-                    var blockInfo = assetIndex.Assets[asset.Key];
-                    ulong key = (((ulong)blockInfo.Id) << 32) | subAsset.PathHashLast;
                     AssetLocationMap[subAsset.PathHashPre].Add(subAsset.PathHashLast, bundleInfo);
-                    AssetMap[key] = ((ulong)subAsset.PathHashLast) << 8 | subAsset.PathHashPre;
+                    AssetMap[subAsset.PathHashLast] = ((ulong)subAsset.PathHashLast) << 8 | subAsset.PathHashPre;
                 }
             }
             foreach (var asset in assetIndex.Assets)
@@ -112,7 +110,7 @@ namespace AssetStudio
                     return bundleInfo;
             return null;
         }
-        public static string GetBundlePath(uint last)
+        public static string GetAssetPath(uint last)
         {
             foreach (var location in AssetLocationMap)
                 if (location.TryGetValue(last, out var bundleInfo)) 
@@ -149,16 +147,6 @@ namespace AssetStudio
         {
             var asset = new Asset() { Hash = hash };
             return AssetLocationMap.ElementAtOrDefault(asset.Pre).ContainsKey(asset.Last);
-        }
-        public static string GetContainerFromBinName(string fileName, string binName)
-        {
-            var blkName = Path.GetFileNameWithoutExtension(fileName);
-            var blk = Convert.ToUInt64(blkName);
-            var lastHex = Convert.ToUInt32(binName, 16);
-            var blkHash = (blk << 32) | lastHex;
-            var index = GetAssetIndex(blkHash);
-            var bundleInfo = GetBundleInfo(index);
-            return bundleInfo != null ? bundleInfo.Path : "";
         }
     }
     public class BundleInfo

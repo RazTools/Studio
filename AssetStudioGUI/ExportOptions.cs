@@ -23,13 +23,6 @@ namespace AssetStudioGUI
                 }
             }
             openAfterExport.Checked = Properties.Settings.Default.openAfterExport;
-            exportAssetBundle.Checked = Properties.Settings.Default.exportAssetBundle;
-            exportIndexObject.Checked = Properties.Settings.Default.exportIndexObject;
-            disableRndrr.Checked = Properties.Settings.Default.disableRndrr;
-            disableShader.Checked = Properties.Settings.Default.disableShader;
-            key.Value = Properties.Settings.Default.key;
-            enableXor.Checked = Properties.Settings.Default.enableXor;
-            ignoreController.Checked = Properties.Settings.Default.ignoreController;
             eulerFilter.Checked = Properties.Settings.Default.eulerFilter;
             filterPrecision.Value = Properties.Settings.Default.filterPrecision;
             exportAllNodes.Checked = Properties.Settings.Default.exportAllNodes;
@@ -42,6 +35,11 @@ namespace AssetStudioGUI
             scaleFactor.Value = Properties.Settings.Default.scaleFactor;
             fbxVersion.SelectedIndex = Properties.Settings.Default.fbxVersion;
             fbxFormat.SelectedIndex = Properties.Settings.Default.fbxFormat;
+            skipRenderer.Checked = Properties.Settings.Default.skipRenderer;
+            exportMiHoYoBinData.Checked = Properties.Settings.Default.exportMiHoYoBinData;
+            collectAnimations.Checked = Properties.Settings.Default.collectAnimations;
+            encrypted.Checked = Properties.Settings.Default.encrypted;
+            key.Value = Properties.Settings.Default.key;
         }
 
         private void OKbutton_Click(object sender, EventArgs e)
@@ -59,19 +57,6 @@ namespace AssetStudioGUI
                 }
             }
             Properties.Settings.Default.openAfterExport = openAfterExport.Checked;
-            Properties.Settings.Default.exportAssetBundle = exportAssetBundle.Checked;
-            AssetBundle.Exportable = Properties.Settings.Default.exportAssetBundle;
-            Properties.Settings.Default.exportIndexObject = exportIndexObject.Checked;
-            IndexObject.Exportable = Properties.Settings.Default.exportAssetBundle;
-            Properties.Settings.Default.disableRndrr = disableRndrr.Checked;
-            Renderer.Parsable = !Properties.Settings.Default.disableRndrr;
-            Properties.Settings.Default.disableShader = disableShader.Checked;
-            Shader.Parsable = !Properties.Settings.Default.disableShader;
-            Properties.Settings.Default.key = (byte)key.Value;
-            Properties.Settings.Default.enableXor = enableXor.Checked;
-            MiHoYoBinData.Key = (byte)key.Value;
-            MiHoYoBinData.doXOR = enableXor.Checked;
-            Properties.Settings.Default.ignoreController = ignoreController.Checked;
             Properties.Settings.Default.eulerFilter = eulerFilter.Checked;
             Properties.Settings.Default.filterPrecision = filterPrecision.Value;
             Properties.Settings.Default.exportAllNodes = exportAllNodes.Checked;
@@ -84,7 +69,15 @@ namespace AssetStudioGUI
             Properties.Settings.Default.scaleFactor = scaleFactor.Value;
             Properties.Settings.Default.fbxVersion = fbxVersion.SelectedIndex;
             Properties.Settings.Default.fbxFormat = fbxFormat.SelectedIndex;
+            Properties.Settings.Default.skipRenderer = skipRenderer.Checked;
+            Properties.Settings.Default.exportMiHoYoBinData = exportMiHoYoBinData.Checked;
+            Properties.Settings.Default.collectAnimations = collectAnimations.Checked;
+            Properties.Settings.Default.encrypted = encrypted.Checked;
+            Properties.Settings.Default.key = (byte)key.Value;
             Properties.Settings.Default.Save();
+            Renderer.Skipped = !Properties.Settings.Default.skipRenderer;
+            MiHoYoBinData.Key = (byte)key.Value;
+            MiHoYoBinData.Encrypted = encrypted.Checked;
             DialogResult = DialogResult.OK;
             Close();
         }

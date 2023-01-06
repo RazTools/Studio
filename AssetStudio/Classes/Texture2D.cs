@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 
 namespace AssetStudio
 {
@@ -134,9 +133,13 @@ namespace AssetStudio
 
             ResourceReader resourceReader;
             if (!string.IsNullOrEmpty(m_StreamData?.path))
+            {
                 resourceReader = new ResourceReader(m_StreamData.path, assetsFile, m_StreamData.offset, m_StreamData.size);
+            }
             else
+            {
                 resourceReader = new ResourceReader(reader, reader.BaseStream.Position, image_data_size);
+            }
             image_data = resourceReader;
         }
     }
@@ -204,7 +207,7 @@ namespace AssetStudio
         R8,
         ETC_RGB4Crunched,
         ETC2_RGBA8Crunched,
-        R16_2,
+        R16_Alt,
         ASTC_HDR_4x4,
         ASTC_HDR_5x5,
         ASTC_HDR_6x6,

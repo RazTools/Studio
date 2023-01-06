@@ -1,9 +1,11 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using static AssetStudio.ImportHelper;
 
 namespace AssetStudio
@@ -11,8 +13,11 @@ namespace AssetStudio
     public class AssetsManager
     {
         public Game Game;
-        public bool ResolveDependancies;
+        public bool Silent = false;
+        public bool SkipProcess = false;
+        public bool ResolveDependencies = false;        
         public string SpecifyUnityVersion;
+        public CancellationTokenSource tokenSource = new CancellationTokenSource();
         public List<SerializedFile> assetsFileList = new List<SerializedFile>();
 
         internal Dictionary<string, int> assetsFileIndexCache = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -20,19 +25,49 @@ namespace AssetStudio
 
         private List<string> importFiles = new List<string>();
         private HashSet<string> importFilesHash = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private HashSet<string> noexistFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private HashSet<string> assetsFileListHash = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         public void LoadFiles(params string[] files)
         {
-            if (ResolveDependancies)
-                files = CABManager.ProcessDependencies(files);
-            Load(files);
+            if (Silent)
+            {
+                Logger.Silent = true;
+                Progress.Silent = true;
+            }
+
+            var path = Path.GetDirectoryName(Path.GetFullPath(files[0]));
+            MergeSplitAssets(path);
+            var toReadFile = ProcessingSplitFiles(files.ToList());
+            if (ResolveDependencies)
+                toReadFile = AssetsHelper.ProcessDependencies(toReadFile);
+            Load(toReadFile);
+
+            if (Silent)
+            {
+                Logger.Silent = false;
+                Progress.Silent = false;
+            }
         }
 
         public void LoadFolder(string path)
         {
-            var files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories).ToArray();
-            Load(files);
+            if (Silent)
+            {
+                Logger.Silent = true;
+                Progress.Silent = true;
+            }
+
+            MergeSplitAssets(path, true);
+            var files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories).ToList();
+            var toReadFile = ProcessingSplitFiles(files);
+            Load(toReadFile);
+
+            if (Silent)
+            {
+                Logger.Silent = false;
+                Progress.Silent = false;
+            }
         }
 
         private void Load(string[] files)
@@ -49,20 +84,29 @@ namespace AssetStudio
             {
                 LoadFile(importFiles[i]);
                 Progress.Report(i + 1, importFiles.Count);
+                if (tokenSource.IsCancellationRequested)
+                {
+                    Logger.Info("Loading files has been aborted !!");
+                    break;
+                }
             }
 
             importFiles.Clear();
             importFilesHash.Clear();
+            noexistFiles.Clear();
             assetsFileListHash.Clear();
-            CABManager.offsets.Clear();
 
-            ReadAssets();
-            ProcessAssets();
+            if (!SkipProcess && !tokenSource.IsCancellationRequested)
+            {
+                ReadAssets();
+                ProcessAssets();
+            }
         }
 
         private void LoadFile(string fullName)
         {
-            var reader = new FileReader(fullName, Game);
+            var reader = new FileReader(fullName);
+            reader = reader.PreProcessing(Game);
             LoadFile(reader);
         }
 
@@ -76,9 +120,6 @@ namespace AssetStudio
                 case FileType.BundleFile:
                     LoadBundleFile(reader);
                     break;
-                case FileType.GameFile:
-                    LoadGameFile(reader);
-                    break;
                 case FileType.WebFile:
                     LoadWebFile(reader);
                     break;
@@ -91,6 +132,15 @@ namespace AssetStudio
                 case FileType.ZipFile:
                     LoadZipFile(reader);
                     break;
+                case FileType.BlockFile:
+                    LoadBlockFile(reader);
+                    break;
+                case FileType.BlkFile:
+                    LoadBlkFile(reader);
+                    break;
+                case FileType.Mhy0File:
+                    LoadMhy0File(reader);
+                    break;
             }
         }
 
@@ -98,13 +148,46 @@ namespace AssetStudio
         {
             if (!assetsFileListHash.Contains(reader.FileName))
             {
-                Logger.Info($"Loading {reader.FileName}");
+                Logger.Info($"Loading {reader.FullPath}");
                 try
                 {
-                    var assetsFile = new SerializedFile(reader, this, reader.FullPath);
+                    var assetsFile = new SerializedFile(reader, this);
                     CheckStrippedVersion(assetsFile);
                     assetsFileList.Add(assetsFile);
                     assetsFileListHash.Add(assetsFile.fileName);
+
+                    if (ResolveDependencies)
+                    {
+                        foreach (var sharedFile in assetsFile.m_Externals)
+                        {
+                            var sharedFileName = sharedFile.fileName;
+
+                            if (!importFilesHash.Contains(sharedFileName))
+                            {
+                                var sharedFilePath = Path.Combine(Path.GetDirectoryName(reader.FullPath), sharedFileName);
+                                if (!noexistFiles.Contains(sharedFilePath))
+                                {
+                                    if (!File.Exists(sharedFilePath))
+                                    {
+                                        var findFiles = Directory.GetFiles(Path.GetDirectoryName(reader.FullPath), sharedFileName, SearchOption.AllDirectories);
+                                        if (findFiles.Length > 0)
+                                        {
+                                            sharedFilePath = findFiles[0];
+                                        }
+                                    }
+                                    if (File.Exists(sharedFilePath))
+                                    {
+                                        importFiles.Add(sharedFilePath);
+                                        importFilesHash.Add(sharedFileName);
+                                    }
+                                    else
+                                    {
+                                        noexistFiles.Add(sharedFilePath);
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
                 catch (Exception e)
                 {
@@ -119,7 +202,7 @@ namespace AssetStudio
             }
         }
 
-        private void LoadAssetsFromMemory(FileReader reader, string originalPath, string unityVersion = null)
+        private void LoadAssetsFromMemory(FileReader reader, string originalPath, string unityVersion = null, long originalOffset = 0)
         {
             if (!assetsFileListHash.Contains(reader.FileName))
             {
@@ -127,6 +210,7 @@ namespace AssetStudio
                 {
                     var assetsFile = new SerializedFile(reader, this);
                     assetsFile.originalPath = originalPath;
+                    assetsFile.offset = originalOffset;
                     if (!string.IsNullOrEmpty(unityVersion) && assetsFile.header.m_Version < SerializedFileFormatVersion.Unknown_7)
                     {
                         assetsFile.SetVersion(unityVersion);
@@ -145,25 +229,29 @@ namespace AssetStudio
                 Logger.Info($"Skipping {originalPath} ({reader.FileName})");
         }
 
-        private void LoadBundleFile(FileReader reader, string originalPath = null)
+        private void LoadBundleFile(FileReader reader, string originalPath = null, long originalOffset = 0)
         {
             Logger.Info("Loading " + reader.FullPath);
             try
             {
-                var bundleFile = new BundleFile(reader);
-                foreach (var file in bundleFile.FileList)
+                var bundleFile = new BundleFile(reader, Game);
+                foreach (var file in bundleFile.fileList)
                 {
                     var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), file.fileName);
                     var subReader = new FileReader(dummyPath, file.stream);
                     if (subReader.FileType == FileType.AssetsFile)
                     {
-                        LoadAssetsFromMemory(subReader, originalPath ?? reader.FullPath, bundleFile.m_Header.unityRevision);
+                        LoadAssetsFromMemory(subReader, originalPath ?? reader.FullPath, bundleFile.m_Header.unityRevision, originalOffset);
                     }
                     else
                     {
                         resourceFileReaders[file.fileName] = subReader; //TODO
                     }
                 }
+            }
+            catch (InvalidCastException)
+            {
+                Logger.Error($"Game type mismatch, Expected {nameof(Mr0k)} but got {Game.Name} ({Game.GetType().Name}) !!");
             }
             catch (Exception e)
             {
@@ -316,37 +404,132 @@ namespace AssetStudio
                 reader.Dispose();
             }
         }
-
-        private void LoadGameFile(FileReader reader)
+        private void LoadBlockFile(FileReader reader)
         {
-            Logger.Info("Loading " + reader.FileName);
+            Logger.Info("Loading " + reader.FullPath);
             try
             {
-                reader.BundlePos = CABManager.offsets.TryGetValue(reader.FullPath, out var list) ? list.ToArray() : Array.Empty<long>();
-                var gameFile = new GameFile(reader);
-                foreach (var bundle in gameFile.Bundles)
+                var offsets = AssetsHelper.Offsets.TryGetValue(reader.FullPath, out var list) ? list.ToArray() : Array.Empty<long>();
+                using var stream = new BlockStream(reader.BaseStream, 0);
+                if (!offsets.IsNullOrEmpty())
                 {
-                    foreach (var file in bundle.Value)
+                    foreach (var offset in offsets)
                     {
-                        var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), file.fileName);
-                        var cabReader = new FileReader(dummyPath, file.stream, Game);
-                        if (cabReader.FileType == FileType.AssetsFile)
-                        {
-                            var assetsFile = new SerializedFile(cabReader, this, reader.FullPath);
-                            CheckStrippedVersion(assetsFile);
-                            assetsFileList.Add(assetsFile);
-                            assetsFileListHash.Add(assetsFile.fileName);
-                        }
-                        else
-                        {
-                            resourceFileReaders[file.fileName] = cabReader; //TODO
-                        }
+                        stream.Offset = offset;
+                        var dummyPath = Path.Combine("//?/block:/", reader.FileName, offset.ToString("X8"));
+                        var subReader = new FileReader(dummyPath, stream, true);
+                        LoadBundleFile(subReader, reader.FullPath, offset);
                     }
+                }
+                else
+                {
+                    do
+                    {
+                        stream.Offset = stream.RelativePosition;
+                        var dummyPath = Path.Combine("//?/block:/", reader.FileName, stream.RelativePosition.ToString("X8"));
+                        var subReader = new FileReader(dummyPath, stream, true);
+                        LoadBundleFile(subReader, reader.FullPath, stream.RelativePosition);
+                    } while (stream.Remaining > 0);
                 }
             }
             catch (Exception e)
             {
-                Logger.Error($"Error while reading file {reader.FileName}", e);
+                Logger.Error($"Error while reading block file {reader.FileName}", e);
+            }
+            finally
+            {
+                reader.Dispose();
+            }
+        }
+        private void LoadBlkFile(FileReader reader)
+        {
+            Logger.Info("Loading " + reader.FullPath);
+            try
+            {
+                var offsets = AssetsHelper.Offsets.TryGetValue(reader.FullPath, out var list) ? list.ToArray() : Array.Empty<long>();
+                using var stream = BlkUtils.Decrypt(reader, (Blk)Game);
+                if (!offsets.IsNullOrEmpty())
+                {
+                    foreach (var offset in offsets)
+                    {
+                        stream.Offset = offset;
+                        var dummyPath = Path.Combine("//?/blk:/", reader.FileName, offset.ToString("X8"));
+                        var subReader = new FileReader(dummyPath, stream, true);
+                        switch (subReader.FileType)
+                        {
+                            case FileType.BundleFile:
+                                LoadBundleFile(subReader, reader.FullPath, offset);
+                                break;
+                            case FileType.Mhy0File:
+                                LoadMhy0File(subReader, reader.FullPath, offset);
+                                break;
+                        }
+                    }
+                }
+                else
+                {
+                    do
+                    {
+                        stream.Offset = stream.RelativePosition;
+                        var dummyPath = Path.Combine("//?/blk:/", reader.FileName, stream.RelativePosition.ToString("X8"));
+                        var subReader = new FileReader(dummyPath, stream, true);
+                        switch (subReader.FileType)
+                        {
+                            case FileType.BundleFile:
+                                LoadBundleFile(subReader, reader.FullPath, stream.RelativePosition);
+                                break;
+                            case FileType.Mhy0File:
+                                LoadMhy0File(subReader, reader.FullPath, stream.RelativePosition);
+                                break;
+                        }
+                    } while (stream.Remaining > 0);
+                }
+            }
+            catch (InvalidCastException)
+            {
+                Logger.Error($"Game type mismatch, Expected {nameof(Blk)} but got {Game.Name} ({Game.GetType().Name}) !!");
+            }
+            catch (Exception e)
+            {
+                Logger.Error($"Error while reading blk file {reader.FileName}", e);
+            }
+            finally
+            {
+                reader.Dispose();
+            }
+        } 
+        private void LoadMhy0File(FileReader reader, string originalPath = null, long originalOffset = 0)
+        {
+            Logger.Info("Loading " + reader.FullPath);
+            try
+            {
+                var mhy0File = new Mhy0File(reader, reader.FullPath, (Mhy0)Game);
+                foreach (var file in mhy0File.fileList)
+                {
+                    var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), file.fileName);
+                    var cabReader = new FileReader(dummyPath, file.stream);
+                    if (cabReader.FileType == FileType.AssetsFile)
+                    {
+                        LoadAssetsFromMemory(cabReader, originalPath ?? reader.FullPath, mhy0File.m_Header.unityRevision, originalOffset);
+                    }
+                    else
+                    {
+                        resourceFileReaders[file.fileName] = cabReader; //TODO
+                    }
+                }
+            }
+            catch (InvalidCastException)
+            {
+                Logger.Error($"Game type mismatch, Expected {nameof(Mhy0)} but got {Game.Name} ({Game.GetType().Name}) !!");
+            }
+            catch (Exception e)
+            {
+                var str = $"Error while reading mhy0 file {reader.FullPath}";
+                if (originalPath != null)
+                {
+                    str += $" from {Path.GetFileName(originalPath)}";
+                }
+                Logger.Error(str, e);
             }
             finally
             {
@@ -382,6 +565,12 @@ namespace AssetStudio
             resourceFileReaders.Clear();
 
             assetsFileIndexCache.Clear();
+
+            tokenSource.Dispose();
+            tokenSource = new CancellationTokenSource();
+
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
         }
 
         private void ReadAssets()
@@ -395,7 +584,12 @@ namespace AssetStudio
             {
                 foreach (var objectInfo in assetsFile.m_Objects)
                 {
-                    var objectReader = new ObjectReader(assetsFile.reader, assetsFile, objectInfo);
+                    if (tokenSource.IsCancellationRequested)
+                    {
+                        Logger.Info("Reading assets has been aborted !!");
+                        return;
+                    }
+                    var objectReader = new ObjectReader(assetsFile.reader, assetsFile, objectInfo, Game);
                     try
                     {
                         Object obj;
@@ -444,7 +638,8 @@ namespace AssetStudio
                                 obj = new MeshFilter(objectReader);
                                 break;
                             case ClassIDType.MeshRenderer:
-                                if (!Renderer.Parsable) continue;
+                                if (Renderer.Skipped)
+                                    goto default;
                                 obj = new MeshRenderer(objectReader);
                                 break;
                             case ClassIDType.MiHoYoBinData:
@@ -466,11 +661,11 @@ namespace AssetStudio
                                 obj = new RectTransform(objectReader);
                                 break;
                             case ClassIDType.Shader:
-                                if (!Shader.Parsable) continue;
                                 obj = new Shader(objectReader);
                                 break;
                             case ClassIDType.SkinnedMeshRenderer:
-                                if (!Renderer.Parsable) continue;
+                                if (Renderer.Skipped)
+                                    goto default;
                                 obj = new SkinnedMeshRenderer(objectReader);
                                 break;
                             case ClassIDType.Sprite:
@@ -519,12 +714,20 @@ namespace AssetStudio
 
         private void ProcessAssets()
         {
+            if (tokenSource.IsCancellationRequested)
+                return;
+
             Logger.Info("Process Assets...");
 
             foreach (var assetsFile in assetsFileList)
             {
                 foreach (var obj in assetsFile.Objects)
                 {
+                    if (tokenSource.IsCancellationRequested)
+                    {
+                        Logger.Info("Processing assets has been aborted !!");
+                        return;
+                    }
                     if (obj is GameObject m_GameObject)
                     {
                         foreach (var pptr in m_GameObject.m_Components)
@@ -556,7 +759,7 @@ namespace AssetStudio
                         }
                     }
                     else if (obj is SpriteAtlas m_SpriteAtlas)
-                    {   
+                    {
                         if (m_SpriteAtlas.m_RenderDataMap.Count > 0)
                         {
                             foreach (var m_PackedSprite in m_SpriteAtlas.m_PackedSprites)

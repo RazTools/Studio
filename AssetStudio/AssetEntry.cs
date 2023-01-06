@@ -2,10 +2,10 @@
 {
     public class AssetEntry
     {
-        public string Name;
-        public string Container;
-        public string Source;
-        public long PathID;
-        public ClassIDType Type;
+        public string Name { get; set; } 
+        public string Container { get; set; }
+        public string Source { get; set; }
+        public long PathID { get; set; }
+        public ClassIDType Type { get; set; }
     }
 }

@@ -73,23 +73,6 @@ namespace AssetStudio
             return null;
         }
 
-        public ImportedFrame FindFrame(string name)
-        {
-            if (Name == name)
-            {
-                return this;
-            }
-            foreach (var child in children)
-            {
-                var frame = child.FindFrame(name);
-                if (frame != null)
-                {
-                    return frame;
-                }
-            }
-            return null;
-        }
-
         public ImportedFrame FindRelativeFrameWithPath(string path)
         {
             var subs = path.Split(new[] { '/' }, 2);
@@ -107,6 +90,23 @@ namespace AssetStudio
                         if (result != null)
                             return result;
                     }
+                }
+            }
+            return null;
+        }
+
+        public ImportedFrame FindFrame(string name)
+        {
+            if (Name == name)
+            {
+                return this;
+            }
+            foreach (var child in children)
+            {
+                var frame = child.FindFrame(name);
+                if (frame != null)
+                {
+                    return frame;
                 }
             }
             return null;

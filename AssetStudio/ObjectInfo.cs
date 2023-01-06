@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace AssetStudio
 {
@@ -17,35 +15,19 @@ namespace AssetStudio
         public long m_PathID;
         public SerializedType serializedType;
 
-        public bool HasExportableType()
+        public static List<ObjectInfo> Filter(List<ObjectInfo> objects) => objects.Where(x => x.IsExportableType()).OrderBy(x => ExportableTypes.IndexOf((ClassIDType)x.typeID)).ToList();
+
+        private bool IsExportableType()
         {
             var typeID = (ClassIDType)classID;
             var isExportableType = ExportableTypes.Contains(typeID);
-            switch (typeID)
+            return typeID switch
             {
-                case ClassIDType.IndexObject:
-                case ClassIDType.MiHoYoBinData:
-                    return isExportableType && IndexObject.Exportable;
-                default:
-                    return isExportableType;
-            }
+                ClassIDType.IndexObject or ClassIDType.MiHoYoBinData => isExportableType && MiHoYoBinData.Exportable,
+                _ => isExportableType,
+            };
         }
 
-        public static ClassIDType[] ExportableTypes = new ClassIDType[]
-        {
-            ClassIDType.GameObject,
-            ClassIDType.Material,
-            ClassIDType.Texture2D,
-            ClassIDType.Mesh,
-            ClassIDType.Shader,
-            ClassIDType.TextAsset,
-            ClassIDType.AnimationClip,
-            ClassIDType.Animator,
-            ClassIDType.Font,
-            ClassIDType.AssetBundle,
-            ClassIDType.Sprite,
-            ClassIDType.MiHoYoBinData,
-            ClassIDType.IndexObject
-        };
+        private readonly static List<ClassIDType> ExportableTypes = new List<ClassIDType> { ClassIDType.GameObject, ClassIDType.IndexObject, ClassIDType.Material, ClassIDType.Texture2D, ClassIDType.Mesh, ClassIDType.Shader, ClassIDType.TextAsset, ClassIDType.AnimationClip, ClassIDType.Font, ClassIDType.Sprite, ClassIDType.Animator, ClassIDType.MiHoYoBinData, ClassIDType.AssetBundle };
     }
 }

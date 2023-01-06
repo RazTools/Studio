@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 namespace AssetStudio
 {
     [StructLayout(LayoutKind.Sequential, Pack = 4)]
-    public struct Quaternion : IEquatable<Quaternion>, IYAMLExportable
+    public struct Quaternion : IEquatable<Quaternion>
     {
         public float X;
         public float Y;
@@ -81,17 +81,6 @@ namespace AssetStudio
         public static bool operator !=(Quaternion lhs, Quaternion rhs)
         {
             return !(lhs == rhs);
-        }
-
-        public YAMLNode ExportYAML()
-        {
-            var node = new YAMLMappingNode();
-            node.Style = MappingStyle.Flow;
-            node.Add("x", X);
-            node.Add("y", Y);
-            node.Add("z", Z);
-            node.Add("w", W);
-            return node;
         }
 
         private const float kEpsilon = 0.000001F;

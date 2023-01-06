@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Text;
-using System.Text.RegularExpressions;
-using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Text.RegularExpressions;
 
 namespace AssetStudio
 {
@@ -12,17 +12,57 @@ namespace AssetStudio
         Bytes,
         JSON
     }
-    public sealed class MiHoYoBinData : Object
+    public sealed partial class MiHoYoBinData : Object
     {
-        public static bool doXOR;
+        public static bool Exportable;
+        public static bool Encrypted;
         public static byte Key;
+
         public byte[] RawData;
 
-        public byte[] Data
+        public MiHoYoBinData(ObjectReader reader) : base(reader)
+        {
+            var length = reader.ReadInt32();
+            RawData = reader.ReadBytes(length);
+        }
+
+        public string AsString => Type switch
+        {
+            MiHoYoBinDataType.JSON => JToken.Parse(DataStr).ToString(Formatting.Indented),
+            MiHoYoBinDataType.Bytes => Chars().Replace(DataStr, string.Empty),
+            _ => "",
+        };
+        public new object Dump() => Type switch
+        {
+            MiHoYoBinDataType.JSON => AsString,
+            MiHoYoBinDataType.Bytes => Data,
+            _ => null,
+        };
+        private string DataStr => Encoding.UTF8.GetString(Data);
+
+        public MiHoYoBinDataType Type
         {
             get
             {
-                if (doXOR)
+                try
+                {
+                    var asToken = JToken.Parse(DataStr);
+                    if (asToken.Type == JTokenType.Object || asToken.Type == JTokenType.Array)
+                        return MiHoYoBinDataType.JSON;
+                }
+                catch (Exception)
+                {
+                    return MiHoYoBinDataType.Bytes;
+                }
+                return MiHoYoBinDataType.None;
+            }
+        }
+
+        private byte[] Data
+        {
+            get
+            {
+                if (Encrypted)
                 {
                     byte[] bytes = new byte[RawData.Length];
                     for (int i = 0; i < RawData.Length; i++)
@@ -35,59 +75,7 @@ namespace AssetStudio
             }
         }
 
-        public string Str
-        {
-            get
-            {
-                var str = Encoding.UTF8.GetString(Data);
-                switch (Type)
-                {
-                    case MiHoYoBinDataType.JSON:
-                        return JToken.Parse(str).ToString(Formatting.Indented);
-                    case MiHoYoBinDataType.Bytes:
-                        return Regex.Replace(str, @"[^\u0020-\u007E]", string.Empty);
-                    default:
-                        return "";
-                }
-            }
-        }
-
-        public MiHoYoBinDataType Type
-        {
-            get
-            {
-                try
-                {
-                    var str = Encoding.UTF8.GetString(Data);
-                    var asToken = JToken.Parse(str);
-                    if (asToken.Type == JTokenType.Object || asToken.Type == JTokenType.Array)
-                        return MiHoYoBinDataType.JSON;
-                }
-                catch (Exception)
-                {
-                    return MiHoYoBinDataType.Bytes;
-                }
-                return MiHoYoBinDataType.None;
-            }
-        }
-
-        public MiHoYoBinData(ObjectReader reader) : base(reader)
-        {
-            var length = reader.ReadInt32();
-            RawData = reader.ReadBytes(length);
-        }
-
-        public new dynamic Dump()
-        {
-            switch (Type)
-            {
-                case MiHoYoBinDataType.JSON:
-                    return Str;
-                case MiHoYoBinDataType.Bytes:
-                    return Data;
-                default:
-                    return null;
-            }
-        }
+        [GeneratedRegex("[^\\u0020-\\u007E]")]
+        private static partial Regex Chars();
     }
 }

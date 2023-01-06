@@ -27,32 +27,5 @@ namespace AssetStudio
             }
             m_Father = new PPtr<Transform>(reader);
         }
-
-        public Transform FindChild(string path)
-        {
-            if (path.Length == 0)
-            {
-                return this;
-            }
-            return FindChild(path, 0);
-        }
-        private Transform FindChild(string path, int startIndex)
-        {
-            int separatorIndex = path.IndexOf('/', startIndex);
-            string childName = separatorIndex == -1 ?
-                path.Substring(startIndex, path.Length - startIndex) :
-                path.Substring(startIndex, separatorIndex - startIndex);
-            foreach (PPtr<Transform> childPtr in m_Children)
-            {
-                if(childPtr.TryGet(out var child))
-                {
-                    if (child.m_GameObject.TryGet(out var childGO) && childGO.m_Name == childName)
-                    {
-                        return separatorIndex == -1 ? child : child.FindChild(path, separatorIndex + 1);
-                    }
-                }
-            }
-            return null;
-        }
     }
 }

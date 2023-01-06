@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Linq;
+using static AssetStudio.ImportHelper;
 
 namespace AssetStudio
 {
@@ -8,40 +9,32 @@ namespace AssetStudio
         public string FullPath;
         public string FileName;
         public FileType FileType;
-        public long Length;
 
         private static readonly byte[] gzipMagic = { 0x1f, 0x8b };
         private static readonly byte[] brotliMagic = { 0x62, 0x72, 0x6F, 0x74, 0x6C, 0x69 };
         private static readonly byte[] zipMagic = { 0x50, 0x4B, 0x03, 0x04 };
         private static readonly byte[] zipSpannedMagic = { 0x50, 0x4B, 0x07, 0x08 };
+        private static readonly byte[] mhy0Magic = { 0x6D, 0x68, 0x79, 0x30 };
+        private static readonly byte[] narakaMagic = { 0x15, 0x1E, 0x1C, 0x0D, 0x0D, 0x23, 0x21 };
+        private static readonly byte[] gunfireMagic = { 0x7C, 0x6D, 0x79, 0x72, 0x27, 0x7A, 0x73, 0x78, 0x3F };
 
-        public FileReader(string path, Game game = null) : this(path, File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite), game) { }
 
-        public FileReader(string path, Stream stream, Game game = null) : base(stream, EndianType.BigEndian, game)
+        public FileReader(string path) : this(path, File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) { }
+
+        public FileReader(string path, Stream stream, bool leaveOpen = false) : base(stream, EndianType.BigEndian, leaveOpen)
         {
-            Game = game;
             FullPath = Path.GetFullPath(path);
             FileName = Path.GetFileName(path);
             FileType = CheckFileType();
-            Length = stream.Length;
-            
         }
 
         private FileType CheckFileType()
         {
-            if (IsSerializedFile())
-            {
-                return FileType.AssetsFile;
-            }
-            else if (Game != null)
-            {
-                return FileType.GameFile;
-            }
-
             var signature = this.ReadStringToNull(20);
             Position = 0;
             switch (signature)
             {
+                case "ENCR":
                 case "UnityWeb":
                 case "UnityRaw":
                 case "UnityArchive":
@@ -49,6 +42,8 @@ namespace AssetStudio
                     return FileType.BundleFile;
                 case "UnityWebData1.0":
                     return FileType.WebFile;
+                case "blk":
+                    return FileType.BlkFile;
                 default:
                     {
                         byte[] magic = ReadBytes(2);
@@ -71,7 +66,26 @@ namespace AssetStudio
                         magic = ReadBytes(4);
                         Position = 0;
                         if (zipMagic.SequenceEqual(magic) || zipSpannedMagic.SequenceEqual(magic))
+                        {
                             return FileType.ZipFile;
+                        }
+                        if (mhy0Magic.SequenceEqual(magic))
+                        {
+                            return FileType.Mhy0File;
+                        }
+                        magic = ReadBytes(7);
+                        Position = 0;
+                        if (narakaMagic.SequenceEqual(magic))
+                        {
+                            return FileType.BundleFile;
+                        }
+                        magic = ReadBytes(9);
+                        Position = 0;
+                        if (gunfireMagic.SequenceEqual(magic))
+                        {
+                            Position = 0x32;
+                            return FileType.BundleFile;
+                        }
                         return FileType.ResourceFile;
                     }
             }
@@ -113,4 +127,35 @@ namespace AssetStudio
             return true;
         }
     }
+
+    public static class FileReaderExtensions
+    {
+        public static FileReader PreProcessing(this FileReader reader, Game game)
+        {
+            if (reader.FileType == FileType.ResourceFile || !game.Type.IsNormal())
+            {
+                switch (game.Type)
+                {
+                    case GameType.GI_Pack:
+                        reader = DecryptPack(reader, game);
+                        break;
+                    case GameType.GI_CB1:
+                        reader = DecryptMark(reader);
+                        break;
+                    case GameType.EnsembleStars:
+                        reader = DecryptEnsembleStar(reader);
+                        break;
+                    case GameType.OPFP:
+                        reader = ParseOPFP(reader);
+                        break;
+                }
+            }
+            if (reader.FileType == FileType.BundleFile && game.Type.IsBlockFile())
+            {
+                reader.FileType = FileType.BlockFile;
+            }
+
+            return reader;
+        }
+    } 
 }

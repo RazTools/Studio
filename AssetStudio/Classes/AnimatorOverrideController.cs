@@ -33,26 +33,5 @@ namespace AssetStudio
                 m_Clips[i] = new AnimationClipOverride(reader);
             }
         }
-
-        public override bool IsContainsAnimationClip(AnimationClip clip)
-        {
-            AnimationClip animationClip;
-            foreach (AnimationClipOverride overClip in m_Clips)
-            {
-                if (overClip.m_OriginalClip.TryGet(out animationClip) && animationClip.Equals(clip))
-                {
-                    return true;
-                }
-                else if (overClip.m_OverrideClip.TryGet(out animationClip) && animationClip.Equals(clip))
-                {
-                    return true;
-                }
-            }
-            if (m_Controller.TryGet(out var baseController))
-            {
-                return baseController.IsContainsAnimationClip(clip);
-            }
-            return false;
-        }
     }
 }

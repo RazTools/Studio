@@ -1,9 +1,11 @@
 ﻿using System;
+using System.IO;
+using System.Collections.Generic;
+using static AssetStudio.AssetsHelper;
 
 namespace AssetStudio
 {
-    public sealed class PPtr<T> : IYAMLExportable
-        where T : Object 
+    public sealed class PPtr<T> where T : Object
     {
         public int m_FileID;
         public long m_PathID;
@@ -16,21 +18,6 @@ namespace AssetStudio
             m_FileID = reader.ReadInt32();
             m_PathID = reader.m_Version < SerializedFileFormatVersion.Unknown_14 ? reader.ReadInt32() : reader.ReadInt64();
             assetsFile = reader.assetsFile;
-        }
-
-        public PPtr(int fileID, long pathID, SerializedFile assetsFile)
-        {
-            m_FileID = fileID;
-            m_PathID = pathID;
-            this.assetsFile = assetsFile;
-        }
-
-        public YAMLNode ExportYAML()
-        {
-            var node = new YAMLMappingNode();
-            node.Style = MappingStyle.Flow;
-            node.Add("fileID", m_FileID);
-            return node;
         }
 
         private bool TryGetAssetsFile(out SerializedFile result)
@@ -140,11 +127,6 @@ namespace AssetStudio
             }
 
             m_PathID = m_Object.m_PathID;
-        }
-
-        public PPtr<T2> CastTo<T2>() where T2 : Object
-        {
-            return new PPtr<T2>(m_FileID, m_PathID, assetsFile);
         }
 
         public bool IsNull => m_PathID == 0 || m_FileID < 0;

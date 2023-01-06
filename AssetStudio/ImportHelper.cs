@@ -1,11 +1,62 @@
 ﻿using Org.Brotli.Dec;
+using System;
+using System.Buffers.Binary;
+using System.Collections.Generic;
+using System.Data;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
+using static AssetStudio.BundleFile;
+using static AssetStudio.Crypto;
 
 namespace AssetStudio
 {
     public static class ImportHelper
     {
+        public static void MergeSplitAssets(string path, bool allDirectories = false)
+        {
+            var splitFiles = Directory.GetFiles(path, "*.split0", allDirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
+            foreach (var splitFile in splitFiles)
+            {
+                var destFile = Path.GetFileNameWithoutExtension(splitFile);
+                var destPath = Path.GetDirectoryName(splitFile);
+                var destFull = Path.Combine(destPath, destFile);
+                if (!File.Exists(destFull))
+                {
+                    var splitParts = Directory.GetFiles(destPath, destFile + ".split*");
+                    using (var destStream = File.Create(destFull))
+                    {
+                        for (int i = 0; i < splitParts.Length; i++)
+                        {
+                            var splitPart = destFull + ".split" + i;
+                            using (var sourceStream = File.OpenRead(splitPart))
+                            {
+                                sourceStream.CopyTo(destStream);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        public static string[] ProcessingSplitFiles(List<string> selectFile)
+        {
+            var splitFiles = selectFile.Where(x => x.Contains(".split"))
+                .Select(x => Path.Combine(Path.GetDirectoryName(x), Path.GetFileNameWithoutExtension(x)))
+                .Distinct()
+                .ToList();
+            selectFile.RemoveAll(x => x.Contains(".split"));
+            foreach (var file in splitFiles)
+            {
+                if (File.Exists(file))
+                {
+                    selectFile.Add(file);
+                }
+            }
+            return selectFile.Distinct().ToArray();
+        }
+
         public static FileReader DecompressGZip(FileReader reader)
         {
             using (reader)
@@ -32,6 +83,211 @@ namespace AssetStudio
                 stream.Position = 0;
                 return new FileReader(reader.FullPath, stream);
             }
+        }
+
+        public static FileReader DecryptPack(FileReader reader, Game game)
+        {
+            const int PackSize = 0x880;
+            const string PackSignature = "pack";
+            const string UnityFSSignature = "UnityFS";
+           
+            var data = reader.ReadBytes((int)reader.Length);
+            var idx = data.Search(PackSignature);
+            if (idx == -1)
+            {
+                reader.Position = 0;
+                return reader;
+            }
+            idx = data.Search("mr0k", idx);
+            if (idx == -1)
+            {
+                reader.Position = 0;
+                return reader;
+            }
+
+            var ms = new MemoryStream();
+            try
+            {
+                var mr0k = (Mr0k)game;
+
+                var bundleSize = 0;
+                reader.Position = 0;
+                Header header = null;
+                var pack = new { IsMr0k = false, BlockSize = -1 };
+                while (reader.Remaining > 0)
+                {
+                    var pos = reader.Position;
+                    var signature = reader.ReadStringToNull(4);
+                    if (signature == PackSignature)
+                    {
+                        pack = new { 
+                            IsMr0k = reader.ReadBoolean(), 
+                            BlockSize = BinaryPrimitives.ReadInt32LittleEndian(reader.ReadBytes(4)) 
+                        };
+
+                        Span<byte> buffer = new byte[pack.BlockSize];
+                        reader.Read(buffer);
+                        if (pack.IsMr0k)
+                        {
+                            buffer = Mr0kUtils.Decrypt(buffer, mr0k);
+                        }
+                        ms.Write(buffer);
+
+                        bundleSize += buffer.Length;
+
+                        if (header == null)
+                        {
+                            using var blockReader = new EndianBinaryReader(new MemoryStream(buffer.ToArray()));
+                            header = new Header()
+                            {
+                                signature = blockReader.ReadStringToNull(),
+                                version = blockReader.ReadUInt32(),
+                                unityVersion = blockReader.ReadStringToNull(),
+                                unityRevision = blockReader.ReadStringToNull(),
+                                size = blockReader.ReadInt64()
+                            };
+                        }
+
+                        if (bundleSize % (PackSize - 0x80) == 0)
+                        {
+                            reader.Position += PackSize - 9 - pack.BlockSize;
+                        }
+
+                        if (bundleSize == header.size)
+                        {
+                            bundleSize = 0;
+                            header = null;
+                            pack = new { IsMr0k = false, BlockSize = -1 };
+                        }
+
+                        continue;
+                    }
+
+                    reader.Position = pos;
+                    signature = reader.ReadStringToNull();
+                    if (signature == UnityFSSignature)
+                    {
+                        header = new Header()
+                        {
+                            signature = reader.ReadStringToNull(),
+                            version = reader.ReadUInt32(),
+                            unityVersion = reader.ReadStringToNull(),
+                            unityRevision = reader.ReadStringToNull(),
+                            size = reader.ReadInt64()
+                        };
+
+                        reader.Position = pos;
+                        reader.BaseStream.CopyTo(ms, header.size);
+                        header = null;
+                        continue;
+                    }
+                    
+                    throw new InvalidOperationException($"Expected signature {PackSignature} or {UnityFSSignature}, got {signature} instead !!");
+                }
+            }
+            catch (InvalidCastException)
+            {
+                Logger.Error($"Game type mismatch, Expected {nameof(GameType.GI_Pack)} ({nameof(Mr0k)}) but got {game.Name} ({game.GetType().Name}) !!");
+            }
+            catch (Exception e)
+            {
+                Logger.Error($"Error while reading pack file {reader.FullPath}", e);
+            }
+            finally
+            {
+                reader.Dispose();
+            }
+
+            ms.Position = 0;
+            return new FileReader(reader.FullPath, ms);
+        }
+
+        public static FileReader DecryptMark(FileReader reader)
+        {
+            var signature = reader.ReadStringToNull(4);
+            if (signature != "mark")
+            {
+                reader.Position = 0;
+                return reader;
+            }
+
+            const int BlockSize = 0xA00;
+            const int ChunkSize = 0x264;
+            const int ChunkPadding = 4;
+
+            var blockPadding = ((BlockSize / ChunkSize) + 1) * ChunkPadding;
+            var chunkSizeWithPadding = ChunkSize + ChunkPadding;
+            var blockSizeWithPadding = BlockSize + blockPadding;
+
+            var index = 0;
+            var block = new byte[blockSizeWithPadding];
+            var chunk = new byte[chunkSizeWithPadding];
+            var dataStream = new MemoryStream();
+            while (reader.BaseStream.Length != reader.BaseStream.Position)
+            {
+                var readBlockBytes = reader.Read(block);
+                using var blockStream = new MemoryStream(block, 0, readBlockBytes);
+                while (blockStream.Length != blockStream.Position)
+                {
+                    var readChunkBytes = blockStream.Read(chunk);
+                    if (readBlockBytes == blockSizeWithPadding || readChunkBytes == chunkSizeWithPadding)
+                    {
+                        readChunkBytes -= ChunkPadding;
+                    }
+                    for (int i = 0; i < readChunkBytes; i++)
+                    {
+                        chunk[i] ^= MarkKey[index++ % MarkKey.Length];
+                    }
+                    dataStream.Write(chunk, 0, readChunkBytes);
+                }
+            }
+
+            reader.Dispose();
+            dataStream.Position = 0;
+            return new FileReader(reader.FullPath, dataStream);
+        }
+
+        public static FileReader DecryptEnsembleStar(FileReader reader)
+        {
+            if (Path.GetExtension(reader.FileName) == ".z")
+            {
+                return reader;
+            }
+            using (reader)
+            {
+                var data = reader.ReadBytes((int)reader.Length);
+                var count = data.Length;
+
+                var stride = count % 3 + 1;
+                var remaining = count % 7;
+                var size = remaining + ~(count % 3) + EnsembleStarKey2.Length;
+                for (int i = 0; i < count; i += stride)
+                {
+                    var offset = i / stride;
+                    var k1 = offset % EnsembleStarKey1.Length;
+                    var k2 = offset % EnsembleStarKey2.Length;
+                    var k3 = offset % EnsembleStarKey3.Length;
+
+                    data[i] = (byte)(EnsembleStarKey1[k1] ^ ((size ^ EnsembleStarKey3[k3] ^ data[i] ^ EnsembleStarKey2[k2]) + remaining));
+                }
+
+                return new FileReader(reader.FullPath, new MemoryStream(data));
+            }
+        }
+
+        public static FileReader ParseOPFP(FileReader reader)
+        {
+            MemoryStream ms = new();
+
+            var data = reader.ReadBytes((int)reader.BaseStream.Length);
+            var idx = data.Search("UnityFS");
+            if (idx != -1)
+            {
+                var count = data.Length - idx;
+                ms = new(data, idx, count);  
+            }
+
+            return new FileReader(reader.FullPath, ms);
         }
     }
 }

@@ -2,9 +2,9 @@ using System;
 using System.Runtime.InteropServices;
 using AssetStudio.PInvoke;
 
-namespace ACL
+namespace ACLLibs
 {
-    public static class ACL
+    public static partial class ACL
     {
         private const string DLL_NAME = "acl";
         static ACL()
@@ -27,20 +27,20 @@ namespace ACL
 
         #region importfunctions
 
-        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void DecompressAll(IntPtr data, out IntPtr pValues, out int numValues, out IntPtr pTimes, out int numTimes);
+        [LibraryImport(DLL_NAME)]
+        private static partial void DecompressAll(IntPtr data, out IntPtr pValues, out int numValues, out IntPtr pTimes, out int numTimes);
 
         #endregion
     }
 
-    public static class SRACL
+    public static partial class SRACL
     {
         private const string DLL_NAME = "sracl";
         static SRACL()
         {
             DllLoader.PreloadDll(DLL_NAME);
         }
-        public static void DecompressAll(uint[] data, out float[] values, out float[] times)
+        public static void DecompressAll(byte[] data, out float[] values, out float[] times)
         {
             var pinned = GCHandle.Alloc(data, GCHandleType.Pinned);
             var pData = pinned.AddrOfPinnedObject();
@@ -56,8 +56,8 @@ namespace ACL
 
         #region importfunctions
 
-        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void DecompressAll(IntPtr data, out IntPtr pValues, out int numValues, out IntPtr pTimes, out int numTimes);
+        [LibraryImport(DLL_NAME)]
+        private static partial void DecompressAll(IntPtr data, out IntPtr pValues, out int numValues, out IntPtr pTimes, out int numTimes);
 
         #endregion
     }

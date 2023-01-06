@@ -1,5 +1,4 @@
-﻿using SevenZip;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,6 +14,7 @@ namespace AssetStudio
         public List<ImportedKeyframedAnimation> AnimationList { get; protected set; } = new List<ImportedKeyframedAnimation>();
         public List<ImportedMorph> MorphList { get; protected set; } = new List<ImportedMorph>();
 
+        private Game Game;
         private ImageFormat imageFormat;
         private Avatar avatar;
         private HashSet<AnimationClip> animationClipHashSet = new HashSet<AnimationClip>();
@@ -23,18 +23,17 @@ namespace AssetStudio
         private Dictionary<Texture2D, string> textureNameDictionary = new Dictionary<Texture2D, string>();
         private Dictionary<Transform, ImportedFrame> transformDictionary = new Dictionary<Transform, ImportedFrame>();
         Dictionary<uint, string> morphChannelNames = new Dictionary<uint, string>();
-        private Game Game;
 
-        public ModelConverter(GameObject m_GameObject, ImageFormat imageFormat, Game game, AnimationClip[] animationList = null, bool ignoreController = true)
+        public ModelConverter(GameObject m_GameObject, ImageFormat imageFormat, Game game, bool collectAnimations, AnimationClip[] animationList = null)
         {
             Game = game;
             this.imageFormat = imageFormat;
             if (m_GameObject.m_Animator != null)
             {
                 InitWithAnimator(m_GameObject.m_Animator);
-                if (animationList == null)
+                if (animationList == null && collectAnimations)
                 {
-                    CollectAnimationClip(m_GameObject.m_Animator, ignoreController);
+                    CollectAnimationClip(m_GameObject.m_Animator);
                 }
             }
             else
@@ -51,16 +50,16 @@ namespace AssetStudio
             ConvertAnimations();
         }
 
-        public ModelConverter(string rootName, List<GameObject> m_GameObjects, ImageFormat imageFormat, Game game, AnimationClip[] animationList = null, bool ignoreController = true)
+        public ModelConverter(string rootName, List<GameObject> m_GameObjects, ImageFormat imageFormat, Game game, bool collectAnimations, AnimationClip[] animationList = null)
         {
             Game = game;
             this.imageFormat = imageFormat;
             RootFrame = CreateFrame(rootName, Vector3.Zero, new Quaternion(0, 0, 0, 0), Vector3.One);
             foreach (var m_GameObject in m_GameObjects)
             {
-                if (m_GameObject.m_Animator != null && animationList == null)
+                if (m_GameObject.m_Animator != null && animationList == null && collectAnimations)
                 {
-                    CollectAnimationClip(m_GameObject.m_Animator, ignoreController);
+                    CollectAnimationClip(m_GameObject.m_Animator);
                 }
 
                 var m_Transform = m_GameObject.m_Transform;
@@ -82,14 +81,14 @@ namespace AssetStudio
             ConvertAnimations();
         }
 
-        public ModelConverter(Animator m_Animator, ImageFormat imageFormat, Game game, AnimationClip[] animationList = null, bool ignoreController = true)
+        public ModelConverter(Animator m_Animator, ImageFormat imageFormat, Game game, bool collectAnimations, AnimationClip[] animationList = null)
         {
             Game = game;
             this.imageFormat = imageFormat;
             InitWithAnimator(m_Animator);
-            if (animationList == null)
+            if (animationList == null && collectAnimations)
             {
-                CollectAnimationClip(m_Animator, ignoreController);
+                CollectAnimationClip(m_Animator);
             }
             else
             {
@@ -185,9 +184,9 @@ namespace AssetStudio
             }
         }
 
-        private void CollectAnimationClip(Animator m_Animator, bool ignoreController)
+        private void CollectAnimationClip(Animator m_Animator)
         {
-            if (m_Animator.m_Controller.TryGet(out var m_Controller) && !ignoreController)
+            if (m_Animator.m_Controller.TryGet(out var m_Controller))
             {
                 switch (m_Controller)
                 {
@@ -512,7 +511,10 @@ namespace AssetStudio
                         var shapeChannel = mesh.m_Shapes.channels[i];
 
                         var blendShapeName = "blendShape." + shapeChannel.name;
-                        morphChannelNames[CRC.CalculateDigestUTF8(blendShapeName)] = blendShapeName;
+                        var crc = new SevenZip.CRC();
+                        var bytes = Encoding.UTF8.GetBytes(blendShapeName);
+                        crc.Update(bytes, 0, (uint)bytes.Length);
+                        morphChannelNames[crc.GetDigest()] = blendShapeName;
 
                         channel.Name = shapeChannel.name.Split('.').Last();
                         channel.KeyframeList = new List<ImportedMorphKeyframe>(shapeChannel.frameCount);
@@ -796,7 +798,7 @@ namespace AssetStudio
                     foreach (var m_CompressedRotationCurve in animationClip.m_CompressedRotationCurves)
                     {
                         var track = iAnim.FindTrack(FixBonePath(animationClip, m_CompressedRotationCurve.m_Path));
-        
+
                         var numKeys = m_CompressedRotationCurve.m_Times.m_NumItems;
                         var data = m_CompressedRotationCurve.m_Times.UnpackInts();
                         var times = new float[numKeys];
@@ -807,7 +809,7 @@ namespace AssetStudio
                             times[i] = t * 0.01f;
                         }
                         var quats = m_CompressedRotationCurve.m_Values.UnpackQuats();
-        
+
                         for (int i = 0; i < numKeys; i++)
                         {
                             var quat = quats[i];
@@ -861,7 +863,7 @@ namespace AssetStudio
                             {
                                 channelName = channelName.Substring(dotPos + 1);
                             }
-        
+
                             var path = FixBonePath(animationClip, m_FloatCurve.path);
                             if (string.IsNullOrEmpty(path))
                             {
@@ -884,7 +886,7 @@ namespace AssetStudio
                     var m_ClipBindingConstant = animationClip.m_ClipBindingConstant ?? m_Clip.ConvertValueArrayToGenericBinding();
                     var m_ACLClip = m_Clip.m_ACLClip;
                     var aclCount = m_ACLClip.m_CurveCount;
-                    if (m_ACLClip.m_CurveCount != 0 && Game.Name != "SR_CB2" && Game.Name != "SR_CB3")
+                    if (!m_ACLClip.m_ClipData.IsNullOrEmpty() && !Game.Type.IsSRGroup())
                     {
                         m_ACLClip.Process(out var values, out var times);
                         for (int frameIndex = 0; frameIndex < times.Length; frameIndex++)
@@ -896,7 +898,7 @@ namespace AssetStudio
                                 var index = curveIndex;
                                 ReadCurveData(iAnim, m_ClipBindingConstant, index, time, values, (int)frameOffset, ref curveIndex);
                             }
-                                
+
                         }
                     }
                     for (int frameIndex = 1; frameIndex < streamedFrames.Count - 1; frameIndex++)
@@ -906,9 +908,9 @@ namespace AssetStudio
                         for (int curveIndex = 0; curveIndex < frame.keyList.Length;)
                         {
                             var index = frame.keyList[curveIndex].index;
-                            if (Game.Name != "SR_CB2" && Game.Name != "SR_CB3")
+                            if (!Game.Type.IsSRGroup())
                                 index += (int)aclCount;
-                            ReadCurveData(iAnim, m_ClipBindingConstant, (int)index, frame.time, streamedValues, 0, ref curveIndex);
+                            ReadCurveData(iAnim, m_ClipBindingConstant, index, frame.time, streamedValues, 0, ref curveIndex);
                         }
                     }
                     var m_DenseClip = m_Clip.m_DenseClip;
@@ -920,12 +922,12 @@ namespace AssetStudio
                         for (int curveIndex = 0; curveIndex < m_DenseClip.m_CurveCount;)
                         {
                             var index = streamCount + curveIndex;
-                            if (Game.Name != "SR_CB2" && Game.Name != "SR_CB3")
-                                index += aclCount;
+                            if (!Game.Type.IsSRGroup())
+                                index += (int)aclCount;
                             ReadCurveData(iAnim, m_ClipBindingConstant, (int)index, time, m_DenseClip.m_SampleArray, (int)frameOffset, ref curveIndex);
                         }
                     }
-                    if (m_ACLClip.m_CurveCount != 0 && Game.Name == "SR_CB2" && Game.Name != "SR_CB3")
+                    if (!m_ACLClip.m_ClipData.IsNullOrEmpty() && Game.Type.IsSRGroup())
                     {
                         m_ACLClip.ProcessSR(out var values, out var times);
                         for (int frameIndex = 0; frameIndex < times.Length; frameIndex++)
@@ -1037,6 +1039,7 @@ namespace AssetStudio
                 curveIndex++;
             }
         }
+
         private string GetPathFromHash(uint hash)
         {
             bonePathHash.TryGetValue(hash, out var boneName);
@@ -1054,12 +1057,18 @@ namespace AssetStudio
         private void CreateBonePathHash(Transform m_Transform)
         {
             var name = GetTransformPathByFather(m_Transform);
-            bonePathHash[CRC.CalculateDigestUTF8(name)] = name;
+            var crc = new SevenZip.CRC();
+            var bytes = Encoding.UTF8.GetBytes(name);
+            crc.Update(bytes, 0, (uint)bytes.Length);
+            bonePathHash[crc.GetDigest()] = name;
             int index;
             while ((index = name.IndexOf("/", StringComparison.Ordinal)) >= 0)
             {
                 name = name.Substring(index + 1);
-                bonePathHash[CRC.CalculateDigestUTF8(name)] = name;
+                crc = new SevenZip.CRC();
+                bytes = Encoding.UTF8.GetBytes(name);
+                crc.Update(bytes, 0, (uint)bytes.Length);
+                bonePathHash[crc.GetDigest()] = name;
             }
             foreach (var pptr in m_Transform.m_Children)
             {

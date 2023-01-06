@@ -7,9 +7,10 @@ namespace AssetStudio
 {
     public sealed class MeshRenderer : Renderer
     {
+        public PPtr<Mesh> m_AdditionalVertexStreams;
         public MeshRenderer(ObjectReader reader) : base(reader)
         {
-            var m_AdditionalVertexStreams = new PPtr<Mesh>(reader);
+            m_AdditionalVertexStreams = new PPtr<Mesh>(reader);
         }
     }
 }

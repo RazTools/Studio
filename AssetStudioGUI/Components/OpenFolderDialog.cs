@@ -34,7 +34,7 @@ namespace AssetStudioGUI
             if (!string.IsNullOrEmpty(InitialFolder))
             {
                 var riid = new Guid("43826D1E-E718-42EE-BC55-A1E261C37BFE"); //IShellItem  
-                if (NativeMethods.SHCreateItemFromParsingName(InitialFolder, IntPtr.Zero, ref riid, out var directoryShellItem) == NativeMethods.S_OK)
+                if (NativeMethods.SHCreateItemFromParsingName(InitialFolder, nint.Zero, ref riid, out var directoryShellItem) == NativeMethods.S_OK)
                 {
                     frm.SetFolder(directoryShellItem);
                 }
@@ -42,7 +42,7 @@ namespace AssetStudioGUI
             if (!string.IsNullOrEmpty(DefaultFolder))
             {
                 var riid = new Guid("43826D1E-E718-42EE-BC55-A1E261C37BFE"); //IShellItem  
-                if (NativeMethods.SHCreateItemFromParsingName(DefaultFolder, IntPtr.Zero, ref riid, out var directoryShellItem) == NativeMethods.S_OK)
+                if (NativeMethods.SHCreateItemFromParsingName(DefaultFolder, nint.Zero, ref riid, out var directoryShellItem) == NativeMethods.S_OK)
                 {
                     frm.SetDefaultFolder(directoryShellItem);
                 }
@@ -54,7 +54,7 @@ namespace AssetStudioGUI
                 {
                     if (shellItem.GetDisplayName(NativeMethods.SIGDN_FILESYSPATH, out var pszString) == NativeMethods.S_OK)
                     {
-                        if (pszString != IntPtr.Zero)
+                        if (pszString != nint.Zero)
                         {
                             try
                             {
@@ -127,11 +127,11 @@ namespace AssetStudioGUI
         {
             [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
             [PreserveSig()]
-            uint Show([In, Optional] IntPtr hwndOwner); //IModalWindow   
+            uint Show([In, Optional] nint hwndOwner); //IModalWindow   
 
 
             [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
-            uint SetFileTypes([In] uint cFileTypes, [In, MarshalAs(UnmanagedType.LPArray)] IntPtr rgFilterSpec);
+            uint SetFileTypes([In] uint cFileTypes, [In, MarshalAs(UnmanagedType.LPArray)] nint rgFilterSpec);
 
             [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
             uint SetFileTypeIndex([In] uint iFileType);
@@ -140,7 +140,7 @@ namespace AssetStudioGUI
             uint GetFileTypeIndex(out uint piFileType);
 
             [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
-            uint Advise([In, MarshalAs(UnmanagedType.Interface)] IntPtr pfde, out uint pdwCookie);
+            uint Advise([In, MarshalAs(UnmanagedType.Interface)] nint pfde, out uint pdwCookie);
 
             [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
             uint Unadvise([In] uint dwCookie);
@@ -197,7 +197,7 @@ namespace AssetStudioGUI
             uint ClearClientData();
 
             [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
-            uint SetFilter([MarshalAs(UnmanagedType.Interface)] IntPtr pFilter);
+            uint SetFilter([MarshalAs(UnmanagedType.Interface)] nint pFilter);
         }
 
 
@@ -205,13 +205,13 @@ namespace AssetStudioGUI
         internal interface IShellItem
         {
             [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
-            uint BindToHandler([In] IntPtr pbc, [In] ref Guid rbhid, [In] ref Guid riid, [Out, MarshalAs(UnmanagedType.Interface)] out IntPtr ppvOut);
+            uint BindToHandler([In] nint pbc, [In] ref Guid rbhid, [In] ref Guid riid, [Out, MarshalAs(UnmanagedType.Interface)] out nint ppvOut);
 
             [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
             uint GetParent([MarshalAs(UnmanagedType.Interface)] out IShellItem ppsi);
 
             [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
-            uint GetDisplayName([In] uint sigdnName, out IntPtr ppszName);
+            uint GetDisplayName([In] uint sigdnName, out nint ppszName);
 
             [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
             uint GetAttributes([In] uint sfgaoMask, out uint psfgaoAttribs);
@@ -224,6 +224,6 @@ namespace AssetStudioGUI
 
 
         [DllImport("shell32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern int SHCreateItemFromParsingName([MarshalAs(UnmanagedType.LPWStr)] string pszPath, IntPtr pbc, ref Guid riid, [MarshalAs(UnmanagedType.Interface)] out IShellItem ppv);
+        internal static extern int SHCreateItemFromParsingName([MarshalAs(UnmanagedType.LPWStr)] string pszPath, nint pbc, ref Guid riid, [MarshalAs(UnmanagedType.Interface)] out IShellItem ppv);
     }
 }

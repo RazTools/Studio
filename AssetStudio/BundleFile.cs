@@ -1,7 +1,9 @@
 ﻿using K4os.Compression.LZ4;
 using System;
+using System.Data;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace AssetStudio
 {
@@ -12,14 +14,16 @@ namespace AssetStudio
         BlocksAndDirectoryInfoCombined = 0x40,
         BlocksInfoAtTheEnd = 0x80,
         OldWebPluginCompatibility = 0x100,
-        BlockInfoNeedPaddingAtStart = 0x200
+        BlockInfoNeedPaddingAtStart = 0x200,
+        CNUnityEncryption = 0x400
     }
 
     [Flags]
     public enum StorageBlockFlags
     {
         CompressionTypeMask = 0x3f,
-        Streamed = 0x40
+        Streamed = 0x40,
+        CNUnity = 0x100
     }
 
     public enum CompressionType
@@ -31,6 +35,7 @@ namespace AssetStudio
         Lzham,
         Lz4Mr0k
     }
+
     public class BundleFile
     {
         public class Header
@@ -60,46 +65,19 @@ namespace AssetStudio
             public string path;
         }
 
+        private Game Game;
+        private CNUnity CNUnity;
+
         public Header m_Header;
-        private StorageBlock[] m_BlocksInfo;
         private Node[] m_DirectoryInfo;
+        private StorageBlock[] m_BlocksInfo;
 
-        public StreamFile[] FileList;
+        public StreamFile[] fileList;
 
-        public BundleFile(FileReader reader)
+        public BundleFile(FileReader reader, Game game)
         {
-            m_Header = new Header();
-            m_Header.signature = reader.ReadStringToNull();
-            
-            if (reader.Game.Name == "BH3")
-            {
-                m_Header.version = 6;
-                m_Header.unityVersion = "5.x.x";
-                m_Header.unityRevision = "2017.4.18f1";
-            }
-            else if (reader.Game.Name == "SR_CB2" || reader.Game.Name == "SR_CB3")
-            {
-                var readHeader = m_Header.signature != "ENCR";
-                
-                if (!readHeader)
-                {
-                    m_Header.version = 7;
-                    m_Header.unityVersion = "5.x.x";
-                    m_Header.unityRevision = "2019.4.32f1";
-                }
-                else
-                {
-                    m_Header.version = reader.ReadUInt32();
-                    m_Header.unityVersion = reader.ReadStringToNull();
-                    m_Header.unityRevision = reader.ReadStringToNull();
-                }
-            }
-            else
-            {
-                m_Header.version = reader.ReadUInt32();
-                m_Header.unityVersion = reader.ReadStringToNull();
-                m_Header.unityRevision = reader.ReadStringToNull();
-            }
+            Game = game;
+            m_Header = ReadBundleHeader(reader);
             switch (m_Header.signature)
             {
                 case "UnityArchive":
@@ -120,10 +98,6 @@ namespace AssetStudio
                 case "UnityFS":
                 case "ENCR":
                     ReadHeader(reader);
-                    if (reader.Game.Name == "ZZZ_CB1")
-                    {
-                        reader.AlignStream(0x10);
-                    }
                     ReadBlocksInfoAndDirectory(reader);
                     using (var blocksStream = CreateBlocksStream(reader.FullPath))
                     {
@@ -132,6 +106,54 @@ namespace AssetStudio
                     }
                     break;
             }
+        }
+
+        private Header ReadBundleHeader(FileReader reader)
+        {
+            Header header = new Header();
+            header.signature = reader.ReadStringToNull(20);
+            switch (header.signature)
+            {
+                case "UnityFS":
+                    if (Game.Type.IsBH3())
+                    {
+                        var version = reader.ReadUInt32();
+                        if (version > 11)
+                        {
+                            XORShift128.InitSeed(version);
+                            header.version = 6;
+                            header.unityVersion = "5.x.x";
+                            header.unityRevision = "2017.4.18f1";
+                        }
+                        else
+                        {
+                            reader.Position -= 4;
+                            goto default;
+                        }
+                    }
+                    else
+                    {
+                        header.version = reader.ReadUInt32();
+                        header.unityVersion = reader.ReadStringToNull();
+                        header.unityRevision = reader.ReadStringToNull();
+                    }
+                    break;
+                case "ENCR":
+                    header.version = 6; // is 7 but does not have uncompressedDataHash
+                    header.unityVersion = "5.x.x";
+                    header.unityRevision = "2019.4.32f1";
+                    break;
+                default:
+                    if (Game.Type.IsNaraka())
+                    {
+                        header.signature = "UnityFS";
+                        goto case "UnityFS";
+                    }
+                    break;
+
+            }
+
+            return header;
         }
 
         private void ReadHeaderAndBlocksInfo(EndianBinaryReader reader)
@@ -221,12 +243,12 @@ namespace AssetStudio
 
         public void ReadFiles(Stream blocksStream, string path)
         {
-            FileList = new StreamFile[m_DirectoryInfo.Length];
+            fileList = new StreamFile[m_DirectoryInfo.Length];
             for (int i = 0; i < m_DirectoryInfo.Length; i++)
             {
                 var node = m_DirectoryInfo[i];
                 var file = new StreamFile();
-                FileList[i] = file;
+                fileList[i] = file;
                 file.path = node.path;
                 file.fileName = Path.GetFileName(node.path);
                 if (node.size >= int.MaxValue)
@@ -247,42 +269,74 @@ namespace AssetStudio
             }
         }
 
-        private void DecryptHeader(int key)
+        private void DecryptHeader()
         {
-            var rand = new XORShift128();
-            rand.InitSeed(key);
-            m_Header.flags ^= (ArchiveFlags)rand.NextDecryptInt();
-            m_Header.size ^= rand.NextDecryptLong();
-            m_Header.uncompressedBlocksInfoSize ^= rand.NextDecryptUInt();
-            m_Header.compressedBlocksInfoSize ^= rand.NextDecryptUInt();
+            m_Header.flags ^= (ArchiveFlags)XORShift128.NextDecryptInt();
+            m_Header.size ^= XORShift128.NextDecryptLong();
+            m_Header.uncompressedBlocksInfoSize ^= XORShift128.NextDecryptUInt();
+            m_Header.compressedBlocksInfoSize ^= XORShift128.NextDecryptUInt();
+            XORShift128.Init = false;
         }
 
         private void ReadHeader(EndianBinaryReader reader)
         {
-            if (reader.Game.Name == "BH3")
+            if (Game.Type.IsBH3() && XORShift128.Init)
             {
-                var key = reader.ReadInt32();
                 m_Header.flags = (ArchiveFlags)reader.ReadUInt32();
                 m_Header.size = reader.ReadInt64();
                 m_Header.uncompressedBlocksInfoSize = reader.ReadUInt32();
                 m_Header.compressedBlocksInfoSize = reader.ReadUInt32();
-                DecryptHeader(key);
+                DecryptHeader();
+
                 var encUnityVersion = reader.ReadStringToNull();
                 var encUnityRevision = reader.ReadStringToNull();
+                return;
             }
-            else
+
+            m_Header.size = reader.ReadInt64();
+            m_Header.compressedBlocksInfoSize = reader.ReadUInt32();
+            m_Header.uncompressedBlocksInfoSize = reader.ReadUInt32();
+            m_Header.flags = (ArchiveFlags)reader.ReadUInt32();
+            if (m_Header.signature != "UnityFS" && !Game.Type.IsSRGroup())
             {
-                m_Header.size = reader.ReadInt64();
-                m_Header.compressedBlocksInfoSize = reader.ReadUInt32();
-                m_Header.uncompressedBlocksInfoSize = reader.ReadUInt32();
-                m_Header.flags = (ArchiveFlags)reader.ReadUInt32();
+                reader.ReadByte();
+            }
+
+            if (Game.Type.IsNaraka())
+            {
+                m_Header.compressedBlocksInfoSize -= 0xCA;
+                m_Header.uncompressedBlocksInfoSize -= 0xCA;
             }
         }
 
         private void ReadBlocksInfoAndDirectory(EndianBinaryReader reader)
         {
+            if (Game.Type.IsCNUnity())
+            {
+                ArchiveFlags mask;
+
+                var version = ParseVersion();
+                //Flag changed it in these versions
+                if (version[0] < 2020 || //2020 and earlier
+                    (version[0] == 2020 && version[1] == 3 && version[2] <= 34) || //2020.3.34 and earlier
+                    (version[0] == 2021 && version[1] == 3 && version[2] <= 2) || //2021.3.2 and earlier
+                    (version[0] == 2022 && version[1] == 3 && version[2] <= 1)) //2022.3.1 and earlier
+                {
+                    mask = ArchiveFlags.BlockInfoNeedPaddingAtStart;
+                }
+                else
+                {
+                    mask = ArchiveFlags.CNUnityEncryption;
+                }
+
+                if ((m_Header.flags & mask) != 0)
+                {
+                    CNUnity = new CNUnity(reader);
+                }
+            }
+
             byte[] blocksInfoBytes;
-            if (m_Header.version >= 7 && reader.Game.Name != "SR_CB2" && reader.Game.Name != "SR_CB3")
+            if (m_Header.version >= 7 && !Game.Type.IsSRGroup())
             {
                 reader.AlignStream(16);
             }
@@ -298,6 +352,7 @@ namespace AssetStudio
                 blocksInfoBytes = reader.ReadBytes((int)m_Header.compressedBlocksInfoSize);
             }
             MemoryStream blocksInfoUncompresseddStream;
+            var blocksInfoBytesSpan = blocksInfoBytes.AsSpan();
             var uncompressedSize = m_Header.uncompressedBlocksInfoSize;
             var compressionType = (CompressionType)(m_Header.flags & ArchiveFlags.CompressionTypeMask);
             switch (compressionType) //kArchiveCompressionTypeMask
@@ -321,7 +376,7 @@ namespace AssetStudio
                 case CompressionType.Lz4HC: //LZ4HC
                     {
                         var uncompressedBytes = new byte[uncompressedSize];
-                        var numWrite = LZ4Codec.Decode(blocksInfoBytes, uncompressedBytes);
+                        var numWrite = LZ4Codec.Decode(blocksInfoBytesSpan, uncompressedBytes);
                         if (numWrite != uncompressedSize)
                         {
                             throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
@@ -330,10 +385,9 @@ namespace AssetStudio
                         break;
                     }
                 case CompressionType.Lz4Mr0k: //Lz4Mr0k
-                    var blocksInfoSize = blocksInfoBytes.Length;
-                    if (Mr0k.IsMr0k(blocksInfoBytes))
+                    if (Mr0kUtils.IsMr0k(blocksInfoBytesSpan))
                     {
-                        Mr0k.Decrypt(ref blocksInfoBytes, ref blocksInfoSize);
+                        blocksInfoBytesSpan = Mr0kUtils.Decrypt(blocksInfoBytesSpan, (Mr0k)Game).ToArray();
                     }
                     goto case CompressionType.Lz4HC;
                 default:
@@ -341,7 +395,7 @@ namespace AssetStudio
             }
             using (var blocksInfoReader = new EndianBinaryReader(blocksInfoUncompresseddStream))
             {
-                if ((reader.Game.Name != "SR_CB2" && reader.Game.Name != "SR_CB3") || m_Header.signature != "ENCR")
+                if (m_Header.version >= 7 || !Game.Type.IsSRGroup())
                 {
                     var uncompressedDataHash = blocksInfoReader.ReadBytes(16);
                 }
@@ -370,12 +424,17 @@ namespace AssetStudio
                     };
                 }
             }
+            if (!Game.Type.IsCNUnity() && (m_Header.flags & ArchiveFlags.BlockInfoNeedPaddingAtStart) != 0)
+            {
+                reader.AlignStream(16);
+            }
         }
 
         private void ReadBlocks(EndianBinaryReader reader, Stream blocksStream)
         {
-            foreach (var blockInfo in m_BlocksInfo)
+            for (int i = 0; i < m_BlocksInfo.Length; i++)
             {
+                var blockInfo = m_BlocksInfo[i];
                 var compressionType = (CompressionType)(blockInfo.flags & StorageBlockFlags.CompressionTypeMask);
                 switch (compressionType) //kStorageBlockCompressionTypeMask
                 {
@@ -394,20 +453,28 @@ namespace AssetStudio
                     case CompressionType.Lz4Mr0k: //Lz4Mr0k
                         {
                             var compressedSize = (int)blockInfo.compressedSize;
-                            var compressedBytes = new byte[compressedSize];
+                            var compressedBytes = BigArrayPool<byte>.Shared.Rent(compressedSize);
                             reader.Read(compressedBytes, 0, compressedSize);
-                            if (compressionType == CompressionType.Lz4Mr0k && Mr0k.IsMr0k(compressedBytes))
+                            var compressedBytesSpan = compressedBytes.AsSpan(0, compressedSize);
+                            if (compressionType == CompressionType.Lz4Mr0k && Mr0kUtils.IsMr0k(compressedBytes))
                             {
-                                Mr0k.Decrypt(ref compressedBytes, ref compressedSize);
+                                compressedBytesSpan = Mr0kUtils.Decrypt(compressedBytesSpan, (Mr0k)Game);
+                            }
+                            if (Game.Type.IsCNUnity() && (blockInfo.flags & StorageBlockFlags.CNUnity) != 0)
+                            {
+                                CNUnity.DecryptBlock(compressedBytesSpan, compressedSize, i);
                             }
                             var uncompressedSize = (int)blockInfo.uncompressedSize;
-                            var uncompressedBytes = new byte[uncompressedSize];
-                            var numWrite = LZ4Codec.Decode(compressedBytes, 0, compressedSize, uncompressedBytes, 0, uncompressedSize);
+                            var uncompressedBytes = BigArrayPool<byte>.Shared.Rent(uncompressedSize);
+                            var uncompressedBytesSpan = uncompressedBytes.AsSpan(0, uncompressedSize);
+                            var numWrite = LZ4Codec.Decode(compressedBytesSpan, uncompressedBytesSpan);
                             if (numWrite != uncompressedSize)
                             {
                                 throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
                             }
                             blocksStream.Write(uncompressedBytes, 0, uncompressedSize);
+                            BigArrayPool<byte>.Shared.Return(compressedBytes);
+                            BigArrayPool<byte>.Shared.Return(uncompressedBytes);
                             break;
                         }
                     default:
@@ -415,6 +482,12 @@ namespace AssetStudio
                 }
             }
             blocksStream.Position = 0;
+        }
+
+        public int[] ParseVersion()
+        {
+            var versionSplit = Regex.Replace(m_Header.unityRevision, @"\D", ".").Split(new[] { "." }, StringSplitOptions.RemoveEmptyEntries);
+            return versionSplit.Select(int.Parse).ToArray();
         }
     }
 }

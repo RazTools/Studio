@@ -11,6 +11,8 @@ namespace AssetStudio
     {
         public AssetsManager assetsManager;
         public FileReader reader;
+        public Game game;
+        public long offset = 0;
         public string fullName;
         public string originalPath;
         public string fileName;
@@ -32,11 +34,11 @@ namespace AssetStudio
         public List<SerializedType> m_RefTypes;
         public string userInformation;
 
-        public SerializedFile(FileReader reader, AssetsManager assetsManager, string path = null)
+        public SerializedFile(FileReader reader, AssetsManager assetsManager)
         {
             this.assetsManager = assetsManager;
             this.reader = reader;
-            originalPath = path;
+            game = assetsManager.Game;
             fullName = reader.FullPath;
             fileName = reader.FileName;
 
@@ -80,10 +82,13 @@ namespace AssetStudio
             if (header.m_Version >= SerializedFileFormatVersion.Unknown_8)
             {
                 m_TargetPlatform = (BuildTarget)reader.ReadInt32();
-                if (m_TargetPlatform == BuildTarget.NoTarget) m_TargetPlatform = BuildTarget.StandaloneWindows64;
                 if (!Enum.IsDefined(typeof(BuildTarget), m_TargetPlatform))
                 {
                     m_TargetPlatform = BuildTarget.UnknownPlatform;
+                }
+                else if (game.Type.IsMhyGroup())
+                {
+                    m_TargetPlatform = BuildTarget.StandaloneWindows64;
                 }
             }
             if (header.m_Version >= SerializedFileFormatVersion.HasTypeTreeHashes)
@@ -197,7 +202,7 @@ namespace AssetStudio
                     m_External.guid = new Guid(reader.ReadBytes(16));
                     m_External.type = reader.ReadInt32();
                 }
-                m_External.pathName = reader.ReadStringToNull().Replace("cab", "CAB");
+                m_External.pathName = reader.ReadStringToNull();
                 m_External.fileName = Path.GetFileName(m_External.pathName);
                 m_Externals.Add(m_External);
             }
@@ -237,7 +242,8 @@ namespace AssetStudio
             var type = new SerializedType();
 
             type.classID = reader.ReadInt32();
-            if (BitConverter.ToBoolean(header.m_Reserved, 0))
+
+            if (game.Type.IsGIGroup() && BitConverter.ToBoolean(header.m_Reserved))
             {
                 type.classID = DecodeClassID(type.classID);
             }
@@ -348,7 +354,7 @@ namespace AssetStudio
             }
             m_Type.m_StringBuffer = reader.ReadBytes(stringBufferSize);
 
-            using (var stringBufferReader = new BinaryReader(new MemoryStream(m_Type.m_StringBuffer)))
+            using (var stringBufferReader = new EndianBinaryReader(new MemoryStream(m_Type.m_StringBuffer), EndianType.LittleEndian))
             {
                 for (int i = 0; i < numberOfNodes; i++)
                 {
@@ -358,7 +364,7 @@ namespace AssetStudio
                 }
             }
 
-            string ReadString(BinaryReader stringBufferReader, uint value)
+            string ReadString(EndianBinaryReader stringBufferReader, uint value)
             {
                 var isOffset = (value & 0x80000000) == 0;
                 if (isOffset)
@@ -381,12 +387,14 @@ namespace AssetStudio
             ObjectsDic.Add(obj.m_PathID, obj);
         }
 
-        private int DecodeClassID(int value)
+        private static int DecodeClassID(int value)
         {
             var bytes = BitConverter.GetBytes(value);
-            value = BinaryPrimitives.ReadInt32BigEndian(bytes);
+            Array.Reverse(bytes);
+            value = BitConverter.ToInt32(bytes, 0);
             return (value ^ 0x23746FBE) - 3;
         }
+
         public bool IsVersionStripped => unityVersion == strippedVersion;
 
         private const string strippedVersion = "0.0.0";

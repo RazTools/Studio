@@ -19,17 +19,5 @@ namespace AssetStudio
                 m_Animations[i] = new PPtr<AnimationClip>(reader);
             }
         }
-
-        public bool IsContainsAnimationClip(AnimationClip clip)
-        {
-            foreach (PPtr<AnimationClip> ptr in m_Animations)
-            {
-                if (ptr.TryGet(out var animationClip) && animationClip.Equals(clip))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
     }
 }

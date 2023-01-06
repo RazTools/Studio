@@ -32,9 +32,9 @@ namespace AssetStudioCLI
                 optionsBinder.MapType,
                 optionsBinder.MapName,
                 optionsBinder.GroupAssetsType,
-                optionsBinder.NoAssetBundle,
-                optionsBinder.NoIndexObject,
-                optionsBinder.XorByte,
+                optionsBinder.IncludeAnimators,
+                optionsBinder.SkipMiHoYoBinData,
+                optionsBinder.Key,
                 optionsBinder.AIFile,
                 optionsBinder.Input,
                 optionsBinder.Output
@@ -54,36 +54,32 @@ namespace AssetStudioCLI
                     }
 
                     Studio.Game = game;
+                    Logger.Default = new ConsoleLogger();
+                    assetsManager.Silent = o.Silent;
                     assetsManager.Game = game;
-                    AssetBundle.Exportable = !o.NoAssetBundle;
-                    IndexObject.Exportable = !o.NoIndexObject;
+                    MiHoYoBinData.Exportable = !o.SkipMiHoYoBinData;
 
-                    if (!o.Silent)
+                    if (o.Key != default)
                     {
-                        Logger.Default = new ConsoleLogger();
-                    }
-
-                    if (o.XorKey != default)
-                    {
-                        if (o.NoIndexObject)
+                        if (o.SkipMiHoYoBinData)
                         {
-                            Logger.Warning("XOR key is set but IndexObject/MiHoYoBinData is excluded, ignoring key...");
+                            Logger.Warning("Key is set but IndexObject/MiHoYoBinData is excluded, ignoring key...");
                         }
                         else
                         {
-                            MiHoYoBinData.doXOR = true;
-                            MiHoYoBinData.Key = o.XorKey;
+                            MiHoYoBinData.Encrypted = true;
+                            MiHoYoBinData.Key = o.Key;
                         }
                     }
 
-                    if (o.AIFile != null && game.Name == "GI" || game.Name == "GI_CB2" || game.Name == "GI_CB3")
+                    if (o.AIFile != null && game.Type.IsGISubGroup())
                     {
                         ResourceIndex.FromFile(o.AIFile.FullName);
                     }
 
                     Logger.Info("Scanning for files");
-                    var files = o.Input.Attributes.HasFlag(FileAttributes.Directory) ? Directory.GetFiles(o.Input.FullName, $"*{game.Extension}", SearchOption.AllDirectories).OrderBy(x => x.Length).ToArray() : new string[] { o.Input.FullName };
-                    Logger.Info(string.Format("Found {0} file(s)", files.Count()));
+                    var files = o.Input.Attributes.HasFlag(FileAttributes.Directory) ? Directory.GetFiles(o.Input.FullName, "*.*", SearchOption.AllDirectories).OrderBy(x => x.Length).ToArray() : new string[] { o.Input.FullName };
+                    Logger.Info(string.Format("Found {0} file(s)", files.Length));
 
                     if (o.MapOp.Equals(MapOpType.None))
                     {
@@ -91,15 +87,18 @@ namespace AssetStudioCLI
                         foreach (var file in files)
                         {
                             assetsManager.LoadFiles(file);
-                            BuildAssetData(o.TypeFilter, o.NameFilter, o.ContainerFilter, ref i);
-                            ExportAssets(o.Output.FullName, exportableAssets, o.GroupAssetsType);
+                            if (assetsManager.assetsFileList.Count > 0)
+                            {
+                                BuildAssetData(o.TypeFilter, o.NameFilter, o.ContainerFilter, ref i);
+                                ExportAssets(o.Output.FullName, exportableAssets, o.GroupAssetsType);
+                            }
                             exportableAssets.Clear();
                             assetsManager.Clear();
                         }
                     }
                     if (o.MapOp.HasFlag(MapOpType.CABMap))
                     {
-                        CABManager.BuildMap(files.ToList(), game);
+                        AssetsHelper.BuildCABMap(files, "", "", game);
                     }
                     if (o.MapOp.HasFlag(MapOpType.AssetMap))
                     {
@@ -107,16 +106,16 @@ namespace AssetStudioCLI
                         {
                             throw new Exception("Unable to build AssetMap with input_path as a file !!");
                         }
-                        var assets = BuildAssetMap(files.ToList(), o.TypeFilter, o.NameFilter, o.ContainerFilter);
+                        var assets = AssetsHelper.BuildAssetMap(files, game, o.TypeFilter, o.NameFilter, o.ContainerFilter);
                         if (!o.Output.Exists)
                         {
                             o.Output.Create();
                         }
                         if (string.IsNullOrEmpty(o.MapName))
                         {
-                            o.MapName = $"assets_map_{game.Name}";
+                            o.MapName = "assets_map";
                         }
-                        ExportAssetsMap(o.Output.FullName, assets, o.MapName, o.MapType);
+                        AssetsHelper.ExportAssetsMap(assets, o.MapName, o.Output.FullName, o.MapType);
                     }
                 }
                 catch (Exception e)
@@ -141,9 +140,9 @@ namespace AssetStudioCLI
         public ExportListType MapType { get; set; }
         public string MapName { get; set; }
         public AssetGroupOption GroupAssetsType { get; set; }
-        public bool NoAssetBundle { get; set; }
-        public bool NoIndexObject { get; set; }
-        public byte XorKey { get; set; }
+        public bool SkipRenderer { get; set; }
+        public bool SkipMiHoYoBinData { get; set; }
+        public byte Key { get; set; }
         public FileInfo AIFile { get; set; }
         public FileInfo Input { get; set; }
         public DirectoryInfo Output { get; set; }
@@ -160,9 +159,9 @@ namespace AssetStudioCLI
         public readonly Option<ExportListType> MapType;
         public readonly Option<string> MapName;
         public readonly Option<AssetGroupOption> GroupAssetsType;
-        public readonly Option<bool> NoAssetBundle;
-        public readonly Option<bool> NoIndexObject;
-        public readonly Option<byte> XorByte;
+        public readonly Option<bool> IncludeAnimators;
+        public readonly Option<bool> SkipMiHoYoBinData;
+        public readonly Option<byte> Key;
         public readonly Option<FileInfo> AIFile;
         public readonly Argument<FileInfo> Input;
         public readonly Argument<DirectoryInfo> Output;
@@ -178,13 +177,13 @@ namespace AssetStudioCLI
             MapType = new Option<ExportListType>("--map_type", "AssetMap output type.");
             MapName = new Option<string>("--map_name", "Specify AssetMap file name.");
             GroupAssetsType = new Option<AssetGroupOption>("--group_assets_type", "Specify how exported assets should be grouped.");
-            NoAssetBundle = new Option<bool>("--no_asset_bundle", "Exclude AssetBundle from AssetMap/Export.");
-            NoIndexObject = new Option<bool>("--no_index_object", "Exclude IndexObject/MiHoYoBinData from AssetMap/Export.");
+            IncludeAnimators = new Option<bool>("--skip_re", "Include Animator with Export.");
+            SkipMiHoYoBinData = new Option<bool>("--skip_mihoyobindata", "Exclude IndexObject/MiHoYoBinData from AssetMap/Export.");
             AIFile = new Option<FileInfo>("--ai_file", "Specify asset_index json file path (to recover GI containers).").LegalFilePathsOnly();
             Input = new Argument<FileInfo>("input_path", "Input file/folder.").LegalFilePathsOnly();
             Output = new Argument<DirectoryInfo>("output_path", "Output folder.").LegalFilePathsOnly();
 
-            XorByte = new Option<byte>("--xor_key", result =>
+            Key = new Option<byte>("--key", result =>
             {
                 var value = result.Tokens.Single().Value;
                 if (value.StartsWith("0x"))
@@ -196,12 +195,12 @@ namespace AssetStudioCLI
                 {
                     return byte.Parse(value);
                 }
-            }, false, "XOR key to decrypt MiHoYoBinData.");
+            }, false, "Key to decrypt MiHoYoBinData.");
 
             TypeFilter.AddValidator(FilterValidator);
             NameFilter.AddValidator(FilterValidator);
             ContainerFilter.AddValidator(FilterValidator);
-            XorByte.AddValidator(result =>
+            Key.AddValidator(result =>
             {
                 var value = result.Tokens.Single().Value;
                 try
@@ -266,9 +265,9 @@ namespace AssetStudioCLI
             MapType = bindingContext.ParseResult.GetValueForOption(MapType),
             MapName = bindingContext.ParseResult.GetValueForOption(MapName),
             GroupAssetsType = bindingContext.ParseResult.GetValueForOption(GroupAssetsType),
-            NoAssetBundle = bindingContext.ParseResult.GetValueForOption(NoAssetBundle),
-            NoIndexObject = bindingContext.ParseResult.GetValueForOption(NoIndexObject),
-            XorKey = bindingContext.ParseResult.GetValueForOption(XorByte),
+            SkipRenderer = bindingContext.ParseResult.GetValueForOption(IncludeAnimators),
+            SkipMiHoYoBinData = bindingContext.ParseResult.GetValueForOption(SkipMiHoYoBinData),
+            Key = bindingContext.ParseResult.GetValueForOption(Key),
             AIFile = bindingContext.ParseResult.GetValueForOption(AIFile),
             Input = bindingContext.ParseResult.GetValueForArgument(Input),
             Output = bindingContext.ParseResult.GetValueForArgument(Output)

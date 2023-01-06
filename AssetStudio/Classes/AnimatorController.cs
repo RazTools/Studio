@@ -580,6 +580,7 @@ namespace AssetStudio
 
     public sealed class AnimatorController : RuntimeAnimatorController
     {
+        public Dictionary<uint, string> m_TOS;
         public PPtr<AnimationClip>[] m_AnimationClips;
 
         public AnimatorController(ObjectReader reader) : base(reader)
@@ -588,7 +589,7 @@ namespace AssetStudio
             var m_Controller = new ControllerConstant(reader);
 
             int tosSize = reader.ReadInt32();
-            var m_TOS = new Dictionary<uint, string>(tosSize);
+            m_TOS = new Dictionary<uint, string>(tosSize);
             for (int i = 0; i < tosSize; i++)
             {
                 m_TOS.Add(reader.ReadUInt32(), reader.ReadAlignedString());
@@ -600,18 +601,6 @@ namespace AssetStudio
             {
                 m_AnimationClips[i] = new PPtr<AnimationClip>(reader);
             }
-        }
-
-        public override bool IsContainsAnimationClip(AnimationClip clip)
-        {
-            foreach (PPtr<AnimationClip> ptr in m_AnimationClips)
-            {
-                if (ptr.TryGet(out var animationClip) && animationClip.Equals(clip))
-                {
-                    return true;
-                }
-            }
-            return false;
         }
     }
 }

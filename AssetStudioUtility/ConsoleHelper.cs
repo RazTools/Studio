@@ -1,24 +1,23 @@
-﻿using System;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 
 namespace AssetStudio
 {
-    public static class ConsoleHelper
+    public static partial class ConsoleHelper
     {
-        [DllImport("kernel32.dll", SetLastError = true)]
+        [LibraryImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool AllocConsole();
+        public static partial bool AllocConsole();
 
-        [DllImport("kernel32.dll", SetLastError = true)]
+        [LibraryImport("kernel32.dll", EntryPoint = "SetConsoleTitleA", SetLastError = true, StringMarshalling = StringMarshalling.Utf8)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool SetConsoleTitle(string lpConsoleTitle);
+        public static partial bool SetConsoleTitle(string lpConsoleTitle);
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern IntPtr GetConsoleWindow();
+        [LibraryImport("kernel32.dll", SetLastError = true)]
+        public static partial nint GetConsoleWindow();
 
-        [DllImport("user32.dll", SetLastError = true)]
+        [LibraryImport("user32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+        public static partial bool ShowWindow(nint hWnd, int nCmdShow);
 
         public const int SW_HIDE = 0;
         public const int SW_SHOW = 5;

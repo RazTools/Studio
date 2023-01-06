@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using static AssetStudioCLI.Exporter;
 using Object = AssetStudio.Object;
+using System.Globalization;
 
 namespace AssetStudioCLI
 {
@@ -20,11 +21,7 @@ namespace AssetStudioCLI
         CABMap,
         Both
     }
-    public enum ExportListType
-    {
-        XML,
-        JSON
-    }
+
     public enum AssetGroupOption
     {
         ByType,
@@ -35,7 +32,7 @@ namespace AssetStudioCLI
 
     internal static class Studio
     {
-        public static AssetsManager assetsManager = new AssetsManager() { ResolveDependancies = false };
+        public static AssetsManager assetsManager = new AssetsManager() { ResolveDependencies = false };
         public static List<AssetItem> exportableAssets = new List<AssetItem>();
         public static Game Game;
 
@@ -67,13 +64,16 @@ namespace AssetStudioCLI
         public static int ExtractFile(string fileName, string savePath)
         {
             int extractedCount = 0;
-            var reader = new FileReader(fileName, Game);
+            var reader = new FileReader(fileName);
+            reader = reader.PreProcessing(Game);
             if (reader.FileType == FileType.BundleFile)
                 extractedCount += ExtractBundleFile(reader, savePath);
             else if (reader.FileType == FileType.WebFile)
                 extractedCount += ExtractWebDataFile(reader, savePath);
-            else if (reader.FileType == FileType.GameFile)
-                extractedCount += ExtractGameFile(reader, savePath);
+            else if (reader.FileType == FileType.BlkFile)
+                extractedCount += ExtractBlkFile(reader, savePath);
+            else if (reader.FileType == FileType.BlockFile)
+                extractedCount += ExtractBlockFile(reader, savePath);
             else
                 reader.Dispose();
             return extractedCount;
@@ -82,12 +82,19 @@ namespace AssetStudioCLI
         private static int ExtractBundleFile(FileReader reader, string savePath)
         {
             Logger.Info($"Decompressing {reader.FileName} ...");
-            var bundleFile = new BundleFile(reader);
-            reader.Dispose();
-            if (bundleFile.FileList.Length > 0)
+            try
             {
-                var extractPath = Path.Combine(savePath, reader.FileName + "_unpacked");
-                return ExtractStreamFile(extractPath, bundleFile.FileList);
+                var bundleFile = new BundleFile(reader, Game);
+                reader.Dispose();
+                if (bundleFile.fileList.Length > 0)
+                {
+                    var extractPath = Path.Combine(savePath, reader.FileName + "_unpacked");
+                    return ExtractStreamFile(extractPath, bundleFile.fileList);
+                }
+            }
+            catch (InvalidCastException)
+            {
+                Logger.Error($"Game type mismatch, Expected {nameof(Mr0k)} but got {Game.Name} ({Game.GetType().Name}) !!");
             }
             return 0;
         }
@@ -105,16 +112,69 @@ namespace AssetStudioCLI
             return 0;
         }
 
-        private static int ExtractGameFile(FileReader reader, string savePath)
+        private static int ExtractBlkFile(FileReader reader, string savePath)
         {
-            Logger.Info($"Decompressing {reader.FileName}...");
-            var gameFile = new GameFile(reader);
-            reader.Dispose();
-            var fileList = gameFile.Bundles.SelectMany(x => x.Value).ToList();
-            if (fileList.Count > 0)
+            int total = 0;
+            Logger.Info($"Decompressing {reader.FileName} ...");
+            try
             {
-                var extractPath = Path.Combine(savePath, Path.GetFileNameWithoutExtension(reader.FileName));
-                return ExtractStreamFile(extractPath, fileList.ToArray());
+                using var stream = BlkUtils.Decrypt(reader, (Blk)Game);
+                do
+                {
+                    stream.Offset = stream.RelativePosition;
+                    var dummyPath = Path.Combine(reader.FullPath, stream.RelativePosition.ToString("X8"));
+                    var subReader = new FileReader(dummyPath, stream, true);
+                    var subSavePath = Path.Combine(savePath, reader.FileName + "_unpacked");
+                    switch (subReader.FileType)
+                    {
+                        case FileType.BundleFile:
+                            total += ExtractBundleFile(subReader, subSavePath);
+                            break;
+                        case FileType.Mhy0File:
+                            total += ExtractMhy0File(subReader, subSavePath);
+                            break;
+                    }
+                } while (stream.Remaining > 0);
+            }
+            catch (InvalidCastException)
+            {
+                Logger.Error($"Game type mismatch, Expected {nameof(Blk)} but got {Game.Name} ({Game.GetType().Name}) !!");
+            }
+            return total;
+        }
+
+        private static int ExtractBlockFile(FileReader reader, string savePath)
+        {
+            int total = 0;
+            Logger.Info($"Decompressing {reader.FileName} ...");
+            using var stream = new BlockStream(reader.BaseStream, 0);
+            do
+            {
+                stream.Offset = stream.RelativePosition;
+                var subSavePath = Path.Combine(savePath, reader.FileName + "_unpacked");
+                var dummyPath = Path.Combine(reader.FullPath, stream.RelativePosition.ToString("X8"));
+                var subReader = new FileReader(dummyPath, stream, true);
+                total += ExtractBundleFile(subReader, subSavePath);
+            } while (stream.Remaining > 0);
+            return total;
+        }
+
+        private static int ExtractMhy0File(FileReader reader, string savePath)
+        {
+            Logger.Info($"Decompressing {reader.FileName} ...");
+            try
+            {
+                var mhy0File = new Mhy0File(reader, reader.FullPath, (Mhy0)Game);
+                reader.Dispose();
+                if (mhy0File.fileList.Length > 0)
+                {
+                    var extractPath = Path.Combine(savePath, reader.FileName + "_unpacked");
+                    return ExtractStreamFile(extractPath, mhy0File.fileList);
+                }
+            }
+            catch (InvalidCastException)
+            {
+                Logger.Error($"Game type mismatch, Expected {nameof(Mhy0)} but got {Game.Name} ({Game.GetType().Name}) !!");
             }
             return 0;
         }
@@ -143,165 +203,29 @@ namespace AssetStudioCLI
             return extractedCount;
         }
 
-        public static List<AssetEntry> BuildAssetMap(List<string> files, ClassIDType[] typeFilters, Regex[] nameFilters, Regex[] containerFilters)
+        public static void UpdateContainers()
         {
-            var assets = new List<AssetEntry>();
-            for (int i = 0; i < files.Count; i++)
+            if (exportableAssets.Count > 0)
             {
-                var file = files[i];
-                var reader = new FileReader(file, Game);
-                var gameFile = new GameFile(reader);
-                reader.Dispose();
-
-                foreach (var bundle in gameFile.Bundles)
+                Logger.Info("Updating Containers...");
+                foreach (var asset in exportableAssets)
                 {
-                    foreach (var cab in bundle.Value)
+                    if (int.TryParse(asset.Container, out var value))
                     {
-                        var dummyPath = Path.Combine(Path.GetDirectoryName(file), cab.fileName);
-                        using (var cabReader = new FileReader(dummyPath, cab.stream, Game))
+                        var last = unchecked((uint)value);
+                        var path = ResourceIndex.GetAssetPath(last);
+                        if (!string.IsNullOrEmpty(path))
                         {
-                            if (cabReader.FileType == FileType.AssetsFile)
+                            asset.Container = path;
+                            if (asset.Type == ClassIDType.MiHoYoBinData)
                             {
-                                var assetsFile = new SerializedFile(cabReader, assetsManager, file);
-                                assetsManager.assetsFileList.Add(assetsFile);
-
-                                assetsFile.m_Objects = assetsFile.m_Objects.Where(x => x.HasExportableType()).ToList();
-
-                                IndexObject indexObject = null;
-                                var containers = new List<(PPtr<Object>, string)>(assetsFile.m_Objects.Count);
-                                var animators = new List<(PPtr<GameObject>, AssetEntry)>(assetsFile.m_Objects.Count);
-                                var objectAssetItemDic = new Dictionary<Object, AssetEntry>(assetsFile.m_Objects.Count);
-                                foreach (var objInfo in assetsFile.m_Objects)
-                                {
-                                    var objectReader = new ObjectReader(assetsFile.reader, assetsFile, objInfo);
-                                    var obj = new Object(objectReader);
-                                    var asset = new AssetEntry()
-                                    {
-                                        Source = file,
-                                        PathID = objectReader.m_PathID,
-                                        Type = objectReader.type,
-                                        Container = ""
-                                    };
-
-                                    var exportable = true;
-                                    switch (objectReader.type)
-                                    {
-                                        case ClassIDType.AssetBundle:
-                                            var assetBundle = new AssetBundle(objectReader);
-                                            foreach (var m_Container in assetBundle.Container)
-                                            {
-                                                var preloadIndex = m_Container.Value.preloadIndex;
-                                                var preloadSize = m_Container.Value.preloadSize;
-                                                var preloadEnd = preloadIndex + preloadSize;
-                                                for (int k = preloadIndex; k < preloadEnd; k++)
-                                                {
-                                                    if (Game.Name == "GI" || Game.Name == "GI_CB2" || Game.Name == "GI_CB3")
-                                                    {
-                                                        if (long.TryParse(m_Container.Key, out var containerValue))
-                                                        {
-                                                            var last = unchecked((uint)containerValue);
-                                                            var path = ResourceIndex.GetBundlePath(last);
-                                                            if (!string.IsNullOrEmpty(path))
-                                                            {
-                                                                containers.Add((assetBundle.PreloadTable[k], path));
-                                                                continue;
-                                                            }
-                                                        }
-                                                    }
-                                                    containers.Add((assetBundle.PreloadTable[k], m_Container.Key));
-                                                }
-                                            }
-                                            obj = null;
-                                            asset.Name = assetBundle.m_Name;
-                                            exportable = AssetBundle.Exportable;
-                                            break;
-                                        case ClassIDType.GameObject:
-                                            var gameObject = new GameObject(objectReader);
-                                            obj = gameObject;
-                                            asset.Name = gameObject.m_Name;
-                                            exportable = false;
-                                            break;
-                                        case ClassIDType.Shader:
-                                            asset.Name = objectReader.ReadAlignedString();
-                                            if (string.IsNullOrEmpty(asset.Name))
-                                            {
-                                                var m_parsedForm = new SerializedShader(objectReader);
-                                                asset.Name = m_parsedForm.m_Name;
-                                            }
-                                            break;
-                                        case ClassIDType.Animator:
-                                            var component = new PPtr<GameObject>(objectReader);
-                                            animators.Add((component, asset));
-                                            asset.Name = "Animator";
-                                            break;
-                                        case ClassIDType.MiHoYoBinData:
-                                            if (indexObject.Names.TryGetValue(objectReader.m_PathID, out var binName))
-                                            {
-                                                var path = ResourceIndex.GetContainerFromBinName(file, binName);
-                                                asset.Container = path;
-                                                asset.Name = !string.IsNullOrEmpty(path) ? Path.GetFileName(path) : binName;
-                                            }
-                                            exportable = IndexObject.Exportable;
-                                            break;
-                                        case ClassIDType.IndexObject:
-                                            indexObject = new IndexObject(objectReader);
-                                            obj = null;
-                                            asset.Name = "IndexObject";
-                                            exportable = IndexObject.Exportable;
-                                            break;
-                                        default:
-                                            asset.Name = objectReader.ReadAlignedString();
-                                            break;
-                                    }
-                                    if (obj != null)
-                                    {
-                                        objectAssetItemDic.Add(obj, asset);
-                                        assetsFile.AddObject(obj);
-                                    }
-                                    var isMatchRegex = nameFilters.Length == 0 || nameFilters.Any(x => x.IsMatch(asset.Name) || asset.Type == ClassIDType.Animator);
-                                    var isFilteredType = typeFilters.Length == 0 || typeFilters.Contains(asset.Type) || asset.Type == ClassIDType.Animator;
-                                    if (isMatchRegex && isFilteredType && exportable)
-                                    {
-                                        assets.Add(asset);
-                                    }
-                                }
-                                foreach (var pair in animators)
-                                {
-                                    if (pair.Item1.TryGet(out var gameObject) && gameObject is GameObject && (nameFilters.Length == 0 || nameFilters.Any(x => x.IsMatch(gameObject.m_Name))) && (typeFilters.Length == 0 || typeFilters.Contains(pair.Item2.Type)))
-                                    {
-                                        pair.Item2.Name = gameObject.m_Name;
-                                    }
-                                    else
-                                    {
-                                        assets.Remove(pair.Item2);
-                                    }
-                                }
-                                foreach ((var pptr, var container) in containers)
-                                {
-                                    if (pptr.TryGet(out var obj))
-                                    {
-                                        var item = objectAssetItemDic[obj];
-                                        if (containerFilters.Length == 0 || containerFilters.Any(x => x.IsMatch(container)))
-                                        {
-                                            item.Container = container;
-                                        }
-                                        else
-                                        {
-                                            assets.Remove(item);
-                                        }
-                                    }
-                                }
-                                assetsManager.assetsFileList.Clear();
+                                asset.Text = Path.GetFileNameWithoutExtension(path);
                             }
                         }
                     }
                 }
-
-                Logger.Info($"[{i + 1}/{files.Count}] Processed {Path.GetFileName(file)}");
-                Progress.Report(i + 1, files.Count);
+                Logger.Info("Updated !!");
             }
-
-            return assets;
         }
 
         public static void BuildAssetData(ClassIDType[] typeFilters, Regex[] nameFilters, Regex[] containerFilters, ref int i)
@@ -309,6 +233,7 @@ namespace AssetStudioCLI
             string productName = null;
             var objectCount = assetsManager.assetsFileList.Sum(x => x.Objects.Count);
             var objectAssetItemDic = new Dictionary<Object, AssetItem>(objectCount);
+            var mihoyoBinDataNames = new List<(PPtr<Object>, string)>();
             var containers = new List<(PPtr<Object>, string)>();
             foreach (var assetsFile in assetsManager.assetsFileList)
             {
@@ -359,6 +284,7 @@ namespace AssetStudioCLI
                             {
                                 assetItem.Text = gameObject.m_Name;
                             }
+                            exportable = true;
                             break;
                         case MonoBehaviour m_MonoBehaviour:
                             if (m_MonoBehaviour.m_Name == "" && m_MonoBehaviour.m_Script.TryGet(out var m_Script))
@@ -374,70 +300,33 @@ namespace AssetStudioCLI
                             productName = m_PlayerSettings.productName;
                             break;
                         case AssetBundle m_AssetBundle:
-                            foreach (var m_Container in m_AssetBundle.Container)
+                            foreach (var m_Container in m_AssetBundle.m_Container)
                             {
                                 var preloadIndex = m_Container.Value.preloadIndex;
                                 var preloadSize = m_Container.Value.preloadSize;
                                 var preloadEnd = preloadIndex + preloadSize;
                                 for (int k = preloadIndex; k < preloadEnd; k++)
                                 {
-                                    if (Game.Name == "GI" || Game.Name == "GI_CB2" || Game.Name == "GI_CB3")
-                                    {
-                                        if (long.TryParse(m_Container.Key, out var containerValue))
-                                        {
-                                            var last = unchecked((uint)containerValue);
-                                            var path = ResourceIndex.GetBundlePath(last);
-                                            if (!string.IsNullOrEmpty(path))
-                                            {
-                                                containers.Add((m_AssetBundle.PreloadTable[k], path));
-                                                continue;
-                                            }
-                                        }
-                                    }
-                                    containers.Add((m_AssetBundle.PreloadTable[k], m_Container.Key));
+                                    containers.Add((m_AssetBundle.m_PreloadTable[k], m_Container.Key));
                                 }
                             }
                             assetItem.Text = m_AssetBundle.m_Name;
-                            exportable = AssetBundle.Exportable;
                             break;
                         case IndexObject m_IndexObject:
+                            foreach (var index in m_IndexObject.AssetMap)
+                            {
+                                mihoyoBinDataNames.Add((index.Value.Object, index.Key));
+                            }
                             assetItem.Text = "IndexObject";
-                            exportable = IndexObject.Exportable;
+                            break;
+                        case MiHoYoBinData m_MiHoYoBinData:
+                            exportable = MiHoYoBinData.Exportable;
                             break;
                         case ResourceManager m_ResourceManager:
                             foreach (var m_Container in m_ResourceManager.m_Container)
                             {
                                 containers.Add((m_Container.Value, m_Container.Key));
                             }
-                            break;
-                        case MiHoYoBinData m_MiHoYoBinData:
-                            if (m_MiHoYoBinData.assetsFile.ObjectsDic.TryGetValue(2, out var obj) && obj is IndexObject indexObject)
-                            {
-                                if (indexObject.Names.TryGetValue(m_MiHoYoBinData.m_PathID, out var binName))
-                                {
-                                    string path = "";
-                                    var game = GameManager.GetGame("GI");
-                                    if (Path.GetExtension(assetsFile.originalPath) == game.Extension)
-                                    {
-                                        var blkName = Path.GetFileNameWithoutExtension(assetsFile.originalPath);
-                                        var blk = Convert.ToUInt64(blkName);
-                                        var lastHex = Convert.ToUInt32(binName, 16);
-                                        var blkHash = (blk << 32) | lastHex;
-                                        var index = ResourceIndex.GetAssetIndex(blkHash);
-                                        var bundleInfo = ResourceIndex.GetBundleInfo(index);
-                                        path = bundleInfo != null ? bundleInfo.Path : "";
-                                    }
-                                    else
-                                    {
-                                        var last = Convert.ToUInt32(binName, 16);
-                                        path = ResourceIndex.GetBundlePath(last) ?? "";
-                                    }
-                                    assetItem.Container = path;
-                                    assetItem.Text = !string.IsNullOrEmpty(path) ? Path.GetFileName(path) : binName;
-                                }
-                            }
-                            else assetItem.Text = string.Format("BinFile #{0}", assetItem.m_PathID);
-                            exportable = IndexObject.Exportable;
                             break;
                         case NamedObject m_NamedObject:
                             assetItem.Text = m_NamedObject.m_Name;
@@ -457,12 +346,25 @@ namespace AssetStudioCLI
                     }
                 }
             }
+            foreach ((var pptr, var name) in mihoyoBinDataNames)
+            {
+                if (pptr.TryGet<MiHoYoBinData>(out var obj))
+                {
+                    var assetItem = objectAssetItemDic[obj];
+                    if (int.TryParse(name, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var hash))
+                    {
+                        assetItem.Text = name;
+                        assetItem.Container = hash.ToString();
+                    }
+                    else assetItem.Text = $"BinFile #{assetItem.m_PathID}";
+                }
+            }
             foreach ((var pptr, var container) in containers)
             {
                 if (pptr.TryGet(out var obj))
                 {
                     var item = objectAssetItemDic[obj];
-                    if (containerFilters.Length == 0 || containerFilters.Any(x => x.IsMatch(container)))
+                    if (containerFilters.IsNullOrEmpty() || containerFilters.Any(x => x.IsMatch(container)))
                     {
                         item.Container = container;
                     }
@@ -471,6 +373,10 @@ namespace AssetStudioCLI
                         exportableAssets.Remove(item);
                     }
                 }
+            }
+            if (Game.Type.IsGISubGroup())
+            {
+                UpdateContainers();
             }
             containers.Clear();
         }

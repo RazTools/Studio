@@ -1,171 +1,100 @@
-﻿using System;
-using System.Runtime.InteropServices;
-using AssetStudio.PInvoke;
+﻿using System.Runtime.InteropServices;
 
 namespace AssetStudio.FbxInterop
 {
     partial class FbxExporterContext
     {
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr AsFbxCreateContext();
+        [LibraryImport(FbxDll.DllName)]
+        private static partial nint AsFbxCreateContext();
 
-        private static bool AsFbxInitializeContext(IntPtr context, string fileName, float scaleFactor, int versionIndex, bool isAscii, bool is60Fps, out string errorMessage)
-        {
-            bool b;
-            IntPtr pErrMsg;
-
-            using (var fileNameUtf8 = new Utf8StringHandle(fileName))
-            {
-                b = AsFbxInitializeContext(context, fileNameUtf8.DangerousGetHandle(), scaleFactor, versionIndex, isAscii, is60Fps, out pErrMsg);
-            }
-
-            errorMessage = Utf8StringHandle.ReadUtf8StringFromPointer(pErrMsg);
-
-            return b;
-        }
-
-        // Do not free the pointer strErrorMessage
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [LibraryImport(FbxDll.DllName, StringMarshalling = StringMarshalling.Utf8)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool AsFbxInitializeContext(IntPtr context, IntPtr strFileName, float scaleFactor, int versionIndex, [MarshalAs(UnmanagedType.Bool)] bool isAscii, [MarshalAs(UnmanagedType.Bool)] bool is60Fps, out IntPtr strErrorMessage);
+        private static partial bool AsFbxInitializeContext(nint context, string fileName, float scaleFactor, int versionIndex, [MarshalAs(UnmanagedType.Bool)] bool isAscii, [MarshalAs(UnmanagedType.Bool)] bool is60Fps, out string errorMessage);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxDisposeContext(ref IntPtr ppContext);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxDisposeContext(ref nint ppContext);
 
-        private static void AsFbxSetFramePaths(IntPtr context, string[] framePaths)
+        private static void AsFbxSetFramePaths(nint context, string[] framePaths) => AsFbxSetFramePaths(context, framePaths, framePaths.Length);
+
+        [LibraryImport(FbxDll.DllName, StringMarshalling = StringMarshalling.Utf8)]
+        private static partial void AsFbxSetFramePaths(nint context, string[] framePaths, int count);
+
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxExportScene(nint context);
+
+        [LibraryImport(FbxDll.DllName)]
+        private static partial nint AsFbxGetSceneRootNode(nint context);
+
+        private static nint AsFbxExportSingleFrame(nint context, nint parentNode, string framePath, string frameName, in Vector3 localPosition, in Vector3 localRotation, in Vector3 localScale)
         {
-            var framePathCount = framePaths.Length;
-
-            if (framePathCount == 0)
-            {
-                AsFbxSetFramePaths(context, Array.Empty<IntPtr>(), 0);
-            }
-            else
-            {
-                var utf8Paths = new Utf8StringHandle[framePathCount];
-
-                try
-                {
-                    for (var i = 0; i < framePathCount; i += 1)
-                    {
-                        utf8Paths[i] = new Utf8StringHandle(framePaths[i]);
-                    }
-
-                    var pathPointers = new IntPtr[framePathCount];
-
-                    for (var i = 0; i < framePathCount; i += 1)
-                    {
-                        pathPointers[i] = utf8Paths[i].DangerousGetHandle();
-                    }
-
-                    AsFbxSetFramePaths(context, pathPointers, framePathCount);
-                }
-                finally
-                {
-                    foreach (var path in utf8Paths)
-                    {
-                        path?.Dispose();
-                    }
-                }
-            }
+            return AsFbxExportSingleFrame(context, parentNode, framePath, frameName, localPosition.X, localPosition.Y, localPosition.Z, localRotation.X, localRotation.Y, localRotation.Z, localScale.X, localScale.Y, localScale.Z);
         }
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxSetFramePaths(IntPtr context, [MarshalAs(UnmanagedType.LPArray)] IntPtr[] strFramePaths, int count);
+        [LibraryImport(FbxDll.DllName, StringMarshalling = StringMarshalling.Utf8)]
+        private static partial nint AsFbxExportSingleFrame(nint context, nint parentNode, string strFramePath, string strFrameName, float localPositionX, float localPositionY, float localPositionZ, float localRotationX, float localRotationY, float localRotationZ, float localScaleX, float localScaleY, float localScaleZ);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxExportScene(IntPtr context);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxSetJointsNode_CastToBone(nint context, nint node, float boneSize);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr AsFbxGetSceneRootNode(IntPtr context);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxSetJointsNode_BoneInPath(nint context, nint node, float boneSize);
 
-        private static IntPtr AsFbxExportSingleFrame(IntPtr context, IntPtr parentNode, string framePath, string frameName, in Vector3 localPosition, in Vector3 localRotation, in Vector3 localScale)
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxSetJointsNode_Generic(nint context, nint node);
+
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxPrepareMaterials(nint context, int materialCount, int textureCount);
+
+        [LibraryImport(FbxDll.DllName, StringMarshalling = StringMarshalling.Utf8)]
+        private static partial nint AsFbxCreateTexture(nint context, string matTexName);
+
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxLinkTexture(int dest, nint texture, nint material, float offsetX, float offsetY, float scaleX, float scaleY);
+
+        [LibraryImport(FbxDll.DllName)]
+        private static partial nint AsFbxMeshCreateClusterArray(int boneCount);
+
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxMeshDisposeClusterArray(ref nint ppArray);
+
+        [LibraryImport(FbxDll.DllName)]
+        private static partial nint AsFbxMeshCreateCluster(nint context, nint boneNode);
+
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxMeshAddCluster(nint array, nint cluster);
+
+        [LibraryImport(FbxDll.DllName)]
+        private static partial nint AsFbxMeshCreateMesh(nint context, nint frameNode);
+
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxMeshInitControlPoints(nint mesh, int vertexCount);
+
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxMeshCreateElementNormal(nint mesh);
+
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxMeshCreateDiffuseUV(nint mesh, int uv);
+
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxMeshCreateNormalMapUV(nint mesh, int uv);
+
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxMeshCreateElementTangent(nint mesh);
+
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxMeshCreateElementVertexColor(nint mesh);
+
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxMeshCreateElementMaterial(nint mesh);
+
+        private static nint AsFbxCreateMaterial(nint pContext, string matName, in Color diffuse, in Color ambient, in Color emissive, in Color specular, in Color reflection, float shininess, float transparency)
         {
-            using (var framePathUtf8 = new Utf8StringHandle(framePath))
-            {
-                using (var frameNameUtf8 = new Utf8StringHandle(frameName))
-                {
-                    return AsFbxExportSingleFrame(context, parentNode, framePathUtf8.DangerousGetHandle(), frameNameUtf8.DangerousGetHandle(), localPosition.X, localPosition.Y, localPosition.Z, localRotation.X, localRotation.Y, localRotation.Z, localScale.X, localScale.Y, localScale.Z);
-                }
-            }
+            return AsFbxCreateMaterial(pContext, matName, diffuse.R, diffuse.G, diffuse.B, ambient.R, ambient.G, ambient.B, emissive.R, emissive.G, emissive.B, specular.R, specular.G, specular.B, reflection.R, reflection.G, reflection.B, shininess, transparency);
         }
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr AsFbxExportSingleFrame(IntPtr context, IntPtr parentNode, IntPtr strFramePath, IntPtr strFrameName, float localPositionX, float localPositionY, float localPositionZ, float localRotationX, float localRotationY, float localRotationZ, float localScaleX, float localScaleY, float localScaleZ);
-
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxSetJointsNode_CastToBone(IntPtr context, IntPtr node, float boneSize);
-
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxSetJointsNode_BoneInPath(IntPtr context, IntPtr node, float boneSize);
-
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxSetJointsNode_Generic(IntPtr context, IntPtr node);
-
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxPrepareMaterials(IntPtr context, int materialCount, int textureCount);
-
-        private static IntPtr AsFbxCreateTexture(IntPtr context, string matTexName)
-        {
-            using (var matTexNameUtf8 = new Utf8StringHandle(matTexName))
-            {
-                return AsFbxCreateTexture(context, matTexNameUtf8.DangerousGetHandle());
-            }
-        }
-
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr AsFbxCreateTexture(IntPtr context, IntPtr strMatTexName);
-
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxLinkTexture(int dest, IntPtr texture, IntPtr material, float offsetX, float offsetY, float scaleX, float scaleY);
-
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr AsFbxMeshCreateClusterArray(int boneCount);
-
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxMeshDisposeClusterArray(ref IntPtr ppArray);
-
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr AsFbxMeshCreateCluster(IntPtr context, IntPtr boneNode);
-
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxMeshAddCluster(IntPtr array, IntPtr cluster);
-
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr AsFbxMeshCreateMesh(IntPtr context, IntPtr frameNode);
-
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxMeshInitControlPoints(IntPtr mesh, int vertexCount);
-
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxMeshCreateElementNormal(IntPtr mesh);
-
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxMeshCreateDiffuseUV(IntPtr mesh, int uv);
-
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxMeshCreateNormalMapUV(IntPtr mesh, int uv);
-
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxMeshCreateElementTangent(IntPtr mesh);
-
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxMeshCreateElementVertexColor(IntPtr mesh);
-
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxMeshCreateElementMaterial(IntPtr mesh);
-
-        private static IntPtr AsFbxCreateMaterial(IntPtr pContext, string matName, in Color diffuse, in Color ambient, in Color emissive, in Color specular, in Color reflection, float shininess, float transparency)
-        {
-            using (var matNameUtf8 = new Utf8StringHandle(matName))
-            {
-                return AsFbxCreateMaterial(pContext, matNameUtf8.DangerousGetHandle(), diffuse.R, diffuse.G, diffuse.B, ambient.R, ambient.G, ambient.B, emissive.R, emissive.G, emissive.B, specular.R, specular.G, specular.B, reflection.R, reflection.G, reflection.B, shininess, transparency);
-            }
-        }
-
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr AsFbxCreateMaterial(IntPtr pContext, IntPtr pMatName,
+        [LibraryImport(FbxDll.DllName, StringMarshalling = StringMarshalling.Utf8)]
+        private static partial nint AsFbxCreateMaterial(nint pContext, string pMatName,
             float diffuseR, float diffuseG, float diffuseB,
             float ambientR, float ambientG, float ambientB,
             float emissiveR, float emissiveG, float emissiveB,
@@ -173,153 +102,121 @@ namespace AssetStudio.FbxInterop
             float reflectR, float reflectG, float reflectB,
             float shininess, float transparency);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int AsFbxAddMaterialToFrame(IntPtr frameNode, IntPtr material);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial int AsFbxAddMaterialToFrame(nint frameNode, nint material);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxSetFrameShadingModeToTextureShading(IntPtr frameNode);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxSetFrameShadingModeToTextureShading(nint frameNode);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxMeshSetControlPoint(IntPtr mesh, int index, float x, float y, float z);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxMeshSetControlPoint(nint mesh, int index, float x, float y, float z);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxMeshAddPolygon(IntPtr mesh, int materialIndex, int index0, int index1, int index2);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxMeshAddPolygon(nint mesh, int materialIndex, int index0, int index1, int index2);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxMeshElementNormalAdd(IntPtr mesh, int elementIndex, float x, float y, float z);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxMeshElementNormalAdd(nint mesh, int elementIndex, float x, float y, float z);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxMeshElementUVAdd(IntPtr mesh, int elementIndex, float u, float v);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxMeshElementUVAdd(nint mesh, int elementIndex, float u, float v);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxMeshElementTangentAdd(IntPtr mesh, int elementIndex, float x, float y, float z, float w);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxMeshElementTangentAdd(nint mesh, int elementIndex, float x, float y, float z, float w);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxMeshElementVertexColorAdd(IntPtr mesh, int elementIndex, float r, float g, float b, float a);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxMeshElementVertexColorAdd(nint mesh, int elementIndex, float r, float g, float b, float a);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxMeshSetBoneWeight(IntPtr pClusterArray, int boneIndex, int vertexIndex, float weight);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxMeshSetBoneWeight(nint pClusterArray, int boneIndex, int vertexIndex, float weight);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr AsFbxMeshCreateSkinContext(IntPtr context, IntPtr frameNode);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial nint AsFbxMeshCreateSkinContext(nint context, nint frameNode);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxMeshDisposeSkinContext(ref IntPtr ppSkinContext);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxMeshDisposeSkinContext(ref nint ppSkinContext);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [LibraryImport(FbxDll.DllName)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool FbxClusterArray_HasItemAt(IntPtr pClusterArray, int index);
+        private static partial bool FbxClusterArray_HasItemAt(nint pClusterArray, int index);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private unsafe static extern void AsFbxMeshSkinAddCluster(IntPtr pSkinContext, IntPtr pClusterArray, int index, float* pBoneMatrix);
+        [LibraryImport(FbxDll.DllName)]
+        private static unsafe partial void AsFbxMeshSkinAddCluster(nint pSkinContext, nint pClusterArray, int index, float* pBoneMatrix);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxMeshAddDeformer(IntPtr pSkinContext, IntPtr pMesh);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxMeshAddDeformer(nint pSkinContext, nint pMesh);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr AsFbxAnimCreateContext([MarshalAs(UnmanagedType.Bool)] bool eulerFilter);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial nint AsFbxAnimCreateContext([MarshalAs(UnmanagedType.Bool)] bool eulerFilter);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxAnimDisposeContext(ref IntPtr ppAnimContext);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxAnimDisposeContext(ref nint ppAnimContext);
 
-        private static void AsFbxAnimPrepareStackAndLayer(IntPtr pContext, IntPtr pAnimContext, string takeName)
-        {
-            using (var takeNameUtf8 = new Utf8StringHandle(takeName))
-            {
-                AsFbxAnimPrepareStackAndLayer(pContext, pAnimContext, takeNameUtf8.DangerousGetHandle());
-            }
-        }
+        [LibraryImport(FbxDll.DllName, StringMarshalling = StringMarshalling.Utf8)]
+        private static partial void AsFbxAnimPrepareStackAndLayer(nint pContext, nint pAnimContext, string takeName);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxAnimPrepareStackAndLayer(IntPtr pContext, IntPtr pAnimContext, IntPtr strTakeName);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxAnimLoadCurves(nint pNode, nint pAnimContext);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxAnimLoadCurves(IntPtr pNode, IntPtr pAnimContext);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxAnimBeginKeyModify(nint pAnimContext);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxAnimBeginKeyModify(IntPtr pAnimContext);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxAnimEndKeyModify(nint pAnimContext);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxAnimEndKeyModify(IntPtr pAnimContext);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxAnimAddScalingKey(nint pAnimContext, float time, float x, float y, float z);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxAnimAddScalingKey(IntPtr pAnimContext, float time, float x, float y, float z);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxAnimAddRotationKey(nint pAnimContext, float time, float x, float y, float z);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxAnimAddRotationKey(IntPtr pAnimContext, float time, float x, float y, float z);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxAnimAddTranslationKey(nint pAnimContext, float time, float x, float y, float z);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxAnimAddTranslationKey(IntPtr pAnimContext, float time, float x, float y, float z);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxAnimApplyEulerFilter(nint pAnimContext, float filterPrecision);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxAnimApplyEulerFilter(IntPtr pAnimContext, float filterPrecision);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial int AsFbxAnimGetCurrentBlendShapeChannelCount(nint pAnimContext, nint pNode);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int AsFbxAnimGetCurrentBlendShapeChannelCount(IntPtr pAnimContext, IntPtr pNode);
-
-        private static bool AsFbxAnimIsBlendShapeChannelMatch(IntPtr pAnimContext, int channelIndex, string channelName)
-        {
-            using (var channelNameUtf8 = new Utf8StringHandle(channelName))
-            {
-                return AsFbxAnimIsBlendShapeChannelMatch(pAnimContext, channelIndex, channelNameUtf8.DangerousGetHandle());
-            }
-        }
-
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [LibraryImport(FbxDll.DllName, StringMarshalling = StringMarshalling.Utf8)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool AsFbxAnimIsBlendShapeChannelMatch(IntPtr pAnimContext, int channelIndex, IntPtr strChannelName);
+        private static partial bool AsFbxAnimIsBlendShapeChannelMatch(nint pAnimContext, int channelIndex, string channelName);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxAnimBeginBlendShapeAnimCurve(IntPtr pAnimContext, int channelIndex);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxAnimBeginBlendShapeAnimCurve(nint pAnimContext, int channelIndex);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxAnimEndBlendShapeAnimCurve(IntPtr pAnimContext);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxAnimEndBlendShapeAnimCurve(nint pAnimContext);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxAnimAddBlendShapeKeyframe(IntPtr pAnimContext, float time, float value);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxAnimAddBlendShapeKeyframe(nint pAnimContext, float time, float value);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr AsFbxMorphCreateContext();
+        [LibraryImport(FbxDll.DllName)]
+        private static partial nint AsFbxMorphCreateContext();
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxMorphInitializeContext(IntPtr pContext, IntPtr pMorphContext, IntPtr pNode);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxMorphInitializeContext(nint pContext, nint pMorphContext, nint pNode);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxMorphDisposeContext(ref IntPtr ppMorphContext);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxMorphDisposeContext(ref nint ppMorphContext);
 
-        private static void AsFbxMorphAddBlendShapeChannel(IntPtr pContext, IntPtr pMorphContext, string channelName)
-        {
-            using (var channelNameUtf8 = new Utf8StringHandle(channelName))
-            {
-                AsFbxMorphAddBlendShapeChannel(pContext, pMorphContext, channelNameUtf8.DangerousGetHandle());
-            }
-        }
+        [LibraryImport(FbxDll.DllName, StringMarshalling = StringMarshalling.Utf8)]
+        private static partial void AsFbxMorphAddBlendShapeChannel(nint pContext, nint pMorphContext, string channelName);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxMorphAddBlendShapeChannel(IntPtr pContext, IntPtr pMorphContext, IntPtr strChannelName);
+        [LibraryImport(FbxDll.DllName, StringMarshalling = StringMarshalling.Utf8)]
+        private static partial void AsFbxMorphAddBlendShapeChannelShape(nint pContext, nint pMorphContext, float weight, string shapeName);
 
-        private static void AsFbxMorphAddBlendShapeChannelShape(IntPtr pContext, IntPtr pMorphContext, float weight, string shapeName)
-        {
-            using (var shapeNameUtf8 = new Utf8StringHandle(shapeName))
-            {
-                AsFbxMorphAddBlendShapeChannelShape(pContext, pMorphContext, weight, shapeNameUtf8.DangerousGetHandle());
-            }
-        }
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxMorphCopyBlendShapeControlPoints(nint pMorphContext);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxMorphAddBlendShapeChannelShape(IntPtr pContext, IntPtr pMorphContext, float weight, IntPtr strShapeName);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxMorphSetBlendShapeVertex(nint pMorphContext, uint index, float x, float y, float z);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxMorphCopyBlendShapeControlPoints(IntPtr pMorphContext);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxMorphCopyBlendShapeControlPointsNormal(nint pMorphContext);
 
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxMorphSetBlendShapeVertex(IntPtr pMorphContext, uint index, float x, float y, float z);
-
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxMorphCopyBlendShapeControlPointsNormal(IntPtr pMorphContext);
-
-        [DllImport(FbxDll.DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern void AsFbxMorphSetBlendShapeVertexNormal(IntPtr pMorphContext, uint index, float x, float y, float z);
+        [LibraryImport(FbxDll.DllName)]
+        private static partial void AsFbxMorphSetBlendShapeVertexNormal(nint pMorphContext, uint index, float x, float y, float z);
 
     }
 }

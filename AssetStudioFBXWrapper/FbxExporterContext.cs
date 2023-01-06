@@ -9,17 +9,17 @@ namespace AssetStudio.FbxInterop
     internal sealed partial class FbxExporterContext : IDisposable
     {
 
-        private IntPtr _pContext;
-        private readonly Dictionary<ImportedFrame, IntPtr> _frameToNode;
-        private readonly List<KeyValuePair<string, IntPtr>> _createdMaterials;
-        private readonly Dictionary<string, IntPtr> _createdTextures;
+        private nint _pContext;
+        private readonly Dictionary<ImportedFrame, nint> _frameToNode;
+        private readonly List<KeyValuePair<string, nint>> _createdMaterials;
+        private readonly Dictionary<string, nint> _createdTextures;
 
         public FbxExporterContext()
         {
             _pContext = AsFbxCreateContext();
-            _frameToNode = new Dictionary<ImportedFrame, IntPtr>();
-            _createdMaterials = new List<KeyValuePair<string, IntPtr>>();
-            _createdTextures = new Dictionary<string, IntPtr>();
+            _frameToNode = new Dictionary<ImportedFrame, nint>();
+            _createdMaterials = new List<KeyValuePair<string, nint>>();
+            _createdTextures = new Dictionary<string, nint>();
         }
 
         ~FbxExporterContext()
@@ -98,9 +98,9 @@ namespace AssetStudio.FbxInterop
         {
             var rootNode = AsFbxGetSceneRootNode(_pContext);
 
-            Debug.Assert(rootNode != IntPtr.Zero);
+            Debug.Assert(rootNode != nint.Zero);
 
-            var nodeStack = new Stack<IntPtr>();
+            var nodeStack = new Stack<nint>();
             var frameStack = new Stack<ImportedFrame>();
 
             nodeStack.Push(rootNode);
@@ -140,7 +140,7 @@ namespace AssetStudio.FbxInterop
 
                 if (_frameToNode.TryGetValue(frame, out var node))
                 {
-                    Debug.Assert(node != IntPtr.Zero);
+                    Debug.Assert(node != nint.Zero);
 
                     if (castToBone)
                     {
@@ -181,11 +181,11 @@ namespace AssetStudio.FbxInterop
             ExportMesh(rootFrame, materialList, textureList, meshNode, mesh, exportSkins, exportAllUvsAsDiffuseMaps);
         }
 
-        private IntPtr ExportTexture(ImportedTexture texture)
+        private nint ExportTexture(ImportedTexture texture)
         {
             if (texture == null)
             {
-                return IntPtr.Zero;
+                return nint.Zero;
             }
 
             if (_createdTextures.ContainsKey(texture.Name))
@@ -207,7 +207,7 @@ namespace AssetStudio.FbxInterop
             return pTex;
         }
 
-        private void ExportMesh(ImportedFrame rootFrame, List<ImportedMaterial> materialList, List<ImportedTexture> textureList, IntPtr frameNode, ImportedMesh importedMesh, bool exportSkins, bool exportAllUvsAsDiffuseMaps)
+        private void ExportMesh(ImportedFrame rootFrame, List<ImportedMaterial> materialList, List<ImportedTexture> textureList, nint frameNode, ImportedMesh importedMesh, bool exportSkins, bool exportAllUvsAsDiffuseMaps)
         {
             var boneList = importedMesh.BoneList;
             var totalBoneCount = 0;
@@ -218,7 +218,7 @@ namespace AssetStudio.FbxInterop
                 hasBones = true;
             }
 
-            var pClusterArray = IntPtr.Zero;
+            var pClusterArray = nint.Zero;
 
             try
             {
@@ -239,7 +239,7 @@ namespace AssetStudio.FbxInterop
                         }
                         else
                         {
-                            AsFbxMeshAddCluster(pClusterArray, IntPtr.Zero);
+                            AsFbxMeshAddCluster(pClusterArray, nint.Zero);
                         }
                     }
                 }
@@ -287,7 +287,7 @@ namespace AssetStudio.FbxInterop
                     if (mat != null)
                     {
                         var foundMat = _createdMaterials.FindIndex(kv => kv.Key == mat.Name);
-                        IntPtr pMat;
+                        nint pMat;
 
                         if (foundMat >= 0)
                         {
@@ -303,7 +303,7 @@ namespace AssetStudio.FbxInterop
 
                             pMat = AsFbxCreateMaterial(_pContext, mat.Name, in diffuse, in ambient, in emissive, in specular, in reflection, mat.Shininess, mat.Transparency);
 
-                            _createdMaterials.Add(new KeyValuePair<string, IntPtr>(mat.Name, pMat));
+                            _createdMaterials.Add(new KeyValuePair<string, nint>(mat.Name, pMat));
                         }
 
                         materialIndex = AsFbxAddMaterialToFrame(frameNode, pMat);
@@ -315,7 +315,7 @@ namespace AssetStudio.FbxInterop
                             var tex = ImportedHelpers.FindTexture(texture.Name, textureList);
                             var pTexture = ExportTexture(tex);
 
-                            if (pTexture != IntPtr.Zero)
+                            if (pTexture != nint.Zero)
                             {
                                 switch (texture.Dest)
                                 {
@@ -406,7 +406,7 @@ namespace AssetStudio.FbxInterop
 
                 if (hasBones)
                 {
-                    IntPtr pSkinContext = IntPtr.Zero;
+                    nint pSkinContext = nint.Zero;
 
                     try
                     {
@@ -471,7 +471,7 @@ namespace AssetStudio.FbxInterop
                 return;
             }
 
-            var pAnimContext = IntPtr.Zero;
+            var pAnimContext = nint.Zero;
 
             try
             {
@@ -502,7 +502,7 @@ namespace AssetStudio.FbxInterop
             }
         }
 
-        private void ExportKeyframedAnimation(ImportedFrame rootFrame, ImportedKeyframedAnimation parser, IntPtr pAnimContext, float filterPrecision)
+        private void ExportKeyframedAnimation(ImportedFrame rootFrame, ImportedKeyframedAnimation parser, nint pAnimContext, float filterPrecision)
         {
             foreach (var track in parser.TrackList)
             {
@@ -593,7 +593,7 @@ namespace AssetStudio.FbxInterop
 
                 var pNode = _frameToNode[frame];
 
-                var pMorphContext = IntPtr.Zero;
+                var pMorphContext = nint.Zero;
 
                 try
                 {

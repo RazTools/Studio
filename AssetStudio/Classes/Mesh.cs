@@ -1,12 +1,9 @@
-﻿using SevenZip;
-using System;
+﻿using System;
+using System.Buffers.Binary;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
-using System.Text;
-using System.Xml.Linq;
 
 namespace AssetStudio
 {
@@ -15,7 +12,7 @@ namespace AssetStudio
         public Vector3 m_Min;
         public Vector3 m_Max;
 
-        public MinMaxAABB(BinaryReader reader)
+        public MinMaxAABB(EndianBinaryReader reader)
         {
             m_Min = reader.ReadVector3();
             m_Max = reader.ReadVector3();
@@ -300,7 +297,6 @@ namespace AssetStudio
 
     public class MeshBlendShape
     {
-        public string name;
         public uint firstVertex;
         public uint vertexCount;
         public bool hasNormals;
@@ -312,7 +308,7 @@ namespace AssetStudio
 
             if (version[0] == 4 && version[1] < 3) //4.3 down
             {
-                name = reader.ReadAlignedString();
+                var name = reader.ReadAlignedString();
             }
             firstVertex = reader.ReadUInt32();
             vertexCount = reader.ReadUInt32();
@@ -327,11 +323,6 @@ namespace AssetStudio
             {
                 reader.AlignStream();
             }
-        }
-
-        public bool IsCRCMatch(uint digest)
-        {
-            return CRC.VerifyDigestUTF8(name, digest);
         }
     }
 
@@ -404,20 +395,9 @@ namespace AssetStudio
                 }
             }
         }
-        public string FindShapeNameByCRC(uint crc)
-        {
-            foreach (var blendChannel in channels)
-            {
-                if (blendChannel.nameHash == crc)
-                {
-                    return blendChannel.name;
-                }
-            }
-            return null;
-        }
     }
 
-    public enum GfxPrimitiveType : int
+    public enum GfxPrimitiveType
     {
         Triangles = 0,
         TriangleStrip = 1,
@@ -560,7 +540,7 @@ namespace AssetStudio
                         var m_StreamCompression = reader.ReadByte();
                     }
                     var m_IsReadable = reader.ReadBoolean();
-                    if (reader.Game.Name == "BH3")
+                    if (reader.Game.Type.IsBH3())
                     {
                         var m_IsHighPrecisionPosition = reader.ReadBoolean();
                         var m_IsHighPrecisionTangent = reader.ReadBoolean();
@@ -568,9 +548,9 @@ namespace AssetStudio
                     }
                     var m_KeepVertices = reader.ReadBoolean();
                     var m_KeepIndices = reader.ReadBoolean();
-                    reader.AlignStream();
                 }
-                if (reader.Game.Name == "GI" || reader.Game.Name == "GI_CB2" || reader.Game.Name == "GI_CB3")
+                reader.AlignStream();
+                if (reader.Game.Type.IsGISubGroup())
                 {
                     var m_PackSkinDataToUV2UV3 = reader.ReadBoolean();
                     reader.AlignStream();
@@ -665,7 +645,7 @@ namespace AssetStudio
                 m_CompressedMesh = new CompressedMesh(reader);
             }
 
-            var m_LocalAABB = new AABB(reader);
+            reader.Position += 24; //AABB m_LocalAABB
 
             if (version[0] < 3 || (version[0] == 3 && version[1] <= 4)) //3.4.2 and earlier
             {
@@ -683,19 +663,24 @@ namespace AssetStudio
 
             int m_MeshUsageFlags = reader.ReadInt32();
 
+            if (version[0] > 2022 || (version[0] == 2022 && version[1] >= 1)) //2022.1 and up
+            {
+                int m_CookingOptions = reader.ReadInt32();
+            }
+
             if (version[0] >= 5) //5.0 and up
             {
                 var m_BakedConvexCollisionMesh = reader.ReadUInt8Array();
                 reader.AlignStream();
                 var m_BakedTriangleCollisionMesh = reader.ReadUInt8Array();
                 reader.AlignStream();
-                if (reader.Game.Name == "BH3")
+                if (reader.Game.Type.IsBH3())
                 {
                     var m_MeshOptimized = reader.ReadBoolean();
                 }
             }
 
-            if (reader.Game.Name == "ZZZ_CB1")
+            if (reader.Game.Type.IsZZZCB1())
             {
                 var m_CloseMeshDynamicCompression = reader.ReadBoolean();
                 reader.AlignStream();
@@ -705,21 +690,20 @@ namespace AssetStudio
                 var m_CompressLevelTexCoordinates = reader.ReadInt32();
             }
 
-            if (reader.Game.Name == "GI" || reader.Game.Name == "GI_CB1" || reader.Game.Name == "GI_CB2" || reader.Game.Name == "GI_CB3"
-                || version[0] > 2018 || (version[0] == 2018 && version[1] >= 2)) //2018.2 and up
+            if (reader.Game.Type.IsGIGroup() || version[0] > 2018 || (version[0] == 2018 && version[1] >= 2)) //2018.2 and up
             {
                 var m_MeshMetrics = new float[2];
                 m_MeshMetrics[0] = reader.ReadSingle();
                 m_MeshMetrics[1] = reader.ReadSingle();
             }
 
-            if (reader.Game.Name == "GI" || reader.Game.Name == "GI_CB1" || reader.Game.Name == "GI_CB2" || reader.Game.Name == "GI_CB3")
+            if (reader.Game.Type.IsGIGroup())
             {
                 var m_MetricsDirty = reader.ReadBoolean();
                 reader.AlignStream();
                 var m_CloseMeshDynamicCompression = reader.ReadBoolean();
                 reader.AlignStream();
-                if (reader.Game.Name != "GI_CB1")
+                if (!reader.Game.Type.IsGICB1() && !reader.Game.Type.IsGIPack())
                 {
                     var m_IsStreamingMesh = reader.ReadBoolean();
                     reader.AlignStream();
@@ -830,13 +814,9 @@ namespace AssetStudio
                                     m_UV1 = componentsFloatArray;
                                     break;
                                 case 6: //kShaderChannelTexCoord2
-                                    if (reader.Game.Name == "GI" || reader.Game.Name == "GI_CB1" || reader.Game.Name == "GI_CB2" || reader.Game.Name == "GI_CB3")
-                                        continue;
                                     m_UV2 = componentsFloatArray;
                                     break;
                                 case 7: //kShaderChannelTexCoord3
-                                    if (reader.Game.Name == "GI" || reader.Game.Name == "GI_CB1" || reader.Game.Name == "GI_CB2" || reader.Game.Name == "GI_CB3")
-                                        continue;
                                     m_UV3 = componentsFloatArray;
                                     break;
                                 case 8: //kShaderChannelTexCoord4
@@ -900,8 +880,6 @@ namespace AssetStudio
                                     m_UV1 = componentsFloatArray;
                                     break;
                                 case 5:
-                                    if (reader.Game.Name == "GI" || reader.Game.Name == "GI_CB1" || reader.Game.Name == "GI_CB2" || reader.Game.Name == "GI_CB3")
-                                        continue;
                                     if (version[0] >= 5) //kShaderChannelTexCoord2
                                     {
                                         m_UV2 = componentsFloatArray;
@@ -912,8 +890,6 @@ namespace AssetStudio
                                     }
                                     break;
                                 case 6: //kShaderChannelTexCoord3
-                                    if (reader.Game.Name == "GI" || reader.Game.Name == "GI_CB1" || reader.Game.Name == "GI_CB2" || reader.Game.Name == "GI_CB3")
-                                        continue;
                                     m_UV3 = componentsFloatArray;
                                     break;
                                 case 7: //kShaderChannelTangent
@@ -1255,25 +1231,6 @@ namespace AssetStudio
                     throw new ArgumentOutOfRangeException();
             }
         }
-
-        public string FindBlendShapeNameByCRC(uint crc)
-        {
-            if (version[0] > 4 || (version[0] == 4 && version[1] >= 3))
-            {
-                return m_Shapes.FindShapeNameByCRC(crc);
-            }
-            else
-            {
-                foreach (var blendShape in m_Shapes.shapes)
-                {
-                    if (blendShape.IsCRCMatch(crc))
-                    {
-                        return blendShape.name;
-                    }
-                }
-                return null;
-            }
-        }
     }
 
     public static class MeshHelper
@@ -1419,7 +1376,7 @@ namespace AssetStudio
                 switch (format)
                 {
                     case VertexFormat.Float:
-                        result[i] = BitConverter.ToSingle(inputBytes, i * 4);
+                        result[i] = BinaryPrimitives.ReadSingleLittleEndian(inputBytes.AsSpan(i * 4));
                         break;
                     case VertexFormat.Float16:
                         result[i] = Half.ToHalf(inputBytes, i * 2);
@@ -1431,10 +1388,10 @@ namespace AssetStudio
                         result[i] = Math.Max((sbyte)inputBytes[i] / 127f, -1f);
                         break;
                     case VertexFormat.UNorm16:
-                        result[i] = BitConverter.ToUInt16(inputBytes, i * 2) / 65535f;
+                        result[i] = BinaryPrimitives.ReadUInt16LittleEndian(inputBytes.AsSpan(i * 2)) / 65535f;
                         break;
                     case VertexFormat.SNorm16:
-                        result[i] = Math.Max(BitConverter.ToInt16(inputBytes, i * 2) / 32767f, -1f);
+                        result[i] = Math.Max(BinaryPrimitives.ReadInt16LittleEndian(inputBytes.AsSpan(i * 2)) / 32767f, -1f);
                         break;
                 }
             }
@@ -1456,11 +1413,11 @@ namespace AssetStudio
                         break;
                     case VertexFormat.UInt16:
                     case VertexFormat.SInt16:
-                        result[i] = BitConverter.ToInt16(inputBytes, i * 2);
+                        result[i] = BinaryPrimitives.ReadInt16LittleEndian(inputBytes.AsSpan(i * 2));
                         break;
                     case VertexFormat.UInt32:
                     case VertexFormat.SInt32:
-                        result[i] = BitConverter.ToInt32(inputBytes, i * 4);
+                        result[i] = BinaryPrimitives.ReadInt32LittleEndian(inputBytes.AsSpan(i * 4));
                         break;
                 }
             }
