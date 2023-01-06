@@ -1,0 +1,28 @@
+image: Visual Studio 2022
+
+shallow_clone: true
+clone_depth: 1
+cache:
+    - '%APPVEYOR_BUILD_FOLDER%\AssetStudioFBXNative\obj'
+    - '%LocalAppData%\NuGet\v3-cache' # NuGet v3
+
+environment:
+    FBX_SDK: https://damassets.autodesk.net/content/dam/autodesk/www/adn/fbx/2020-3-2/fbx202032_fbxsdk_vs2019_win.exe
+    File_NAME: Studio
+    File_Format: zip
+
+install:
+    - pwsh: appveyor DownloadFile $env:FBX_SDK && Start (Get-ChildItem ./'fbx*'.exe -Name) /S -Wait
+    
+build_script:
+    - msbuild -m -t:AssetStudioGUI:publish -t:AssetStudioCLI:publish -r -p:Configuration=Release -v:minimal AssetStudio.sln
+
+after_build:
+    - ps: $env:TIME_STRING=(Get-Date -UFormat "%Y%m%d%H%M%S%a").ToString()
+    - 7z a -y -mx9 %File_NAME%-%TIME_STRING%.%File_Format% %APPVEYOR_BUILD_FOLDER%\AssetStudioGUI\bin\Release\net6.0-windows\publish\
+    - appveyor PushArtifact %APPVEYOR_BUILD_FOLDER%\%File_NAME%-%TIME_STRING%.%File_Format%
+
+# artifacts:
+#   - path: AssetStudioGUI\bin\Release\net6.0-windows\publish\
+#     name: "%File_NAME%-%TIME_STRING%.%File_Format%"
+#     type: zip
