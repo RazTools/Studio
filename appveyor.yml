@@ -13,7 +13,8 @@ install:
     - pwsh: appveyor DownloadFile $env:FBX_SDK && Start (Get-ChildItem ./'fbx*'.exe -Name) /S -Wait
     
 build_script:
-    - msbuild -m -t:AssetStudioGUI:publish -t:AssetStudioCLI:publish -r -p:Configuration=Release -v:minimal AssetStudio.sln
+    - msbuild -m -t:AssetStudioGUI:publish -t:AssetStudioCLI:publish -r -p:Configuration=Release -p:TargetFramework=net6.0-windows -v:minimal AssetStudio.sln
+    - msbuild -m -t:AssetStudioGUI:publish -t:AssetStudioCLI:publish -r -p:Configuration=Release -p:TargetFramework=net7.0-windows -v:minimal AssetStudio.sln
 
 after_build:
     - 7z a -y -mx9 net6.0-windows.zip %APPVEYOR_BUILD_FOLDER%\AssetStudioGUI\bin\Release\net6.0-windows\publish\
