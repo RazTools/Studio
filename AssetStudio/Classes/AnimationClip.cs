@@ -462,7 +462,14 @@ namespace AssetStudio
 
         public uint m_CurveCount;
         public uint m_ConstCurveCount;
-        public ACLClip(ObjectReader reader)
+        
+        public ACLClip()
+        {
+            m_CurveCount = 0;
+            m_ConstCurveCount = 0;
+            m_ClipData = Array.Empty<byte>();
+        }
+        public void Read(ObjectReader reader)
         {
             var byteCount = reader.ReadInt32();
 
@@ -481,6 +488,8 @@ namespace AssetStudio
                 m_ConstCurveCount = reader.ReadUInt32();
             }
         }
+
+        public bool IsSet => m_CurveCount > 0;
     }
 
     public class StreamedClip
@@ -646,7 +655,7 @@ namespace AssetStudio
 
     public class Clip
     {
-        public ACLClip m_ACLClip;
+        public ACLClip m_ACLClip = new();
         public StreamedClip m_StreamedClip;
         public DenseClip m_DenseClip;
         public ConstantClip m_ConstantClip;
@@ -659,7 +668,7 @@ namespace AssetStudio
             m_DenseClip = new DenseClip(reader);
             if (reader.Game.Type.IsSRGroup())
             {
-                m_ACLClip = new ACLClip(reader);
+                m_ACLClip.Read(reader);
             }
             if (version[0] > 4 || (version[0] == 4 && version[1] >= 3)) //4.3 and up
             {
@@ -667,7 +676,7 @@ namespace AssetStudio
             }
             if (reader.Game.Type.IsGIGroup() || reader.Game.Type.IsBH3() || reader.Game.Type.IsZZZCB1())
             {
-                m_ACLClip = new ACLClip(reader);
+                m_ACLClip.Read(reader);
             }
             if (version[0] < 2018 || (version[0] == 2018 && version[1] < 3)) //2018.3 down
             {
