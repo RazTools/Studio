@@ -110,35 +110,30 @@ namespace AssetStudio
             {
                 var mr0k = (Mr0k)game;
 
-                var bundleSize = 0;
+                long readSize = 0;
+                long bundleSize = 0;
                 reader.Position = 0;
-                Header header = null;
-                var pack = new { IsMr0k = false, BlockSize = -1 };
                 while (reader.Remaining > 0)
                 {
                     var pos = reader.Position;
                     var signature = reader.ReadStringToNull(4);
                     if (signature == PackSignature)
                     {
-                        pack = new { 
-                            IsMr0k = reader.ReadBoolean(), 
-                            BlockSize = BinaryPrimitives.ReadInt32LittleEndian(reader.ReadBytes(4)) 
-                        };
+                        var isMr0k = reader.ReadBoolean();
+                        var blockSize = BinaryPrimitives.ReadInt32LittleEndian(reader.ReadBytes(4));
 
-                        Span<byte> buffer = new byte[pack.BlockSize];
+                        Span<byte> buffer = new byte[blockSize];
                         reader.Read(buffer);
-                        if (pack.IsMr0k)
+                        if (isMr0k)
                         {
                             buffer = Mr0kUtils.Decrypt(buffer, mr0k);
                         }
                         ms.Write(buffer);
 
-                        bundleSize += buffer.Length;
-
-                        if (header == null)
+                        if (bundleSize == 0)
                         {
                             using var blockReader = new EndianBinaryReader(new MemoryStream(buffer.ToArray()));
-                            header = new Header()
+                            var header = new Header()
                             {
                                 signature = blockReader.ReadStringToNull(),
                                 version = blockReader.ReadUInt32(),
@@ -146,18 +141,20 @@ namespace AssetStudio
                                 unityRevision = blockReader.ReadStringToNull(),
                                 size = blockReader.ReadInt64()
                             };
+                            bundleSize = header.size;
                         }
 
-                        if (bundleSize % (PackSize - 0x80) == 0)
+                        readSize += buffer.Length;
+
+                        if (readSize % (PackSize - 0x80) == 0)
                         {
-                            reader.Position += PackSize - 9 - pack.BlockSize;
+                            reader.Position += PackSize - 9 - blockSize;
                         }
 
-                        if (bundleSize == header.size)
+                        if (readSize == bundleSize)
                         {
+                            readSize = 0;
                             bundleSize = 0;
-                            header = null;
-                            pack = new { IsMr0k = false, BlockSize = -1 };
                         }
 
                         continue;
@@ -167,7 +164,7 @@ namespace AssetStudio
                     signature = reader.ReadStringToNull();
                     if (signature == UnityFSSignature)
                     {
-                        header = new Header()
+                        var header = new Header()
                         {
                             signature = reader.ReadStringToNull(),
                             version = reader.ReadUInt32(),
@@ -178,7 +175,6 @@ namespace AssetStudio
 
                         reader.Position = pos;
                         reader.BaseStream.CopyTo(ms, header.size);
-                        header = null;
                         continue;
                     }
                     
