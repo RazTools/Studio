@@ -488,8 +488,6 @@ namespace AssetStudio
                 m_ConstCurveCount = reader.ReadUInt32();
             }
         }
-
-        public bool IsSet => m_CurveCount > 0;
     }
 
     public class StreamedClip

@@ -4,7 +4,7 @@ using AssetStudio.PInvoke;
 
 namespace ACLLibs
 {
-    public static partial class ACL
+    public static class ACL
     {
         private const string DLL_NAME = "acl";
         static ACL()
@@ -27,8 +27,8 @@ namespace ACLLibs
 
         #region importfunctions
 
-        [LibraryImport(DLL_NAME)]
-        private static partial void DecompressAll(IntPtr data, out IntPtr pValues, out int numValues, out IntPtr pTimes, out int numTimes);
+        [DllImport(DLL_NAME)]
+        private static extern void DecompressAll(IntPtr data, out IntPtr pValues, out int numValues, out IntPtr pTimes, out int numTimes);
 
         #endregion
     }
@@ -56,8 +56,8 @@ namespace ACLLibs
 
         #region importfunctions
 
-        [LibraryImport(DLL_NAME)]
-        private static partial void DecompressAll(IntPtr data, out IntPtr pValues, out int numValues, out IntPtr pTimes, out int numTimes);
+        [DllImport(DLL_NAME)]
+        private static extern void DecompressAll(IntPtr data, out IntPtr pValues, out int numValues, out IntPtr pTimes, out int numTimes);
 
         #endregion
     }

@@ -1045,8 +1045,8 @@ namespace AssetStudioGUI
                 Marshal.Copy(m_Font.m_FontData, 0, data, m_Font.m_FontData.Length);
 
                 uint cFonts = 0;
-                var re = FontHelper.AddFontMemResourceEx(data, (uint)m_Font.m_FontData.Length, nint.Zero, ref cFonts);
-                if (re != nint.Zero)
+                var re = FontHelper.AddFontMemResourceEx(data, (uint)m_Font.m_FontData.Length, IntPtr.Zero, ref cFonts);
+                if (re != IntPtr.Zero)
                 {
                     using (var pfc = new PrivateFontCollection())
                     {
@@ -2048,7 +2048,7 @@ namespace AssetStudioGUI
                 Application.Exit();
             }
 
-            result = system.init(2, FMOD.INITFLAGS.NORMAL, nint.Zero);
+            result = system.init(2, FMOD.INITFLAGS.NORMAL, IntPtr.Zero);
             if (ERRCHECK(result)) { return; }
 
             result = system.getMasterSoundGroup(out masterSoundGroup);

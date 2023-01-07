@@ -23,7 +23,7 @@ namespace AssetStudio
             var result = Factory.System_Create(out var system);
             if (result != RESULT.OK)
                 return null;
-            result = system.init(1, INITFLAGS.NORMAL, nint.Zero);
+            result = system.init(1, INITFLAGS.NORMAL, IntPtr.Zero);
             if (result != RESULT.OK)
                 return null;
             exinfo.cbsize = Marshal.SizeOf(exinfo);

@@ -12,8 +12,10 @@ namespace AssetStudio
         Bytes,
         JSON
     }
-    public sealed partial class MiHoYoBinData : Object
+    public sealed class MiHoYoBinData : Object
     {
+        private static Regex ASCII = new Regex("[^\u0020-\u007E]", RegexOptions.Compiled);
+
         public static bool Exportable;
         public static bool Encrypted;
         public static byte Key;
@@ -29,7 +31,7 @@ namespace AssetStudio
         public string AsString => Type switch
         {
             MiHoYoBinDataType.JSON => JToken.Parse(DataStr).ToString(Formatting.Indented),
-            MiHoYoBinDataType.Bytes => Chars().Replace(DataStr, string.Empty),
+            MiHoYoBinDataType.Bytes => ASCII.Replace(DataStr, string.Empty),
             _ => "",
         };
         public new object Dump() => Type switch
@@ -74,8 +76,5 @@ namespace AssetStudio
                 else return RawData;
             }
         }
-
-        [GeneratedRegex("[^\\u0020-\\u007E]")]
-        private static partial Regex Chars();
     }
 }
