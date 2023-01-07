@@ -46,11 +46,11 @@ namespace AssetStudio
             var keyHigh = BinaryPrimitives.ReadUInt64LittleEndian(key.AsSpan(8, 8));
             var seed = keyLow ^ keyHigh ^ keySeed ^ blk.InitSeed;
 
-            MT19937_64.Init(seed);
+            var mt64 = new MT19937_64(seed);
             var xorpad = new byte[KeySize];
             for (int i = 0; i < KeySize; i += 8)
             {
-                BinaryPrimitives.WriteUInt64LittleEndian(xorpad.AsSpan(i, 8), MT19937_64.Int64());
+                BinaryPrimitives.WriteUInt64LittleEndian(xorpad.AsSpan(i, 8), mt64.Int64());
             }
 
             return new CryptoStream(reader.BaseStream, xorpad);

@@ -1,6 +1,6 @@
 ﻿namespace AssetStudio
 {
-    public static class MT19937_64
+    public class MT19937_64
     {
         private const ulong N = 312;
         private const ulong M = 156;
@@ -8,10 +8,15 @@
         private const ulong UPPER_MASK = 0xFFFFFFFF80000000;
         private const ulong LOWER_MASK = 0X7FFFFFFFUL;
 
-        private static readonly ulong[] mt = new ulong[N + 1];
-        private static ulong mti = N + 1;
+        private readonly ulong[] mt = new ulong[N + 1];
+        private ulong mti = N + 1;
 
-        public static void Init(ulong seed)
+        public MT19937_64(ulong seed)
+        {
+            Init(seed);
+        }
+
+        public void Init(ulong seed)
         {
             mt[0] = seed;
             for (mti = 1; mti < N; mti++)
@@ -20,7 +25,7 @@
             }
         }
 
-        public static ulong Int64()
+        public ulong Int64()
         {
             ulong x;
             ulong[] mag01 = new ulong[2] { 0x0UL, MATRIX_A };
@@ -56,12 +61,12 @@
             return x;
         }
 
-        public static long Int63()
+        public long Int63()
         {
             return (long)(Int64() >> 1);
         }
 
-        public static ulong IntN(ulong value)
+        public ulong IntN(ulong value)
         {
             return (ulong)Int63() % value;
         }
