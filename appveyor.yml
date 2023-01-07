@@ -8,16 +8,16 @@ cache:
 
 environment:
     FBX_SDK: https://damassets.autodesk.net/content/dam/autodesk/www/adn/fbx/2020-3-2/fbx202032_fbxsdk_vs2019_win.exe
+    File_NAME: Studio
+    File_Format: zip
 
 install:
     - pwsh: appveyor DownloadFile $env:FBX_SDK && Start (Get-ChildItem ./'fbx*'.exe -Name) /S -Wait
     
 build_script:
-    - msbuild -m -t:AssetStudioGUI:publish -t:AssetStudioCLI:publish -r -p:Configuration=Release -p:TargetFramework=net6.0-windows -v:minimal AssetStudio.sln
-    - msbuild -m -t:AssetStudioGUI:publish -t:AssetStudioCLI:publish -r -p:Configuration=Release -p:TargetFramework=net7.0-windows -v:minimal AssetStudio.sln
+    - msbuild -m -t:AssetStudioGUI:publish -t:AssetStudioCLI:publish -r -p:Configuration=Release -v:minimal AssetStudio.sln
 
 after_build:
-    - 7z a -y -mx9 net6.0-windows.zip %APPVEYOR_BUILD_FOLDER%\AssetStudioGUI\bin\Release\net6.0-windows\publish\
-    - appveyor PushArtifact %APPVEYOR_BUILD_FOLDER%\net6.0-windows.zip
-    - 7z a -y -mx9 net7.0-windows.zip %APPVEYOR_BUILD_FOLDER%\AssetStudioGUI\bin\Release\net7.0-windows\publish\
-    - appveyor PushArtifact %APPVEYOR_BUILD_FOLDER%\net7.0-windows.zip
+    - ps: $env:TIME_STRING=(Get-Date -UFormat "%Y%m%d%H%M%S%a").ToString()
+    - 7z a -y -mx9 %File_NAME%-%TIME_STRING%.%File_Format% %APPVEYOR_BUILD_FOLDER%\AssetStudioGUI\bin\Release\net7.0-windows\publish\
+    - appveyor PushArtifact %APPVEYOR_BUILD_FOLDER%\%File_NAME%-%TIME_STRING%.%File_Format%
