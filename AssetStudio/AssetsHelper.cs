@@ -16,23 +16,17 @@ namespace AssetStudio
         public const string CABMapName = "Maps";
 
         public static CancellationTokenSource tokenSource = new CancellationTokenSource();
-        public static AssetsManager assetsManager = new AssetsManager() { Silent = true, SkipProcess = true, ResolveDependencies = false };
 
-        public static string BaseFolder = "";
-        public static Dictionary<string, Entry> CABMap = new Dictionary<string, Entry>(StringComparer.OrdinalIgnoreCase);
-        public static Dictionary<string, HashSet<long>> Offsets = new Dictionary<string, HashSet<long>>();
+        private static string BaseFolder = "";
+        private static Dictionary<string, Entry> CABMap = new Dictionary<string, Entry>(StringComparer.OrdinalIgnoreCase);
+        private static Dictionary<string, HashSet<long>> Offsets = new Dictionary<string, HashSet<long>>();
+        private static AssetsManager assetsManager = new AssetsManager() { Silent = true, SkipProcess = true, ResolveDependencies = false };
 
-        public static void Clear()
+        public record Entry
         {
-            CABMap.Clear();
-            Offsets.Clear();
-            BaseFolder = "";
-
-            tokenSource.Dispose();
-            tokenSource = new CancellationTokenSource();
-
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
+            public string Path { get; set; }
+            public long Offset { get; set; }
+            public string[] Dependencies { get; set; }
         }
 
         public static string[] GetMaps()
@@ -42,12 +36,57 @@ namespace AssetStudio
             return files.Select(x => Path.GetFileNameWithoutExtension(x)).ToArray();
         }
 
+        public static void Clear()
+        {
+            CABMap.Clear();
+            Offsets.Clear();
+            BaseFolder = string.Empty;
+
+            tokenSource.Dispose();
+            tokenSource = new CancellationTokenSource();
+
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+        }
+
+        public static void ClearOffsets() => Offsets.Clear();
+
+        public static void Remove(string path) => Offsets.Remove(path);
+
+        public static bool TryAdd(string name, out string path)
+        {
+            if (CABMap.TryGetValue(name, out var entry))
+            {
+                path = Path.Combine(BaseFolder, entry.Path);
+                if (!Offsets.ContainsKey(path))
+                {
+                    Offsets.Add(path, new HashSet<long>());
+                }
+                Offsets[path].Add(entry.Offset);
+                return true;
+            }
+            path = string.Empty;
+            return false;
+        }
+
+        public static bool TryGet(string path, out long[] offsets)
+        {
+            if (Offsets.TryGetValue(path, out var list))
+            {
+                offsets = list.ToArray();
+                return true;
+            }
+            offsets = Array.Empty<long>();
+            return false;
+        }
+
         public static void BuildCABMap(string[] files, string mapName, string baseFolder, Game game)
         {
             Logger.Info($"Processing...");
             try
             {
                 CABMap.Clear();
+                var collision = 0;
                 BaseFolder = baseFolder;
                 assetsManager.Game = game;
                 for (int i = 0; i < files.Length; i++)
@@ -72,8 +111,11 @@ namespace AssetStudio
                                 Dependencies = dependencies
                             };
 
-                            CABMap.TryAdd(assetsFile.fileName, new());
-                            CABMap[assetsFile.fileName] = entry;
+                            if (CABMap.ContainsKey(assetsFile.fileName))
+                            {
+                                collision++;
+                            }
+                            CABMap.Add(assetsFile.fileName, entry);
                         }
                         Logger.Info($"Processed {Path.GetFileName(file)}");
                     }
@@ -81,11 +123,11 @@ namespace AssetStudio
                 }
 
                 CABMap = CABMap.OrderBy(pair => pair.Key).ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase);
-                var outputFile = new FileInfo(Path.Combine(CABMapName, $"{mapName}.bin"));
+                var outputFile = Path.Combine(CABMapName, $"{mapName}.bin");
 
-                outputFile.Directory.Create();
+                Directory.CreateDirectory(Path.GetDirectoryName(outputFile));
 
-                using (var binaryFile = outputFile.Create())
+                using (var binaryFile = File.OpenWrite(outputFile))
                 using (var writer = new BinaryWriter(binaryFile))
                 {
                     writer.Write(BaseFolder);
@@ -103,11 +145,11 @@ namespace AssetStudio
                     }
                 }
 
-                Logger.Info($"CABMap build successfully !!");
+                Logger.Info($"CABMap build successfully !! {collision} collisions found");
             }
             catch (Exception e)
             {
-                Logger.Warning($"CABMap was not build, {e.Message}{e.StackTrace}");
+                Logger.Warning($"CABMap was not build, {e}");
             }
         }
 
@@ -147,7 +189,7 @@ namespace AssetStudio
             }
             catch (Exception e)
             {
-                Logger.Warning($"{mapName} was not loaded, {e.Message}");
+                Logger.Warning($"{mapName} was not loaded, {e}");
             }
         }
 
@@ -356,81 +398,6 @@ namespace AssetStudio
                 Logger.Info($"Finished exporting asset list with {toExportAssets.Length} items.");
                 Logger.Info($"AssetMap build successfully !!");
             });
-        }
-
-        public static void AddCABOffsets(string[] path, List<string> cabs)
-        {
-            for (int i = 0; i < cabs.Count; i++)
-            {
-                var cab = cabs[i];
-                if (CABMap.TryGetValue(cab, out var entry))
-                {
-                    if (!path.Contains(entry.Path))
-                    {
-                        var fullPath = Path.Combine(BaseFolder, entry.Path);
-                        if (!Offsets.ContainsKey(fullPath))
-                        {
-                            Offsets.Add(fullPath, new HashSet<long>());
-                        }
-                        Offsets[fullPath].Add(entry.Offset);
-                    }
-                    foreach (var dep in entry.Dependencies)
-                    {
-                        if (!cabs.Contains(dep))
-                            cabs.Add(dep);
-                    }
-                }
-            }
-        }
-        
-        public static bool FindCAB(string path, out List<string> cabs)
-        {
-            cabs = new List<string>();
-            var relativePath = Path.GetRelativePath(BaseFolder, path);
-            foreach (var kv in CABMap)
-            {
-                if (kv.Value.Path.Equals(relativePath))
-                {
-                    cabs.Add(kv.Key);
-                }
-            }
-            return cabs.Count != 0;
-        }
-        
-        public static string[] ProcessFiles(string[] files)
-        {
-            foreach (var file in files)
-            {
-                if (!Offsets.ContainsKey(file))
-                {
-                    Offsets.Add(file, new HashSet<long>());
-                }
-                if (FindCAB(file, out var cabs))
-                {
-                    AddCABOffsets(files, cabs);
-                }
-            }
-            return Offsets.Keys.ToArray();
-        }
-
-        public static string[] ProcessDependencies(string[] files)
-        {
-            if (CABMap.Count == 0)
-            {
-                Logger.Warning("CABMap is not build, skip resolving dependencies...");
-            }
-            else
-            {
-                Logger.Info("Resolving Dependencies...");
-                files = ProcessFiles(files);
-            }
-            return files;
-        }
-        public record Entry
-        {
-            public string Path { get; set; }
-            public long Offset { get; set; }
-            public string[] Dependencies { get; set; }
         }
     }
 }

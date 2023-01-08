@@ -39,8 +39,6 @@ namespace AssetStudio
             var path = Path.GetDirectoryName(Path.GetFullPath(files[0]));
             MergeSplitAssets(path);
             var toReadFile = ProcessingSplitFiles(files.ToList());
-            if (ResolveDependencies)
-                toReadFile = AssetsHelper.ProcessDependencies(toReadFile);
             Load(toReadFile);
 
             if (Silent)
@@ -95,6 +93,7 @@ namespace AssetStudio
             importFilesHash.Clear();
             noexistFiles.Clear();
             assetsFileListHash.Clear();
+            AssetsHelper.ClearOffsets();
 
             if (!SkipProcess && !tokenSource.IsCancellationRequested)
             {
@@ -137,9 +136,6 @@ namespace AssetStudio
                     break;
                 case FileType.BlkFile:
                     LoadBlkFile(reader);
-                    break;
-                case FileType.Mhy0File:
-                    LoadMhy0File(reader);
                     break;
             }
         }
@@ -218,6 +214,38 @@ namespace AssetStudio
                     CheckStrippedVersion(assetsFile);
                     assetsFileList.Add(assetsFile);
                     assetsFileListHash.Add(assetsFile.fileName);
+
+                    if (ResolveDependencies)
+                    {
+                        foreach (var sharedFile in assetsFile.m_Externals)
+                        {
+                            var sharedFileName = sharedFile.fileName;
+
+                            if (!importFilesHash.Contains(sharedFileName))
+                            {
+                                var sharedFilePath = Path.Combine(Path.GetDirectoryName(originalPath), sharedFileName);
+                                if (!noexistFiles.Contains(sharedFilePath))
+                                {
+                                    if (AssetsHelper.TryAdd(sharedFileName, out var path))
+                                    {
+                                        sharedFilePath = path;
+                                    }
+                                    if (File.Exists(sharedFilePath))
+                                    {
+                                        if (!importFiles.Contains(sharedFilePath))
+                                        {
+                                            importFiles.Add(sharedFilePath);
+                                        }
+                                        importFilesHash.Add(sharedFileName);
+                                    }
+                                    else
+                                    {
+                                        noexistFiles.Add(sharedFilePath);
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
                 catch (Exception e)
                 {
@@ -409,9 +437,8 @@ namespace AssetStudio
             Logger.Info("Loading " + reader.FullPath);
             try
             {
-                var offsets = AssetsHelper.Offsets.TryGetValue(reader.FullPath, out var list) ? list.ToArray() : Array.Empty<long>();
                 using var stream = new BlockStream(reader.BaseStream, 0);
-                if (!offsets.IsNullOrEmpty())
+                if (AssetsHelper.TryGet(reader.FullPath, out var offsets))
                 {
                     foreach (var offset in offsets)
                     {
@@ -420,6 +447,7 @@ namespace AssetStudio
                         var subReader = new FileReader(dummyPath, stream, true);
                         LoadBundleFile(subReader, reader.FullPath, offset);
                     }
+                    AssetsHelper.Remove(reader.FullPath);
                 }
                 else
                 {
@@ -446,9 +474,8 @@ namespace AssetStudio
             Logger.Info("Loading " + reader.FullPath);
             try
             {
-                var offsets = AssetsHelper.Offsets.TryGetValue(reader.FullPath, out var list) ? list.ToArray() : Array.Empty<long>();
                 using var stream = BlkUtils.Decrypt(reader, (Blk)Game);
-                if (!offsets.IsNullOrEmpty())
+                if (AssetsHelper.TryGet(reader.FullPath, out var offsets))
                 {
                     foreach (var offset in offsets)
                     {
@@ -465,6 +492,7 @@ namespace AssetStudio
                                 break;
                         }
                     }
+                    AssetsHelper.Remove(reader.FullPath);
                 }
                 else
                 {

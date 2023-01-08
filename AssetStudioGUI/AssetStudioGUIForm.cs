@@ -193,6 +193,7 @@ namespace AssetStudioGUI
                 ResetForm();
                 openDirectoryBackup = Path.GetDirectoryName(openFileDialog1.FileNames[0]);
                 assetsManager.SpecifyUnityVersion = specifyUnityVersion.Text;
+                assetsManager.Game = Studio.Game;
                 await Task.Run(() => assetsManager.LoadFiles(openFileDialog1.FileNames));
                 BuildAssetStructures();
             }
@@ -1933,6 +1934,8 @@ namespace AssetStudioGUI
         {
             ResetForm();
             AssetsHelper.Clear();
+            assetsManager.SpecifyUnityVersion = specifyUnityVersion.Text;
+            assetsManager.Game = Studio.Game;
         }
 
         private void enableConsole_CheckedChanged(object sender, EventArgs e)
