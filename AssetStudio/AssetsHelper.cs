@@ -114,6 +114,7 @@ namespace AssetStudio
                             if (CABMap.ContainsKey(assetsFile.fileName))
                             {
                                 collision++;
+                                continue;
                             }
                             CABMap.Add(assetsFile.fileName, entry);
                         }
