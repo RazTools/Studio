@@ -245,7 +245,7 @@ namespace AssetStudio
 
         public static FileReader DecryptEnsembleStar(FileReader reader)
         {
-            if (Path.GetExtension(reader.FileName) == ".z")
+            if (Path.GetExtension(reader.FileName) != ".z")
             {
                 return reader;
             }
