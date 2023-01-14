@@ -394,5 +394,17 @@ namespace AssetStudioGUI.Properties {
                 this["collectAnimations"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool skipContainer {
+            get {
+                return ((bool)(this["skipContainer"]));
+            }
+            set {
+                this["skipContainer"] = value;
+            }
+        }
     }
 }

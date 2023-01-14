@@ -32,6 +32,7 @@ namespace AssetStudioGUI
     internal static class Studio
     {
         public static Game Game;
+        public static bool SkipContainer = false;
         public static AssetsManager assetsManager = new AssetsManager();
         public static AssemblyLoader assemblyLoader = new AssemblyLoader();
         public static List<AssetItem> exportableAssets = new List<AssetItem>();
@@ -316,14 +317,17 @@ namespace AssetStudioGUI
                             productName = m_PlayerSettings.productName;
                             break;
                         case AssetBundle m_AssetBundle:
-                            foreach (var m_Container in m_AssetBundle.m_Container)
+                            if (!SkipContainer)
                             {
-                                var preloadIndex = m_Container.Value.preloadIndex;
-                                var preloadSize = m_Container.Value.preloadSize;
-                                var preloadEnd = preloadIndex + preloadSize;
-                                for (int k = preloadIndex; k < preloadEnd; k++)
+                                foreach (var m_Container in m_AssetBundle.m_Container)
                                 {
-                                    containers.Add((m_AssetBundle.m_PreloadTable[k], m_Container.Key));
+                                    var preloadIndex = m_Container.Value.preloadIndex;
+                                    var preloadSize = m_Container.Value.preloadSize;
+                                    var preloadEnd = preloadIndex + preloadSize;
+                                    for (int k = preloadIndex; k < preloadEnd; k++)
+                                    {
+                                        containers.Add((m_AssetBundle.m_PreloadTable[k], m_Container.Key));
+                                    }
                                 }
                             }
                             assetItem.Text = m_AssetBundle.m_Name;
@@ -372,24 +376,25 @@ namespace AssetStudioGUI
                     else assetItem.Text = $"BinFile #{assetItem.m_PathID}";
                 }
             }
-            foreach ((var pptr, var container) in containers)
+            if (!SkipContainer)
             {
-                if (pptr.TryGet(out var obj))
+                foreach ((var pptr, var container) in containers)
                 {
-                    objectAssetItemDic[obj].Container = container;
+                    if (pptr.TryGet(out var obj))
+                    {
+                        objectAssetItemDic[obj].Container = container;
+                    }
+                }
+                containers.Clear();
+                if (Game.Type.IsGISubGroup())
+                {
+                    UpdateContainers();
                 }
             }
-
-            if (Game.Type.IsGISubGroup())
-            {
-                UpdateContainers();
-            }
-
             foreach (var tmp in exportableAssets)
             {
                 tmp.SetSubItems();
             }
-            containers.Clear();
 
             visibleAssets = exportableAssets;
 

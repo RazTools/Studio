@@ -44,9 +44,10 @@ namespace AssetStudioGUI
             this.abortStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.optionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.displayAll = new System.Windows.Forms.ToolStripMenuItem();
-            this.enableResolveDependencies = new System.Windows.Forms.ToolStripMenuItem();
             this.enablePreview = new System.Windows.Forms.ToolStripMenuItem();
             this.displayInfo = new System.Windows.Forms.ToolStripMenuItem();
+            this.enableResolveDependencies = new System.Windows.Forms.ToolStripMenuItem();
+            this.skipContainer = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem14 = new System.Windows.Forms.ToolStripMenuItem();
             this.specifyUnityVersion = new System.Windows.Forms.ToolStripTextBox();
             this.toolStripMenuItem18 = new System.Windows.Forms.ToolStripMenuItem();
@@ -263,9 +264,10 @@ namespace AssetStudioGUI
             // 
             this.optionsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.displayAll,
-            this.enableResolveDependencies,
             this.enablePreview,
             this.displayInfo,
+            this.enableResolveDependencies,
+            this.skipContainer,
             this.toolStripMenuItem14,
             this.toolStripMenuItem18,
             this.toolStripMenuItem19,
@@ -284,18 +286,6 @@ namespace AssetStudioGUI
             this.displayAll.ToolTipText = "Check this option will display all types assets. Not extractable assets can expor" +
     "t the RAW file.";
             this.displayAll.CheckedChanged += new System.EventHandler(this.displayAll_CheckedChanged);
-            // 
-            // enableResolveDependencies
-            // 
-            this.enableResolveDependencies.Checked = true;
-            this.enableResolveDependencies.CheckOnClick = true;
-            this.enableResolveDependencies.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.enableResolveDependencies.Name = "enableResolveDependencies";
-            this.enableResolveDependencies.Size = new System.Drawing.Size(225, 22);
-            this.enableResolveDependencies.Text = "Enable resolve dependencies";
-            this.enableResolveDependencies.ToolTipText = "Toggle the behaviour of loading assets.\nDisable to load file(s) without its depen" +
-    "dencies.";
-            this.enableResolveDependencies.CheckedChanged += new System.EventHandler(this.enableResolveDependencies_CheckedChanged);
             // 
             // enablePreview
             // 
@@ -320,6 +310,28 @@ namespace AssetStudioGUI
             this.displayInfo.ToolTipText = "Toggle the overlay that shows information about each asset, eg. image size, forma" +
     "t, audio bitrate, etc.";
             this.displayInfo.CheckedChanged += new System.EventHandler(this.displayAssetInfo_Check);
+            // 
+            // enableResolveDependencies
+            // 
+            this.enableResolveDependencies.Checked = true;
+            this.enableResolveDependencies.CheckOnClick = true;
+            this.enableResolveDependencies.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.enableResolveDependencies.Name = "enableResolveDependencies";
+            this.enableResolveDependencies.Size = new System.Drawing.Size(225, 22);
+            this.enableResolveDependencies.Text = "Enable resolve dependencies";
+            this.enableResolveDependencies.ToolTipText = "Toggle the behaviour of loading assets.\nDisable to load file(s) without its depen" +
+    "dencies.";
+            this.enableResolveDependencies.CheckedChanged += new System.EventHandler(this.enableResolveDependencies_CheckedChanged);
+            // 
+            // skipContainer
+            // 
+            this.skipContainer.CheckOnClick = true;
+            this.skipContainer.Name = "skipContainer";
+            this.skipContainer.Size = new System.Drawing.Size(225, 22);
+            this.skipContainer.Text = "Skip container recovery";
+            this.skipContainer.ToolTipText = "Skips the container recovery step.\nImproves loading when dealing with a large num" +
+    "ber of files.";
+            this.skipContainer.CheckedChanged += new System.EventHandler(this.skipContainer_CheckedChanged);
             // 
             // toolStripMenuItem14
             // 
@@ -533,21 +545,21 @@ namespace AssetStudioGUI
             // toolStripMenuItem7
             // 
             this.toolStripMenuItem7.Name = "toolStripMenuItem7";
-            this.toolStripMenuItem7.Size = new System.Drawing.Size(180, 22);
+            this.toolStripMenuItem7.Size = new System.Drawing.Size(152, 22);
             this.toolStripMenuItem7.Text = "All assets";
             this.toolStripMenuItem7.Click += new System.EventHandler(this.toolStripMenuItem7_Click);
             // 
             // toolStripMenuItem8
             // 
             this.toolStripMenuItem8.Name = "toolStripMenuItem8";
-            this.toolStripMenuItem8.Size = new System.Drawing.Size(180, 22);
+            this.toolStripMenuItem8.Size = new System.Drawing.Size(152, 22);
             this.toolStripMenuItem8.Text = "Selected assets";
             this.toolStripMenuItem8.Click += new System.EventHandler(this.toolStripMenuItem8_Click);
             // 
             // toolStripMenuItem9
             // 
             this.toolStripMenuItem9.Name = "toolStripMenuItem9";
-            this.toolStripMenuItem9.Size = new System.Drawing.Size(180, 22);
+            this.toolStripMenuItem9.Size = new System.Drawing.Size(152, 22);
             this.toolStripMenuItem9.Text = "Filtered assets";
             this.toolStripMenuItem9.Click += new System.EventHandler(this.toolStripMenuItem9_Click);
             // 
@@ -564,21 +576,21 @@ namespace AssetStudioGUI
             // toolStripMenuItem17
             // 
             this.toolStripMenuItem17.Name = "toolStripMenuItem17";
-            this.toolStripMenuItem17.Size = new System.Drawing.Size(180, 22);
+            this.toolStripMenuItem17.Size = new System.Drawing.Size(152, 22);
             this.toolStripMenuItem17.Text = "All assets";
             this.toolStripMenuItem17.Click += new System.EventHandler(this.toolStripMenuItem17_Click);
             // 
             // toolStripMenuItem24
             // 
             this.toolStripMenuItem24.Name = "toolStripMenuItem24";
-            this.toolStripMenuItem24.Size = new System.Drawing.Size(180, 22);
+            this.toolStripMenuItem24.Size = new System.Drawing.Size(152, 22);
             this.toolStripMenuItem24.Text = "Selected assets";
             this.toolStripMenuItem24.Click += new System.EventHandler(this.toolStripMenuItem24_Click);
             // 
             // toolStripMenuItem25
             // 
             this.toolStripMenuItem25.Name = "toolStripMenuItem25";
-            this.toolStripMenuItem25.Size = new System.Drawing.Size(180, 22);
+            this.toolStripMenuItem25.Size = new System.Drawing.Size(152, 22);
             this.toolStripMenuItem25.Text = "Filtered assets";
             this.toolStripMenuItem25.Click += new System.EventHandler(this.toolStripMenuItem25_Click);
             // 
@@ -632,7 +644,7 @@ namespace AssetStudioGUI
             this.allToolStripMenuItem.CheckOnClick = true;
             this.allToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
             this.allToolStripMenuItem.Name = "allToolStripMenuItem";
-            this.allToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.allToolStripMenuItem.Size = new System.Drawing.Size(88, 22);
             this.allToolStripMenuItem.Text = "All";
             this.allToolStripMenuItem.Click += new System.EventHandler(this.typeToolStripMenuItem_Click);
             // 
@@ -1486,6 +1498,7 @@ namespace AssetStudioGUI
         private System.Windows.Forms.ToolStripMenuItem clearConsoleToolStripMenuItem;
         private System.Windows.Forms.ToolStripTextBox assetMapNameTextBox;
         private System.Windows.Forms.ToolStripComboBox assetMapTypeComboBox;
+        private System.Windows.Forms.ToolStripMenuItem skipContainer;
     }
 }
 

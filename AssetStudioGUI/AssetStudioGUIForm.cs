@@ -108,6 +108,7 @@ namespace AssetStudioGUI
             displayInfo.Checked = Properties.Settings.Default.displayInfo;
             enablePreview.Checked = Properties.Settings.Default.enablePreview;
             enableResolveDependencies.Checked = Properties.Settings.Default.enableResolveDependencies;
+            skipContainer.Checked = Properties.Settings.Default.skipContainer;
             assetsManager.ResolveDependencies = enableResolveDependencies.Checked;
             Renderer.Skipped = Properties.Settings.Default.skipRenderer;
             MiHoYoBinData.Exportable = Properties.Settings.Default.exportMiHoYoBinData;
@@ -502,6 +503,13 @@ namespace AssetStudioGUI
             assetsManager.ResolveDependencies = enableResolveDependencies.Checked;
         }
 
+        private void skipContainer_CheckedChanged(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.skipContainer = skipContainer.Checked;
+            Properties.Settings.Default.Save();
+
+            SkipContainer = enableResolveDependencies.Checked;
+        }
         private void displayAssetInfo_Check(object sender, EventArgs e)
         {
             if (displayInfo.Checked && assetInfoLabel.Text != null)
@@ -1729,6 +1737,11 @@ namespace AssetStudioGUI
             {
                 return;
             }
+            if (skipContainer.Checked)
+            {
+                Logger.Info("Skip container is enabled, aborting...");
+                return;
+            }
             optionsToolStripMenuItem.DropDown.Visible = false;
             var version = specifyAIVersion.SelectedItem.ToString();
 
@@ -1965,6 +1978,11 @@ namespace AssetStudioGUI
 
         private async void loadAIToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            if (skipContainer.Checked)
+            {
+                Logger.Info("Skip container is enabled, aborting...");
+                return;
+            }
             miscToolStripMenuItem.DropDown.Visible = false;
 
             var openFileDialog = new OpenFileDialog() { Multiselect = false, Filter = "Asset Index JSON File|*.json" };
