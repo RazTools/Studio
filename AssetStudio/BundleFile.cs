@@ -156,7 +156,7 @@ namespace AssetStudio
             return header;
         }
 
-        private void ReadHeaderAndBlocksInfo(EndianBinaryReader reader)
+        private void ReadHeaderAndBlocksInfo(FileReader reader)
         {
             if (m_Header.version >= 4)
             {
@@ -208,7 +208,7 @@ namespace AssetStudio
             return blocksStream;
         }
 
-        private void ReadBlocksAndDirectory(EndianBinaryReader reader, Stream blocksStream)
+        private void ReadBlocksAndDirectory(FileReader reader, Stream blocksStream)
         {
             var isCompressed = m_Header.signature == "UnityWeb";
             foreach (var blockInfo in m_BlocksInfo)
@@ -278,7 +278,7 @@ namespace AssetStudio
             XORShift128.Init = false;
         }
 
-        private void ReadHeader(EndianBinaryReader reader)
+        private void ReadHeader(FileReader reader)
         {
             if (Game.Type.IsBH3() && XORShift128.Init)
             {
@@ -309,7 +309,7 @@ namespace AssetStudio
             }
         }
 
-        private void ReadBlocksInfoAndDirectory(EndianBinaryReader reader)
+        private void ReadBlocksInfoAndDirectory(FileReader reader)
         {
             if (Game.Type.IsCNUnity())
             {
@@ -430,7 +430,7 @@ namespace AssetStudio
             }
         }
 
-        private void ReadBlocks(EndianBinaryReader reader, Stream blocksStream)
+        private void ReadBlocks(FileReader reader, Stream blocksStream)
         {
             for (int i = 0; i < m_BlocksInfo.Length; i++)
             {
@@ -463,6 +463,10 @@ namespace AssetStudio
                             if (Game.Type.IsCNUnity() && (blockInfo.flags & StorageBlockFlags.CNUnity) != 0)
                             {
                                 CNUnity.DecryptBlock(compressedBytesSpan, compressedSize, i);
+                            }
+                            if (Game.Type.IsOPFP())
+                            {
+                                OPFPUtils.Decrypt(compressedBytesSpan, reader.FullPath);
                             }
                             var uncompressedSize = (int)blockInfo.uncompressedSize;
                             var uncompressedBytes = BigArrayPool<byte>.Shared.Rent(uncompressedSize);

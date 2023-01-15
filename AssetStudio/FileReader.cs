@@ -148,6 +148,12 @@ namespace AssetStudio
                     case GameType.OPFP:
                         reader = ParseOPFP(reader);
                         break;
+                    case GameType.AlchemyStars:
+                        reader = ParseAlchemyStars(reader);
+                        break;
+                    case GameType.FantasyOfWind:
+                        reader = DecryptFantasyOfWind(reader);
+                        break;
                 }
             }
             if (reader.FileType == FileType.BundleFile && game.Type.IsBlockFile())

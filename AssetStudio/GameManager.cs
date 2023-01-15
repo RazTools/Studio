@@ -27,6 +27,8 @@ namespace AssetStudio
             Games.Add(index++, new Game(GameType.Naraka));
             Games.Add(index++, new Game(GameType.EnsembleStars));
             Games.Add(index++, new Game(GameType.OPFP));
+            Games.Add(index++, new Game(GameType.AlchemyStars));
+            Games.Add(index++, new Game(GameType.FantasyOfWind));
         }
         public static Game GetGame(int index)
         {
@@ -123,7 +125,9 @@ namespace AssetStudio
         Naraka,
         CNUnity,
         EnsembleStars,
-        OPFP
+        OPFP,
+        AlchemyStars,
+        FantasyOfWind
     }
 
     public static class GameTypes

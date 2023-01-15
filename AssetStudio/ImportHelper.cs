@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Text;
 using static AssetStudio.BundleFile;
 using static AssetStudio.Crypto;
 
@@ -273,15 +274,90 @@ namespace AssetStudio
 
         public static FileReader ParseOPFP(FileReader reader)
         {
-            MemoryStream ms = new();
-
-            var data = reader.ReadBytes((int)reader.BaseStream.Length);
+            var stream = reader.BaseStream;
+            var data = reader.ReadBytes(0x1000);
             var idx = data.Search("UnityFS");
             if (idx != -1)
             {
-                var count = data.Length - idx;
-                ms = new(data, idx, count);  
+                stream = new BlockStream(stream, idx);
             }
+
+            return new FileReader(reader.FullPath, stream);
+        }
+
+        public static FileReader ParseAlchemyStars(FileReader reader)
+        {
+            var stream = reader.BaseStream;
+            var data = reader.ReadBytes(0x1000);
+            var idx = data.Search("UnityFS");
+            if (idx != -1)
+            {
+                var idx2 = data[(idx + 1)..].Search("UnityFS");
+                if (idx2 != -1)
+                {
+                    stream = new BlockStream(stream, idx + idx2 + 1);
+                }
+                else
+                {
+                    stream = new BlockStream(stream, idx);
+                }
+            }
+
+            return new FileReader(reader.FullPath, stream);
+        }
+        
+        public static FileReader DecryptFantasyOfWind(FileReader reader)
+        {
+            byte[] encryptKeyName = Encoding.UTF8.GetBytes("28856");
+            const int MinLength = 0xC8;
+            const int KeyLength = 8;
+            const int EnLength = 0x32;
+            const int StartEnd = 0x14;
+            const int HeadLength = 5;
+
+            var signature = reader.ReadStringToNull(HeadLength);
+            if (string.Compare(signature, "K9999") > 0 || reader.Length <= MinLength)
+            {
+                reader.Position = 0;
+                return reader;
+            }
+
+            reader.Position = reader.Length + ~StartEnd;
+            var keyLength = reader.ReadByte();
+            reader.Position = reader.Length - StartEnd - 2;
+            var enLength = reader.ReadByte();
+
+            var enKeyPos = (byte)((keyLength % KeyLength) + KeyLength);
+            var encryptedLength = (byte)((enLength % EnLength) + EnLength);
+
+            reader.Position = reader.Length - StartEnd - enKeyPos;
+            var encryptKey = reader.ReadBytes(KeyLength);
+
+            var subByte = (byte)(reader.Length - StartEnd - KeyLength - (keyLength % KeyLength));
+            for (var i = 0; i < KeyLength; i++)
+            {
+                if (encryptKey[i] == 0)
+                {
+                    encryptKey[i] = (byte)(subByte + i);
+                }
+            }
+
+            var key = new byte[encryptKeyName.Length + KeyLength];
+            encryptKeyName.CopyTo(key.AsMemory(0));
+            encryptKey.CopyTo(key.AsMemory(encryptKeyName.Length));
+
+            reader.Position = HeadLength;
+            var data = reader.ReadBytes(encryptedLength);
+            for (int i = 0; i < encryptedLength; i++)
+            {
+                data[i] ^= key[i % key.Length]; 
+            }
+
+            MemoryStream ms = new();
+            ms.Write(Encoding.UTF8.GetBytes("Unity"));
+            ms.Write(data);
+            reader.BaseStream.CopyTo(ms);
+            ms.Position = 0;
 
             return new FileReader(reader.FullPath, ms);
         }
