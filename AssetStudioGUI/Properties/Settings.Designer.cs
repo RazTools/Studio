@@ -491,5 +491,20 @@ namespace AssetStudioGUI.Properties
                 this["exportAllUvsAsDiffuseMaps"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool isFileLogging
+        {
+            get
+            {
+                return ((bool)(this["isFileLogging"]));
+            }
+            set
+            {
+                this["isFileLogging"] = value;
+            }
+        }
     }
 }

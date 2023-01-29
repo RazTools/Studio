@@ -128,6 +128,8 @@ namespace AssetStudioGUI
                 Logger.Default = logger;
                 ConsoleHelper.ShowWindow(handle, ConsoleHelper.SW_HIDE);
             }
+            enableFileLogging.Checked = Properties.Settings.Default.isFileLogging;
+            Logger.IsFileLogging = Properties.Settings.Default.isFileLogging;
             Progress.Default = new Progress<int>(SetProgressBarValue);
             Studio.StatusStripUpdate = StatusStripUpdate;
             specifyGame.Items.AddRange(GameManager.GetGames());
@@ -138,6 +140,10 @@ namespace AssetStudioGUI
             CABManager.LoadMap(Studio.Game);
         }
 
+        ~AssetStudioGUIForm()
+        {
+            Logger.Dispose();
+        }
         private void AssetStudioGUIForm_DragEnter(object sender, DragEventArgs e)
         {
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
@@ -2212,6 +2218,14 @@ namespace AssetStudioGUI
             assetsManager.SpecifyUnityVersion = specifyUnityVersion.Text;
             assetsManager.Game = Studio.Game;
             CABManager.LoadMap(Studio.Game);
+        }
+
+        private void enableFileLogging_CheckedChanged(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.isFileLogging = enableFileLogging.Checked;
+            Properties.Settings.Default.Save();
+
+            Logger.IsFileLogging = Properties.Settings.Default.isFileLogging;
         }
 
         private void SpecifyAIVersionUpdate(bool value)

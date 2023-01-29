@@ -14,7 +14,7 @@ namespace AssetStudioGUI
             this.action = action;
         }
 
-        public void Log(LoggerEvent loggerEvent, string message)
+        public string Log(LoggerEvent loggerEvent, string message)
         {
             switch (loggerEvent)
             {
@@ -28,7 +28,7 @@ namespace AssetStudioGUI
                     action(message);
                     break;
             }
-
+            return message;
         }
     }
 }
