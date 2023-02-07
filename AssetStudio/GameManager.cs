@@ -29,6 +29,7 @@ namespace AssetStudio
             Games.Add(index++, new Game(GameType.OPFP));
             Games.Add(index++, new Game(GameType.AlchemyStars));
             Games.Add(index++, new Game(GameType.FantasyOfWind));
+            Games.Add(index++, new Game(GameType.ShiningNikki));
         }
         public static Game GetGame(int index)
         {
@@ -127,7 +128,8 @@ namespace AssetStudio
         EnsembleStars,
         OPFP,
         AlchemyStars,
-        FantasyOfWind
+        FantasyOfWind,
+        ShiningNikki
     }
 
     public static class GameTypes

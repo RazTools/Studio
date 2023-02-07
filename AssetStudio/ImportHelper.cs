@@ -361,5 +361,20 @@ namespace AssetStudio
 
             return new FileReader(reader.FullPath, ms);
         }
+
+        public static FileReader ParseShiningNikki(FileReader reader)
+        {
+            var data = reader.ReadBytes(0x1000);
+            var idx = data.Search("UnityFS");
+            if (idx == -1)
+            {
+                reader.Position = 0;
+                return reader;
+            }
+            var stream = new BlockStream(reader.BaseStream, idx);
+            return new FileReader(reader.FullPath, stream);
+        }
+            return new FileReader(reader.FullPath, ms);
+        }
     }
 }

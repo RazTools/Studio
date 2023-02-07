@@ -154,6 +154,9 @@ namespace AssetStudio
                     case GameType.FantasyOfWind:
                         reader = DecryptFantasyOfWind(reader);
                         break;
+                    case GameType.ShiningNikki:
+                        reader = ParseShiningNikki(reader);
+                        break;
                 }
             }
             if (reader.FileType == FileType.BundleFile && game.Type.IsBlockFile())
