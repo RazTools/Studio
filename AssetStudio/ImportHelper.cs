@@ -374,7 +374,5 @@ namespace AssetStudio
             var stream = new BlockStream(reader.BaseStream, idx);
             return new FileReader(reader.FullPath, stream);
         }
-            return new FileReader(reader.FullPath, ms);
-        }
     }
 }
