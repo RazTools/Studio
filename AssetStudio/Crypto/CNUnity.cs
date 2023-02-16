@@ -49,7 +49,7 @@ namespace AssetStudio
             {
                 using var aes = Aes.Create();
                 aes.Mode = CipherMode.ECB;
-                aes.Key = Encoding.UTF8.GetBytes(entry.Key);
+                aes.Key = entry.GenerateKey();
 
                 Encryptor = aes.CreateEncryptor();
             }
@@ -140,23 +140,17 @@ namespace AssetStudio
 
             public bool Validate()
             {
-                try
+                var bytes = GenerateKey();
+                if (bytes.Length != 0x10)
                 {
-                    var bytes = Encoding.UTF8.GetBytes(Key);
-                    if (bytes.Length != 0x10)
-                    {
-                        Logger.Warning($"[CNUnity] {this} has invalid key, size should be 16 bytes, skipping...");
-                        return false;
-                    }
-                }
-                catch(Exception e)
-                {
-                    Logger.Error($"[CNUnity] Error while adding {this}: {e.Message}");
+                    Logger.Warning($"[CNUnity] {this} has invalid key, size should be 16 bytes, skipping...");
                     return false;
                 }
-                
+
                 return true;
             }
+
+            public byte[] GenerateKey() => Convert.FromHexString(Key);
 
             public override string ToString() => $"{Name} ({Key})";
         }

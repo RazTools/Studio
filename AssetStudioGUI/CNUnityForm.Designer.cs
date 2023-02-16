@@ -31,8 +31,6 @@
             this.specifyCNUnityList = new System.Windows.Forms.DataGridView();
             this.NameField = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.KeyField = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Cancel = new System.Windows.Forms.Button();
-            this.OKbutton = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.specifyCNUnityList)).BeginInit();
             this.SuspendLayout();
             // 
@@ -45,13 +43,15 @@
             this.specifyCNUnityList.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.NameField,
             this.KeyField});
-            this.specifyCNUnityList.Location = new System.Drawing.Point(12, 12);
+            this.specifyCNUnityList.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.specifyCNUnityList.Location = new System.Drawing.Point(0, 0);
             this.specifyCNUnityList.MultiSelect = false;
             this.specifyCNUnityList.Name = "specifyCNUnityList";
             this.specifyCNUnityList.RowHeadersWidthSizeMode = System.Windows.Forms.DataGridViewRowHeadersWidthSizeMode.DisableResizing;
             this.specifyCNUnityList.RowTemplate.Height = 25;
-            this.specifyCNUnityList.Size = new System.Drawing.Size(332, 171);
+            this.specifyCNUnityList.Size = new System.Drawing.Size(432, 229);
             this.specifyCNUnityList.TabIndex = 0;
+            this.specifyCNUnityList.RowHeaderMouseDoubleClick += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.specifyCNUnityList_RowHeaderMouseDoubleClick);
             // 
             // NameField
             // 
@@ -65,38 +65,11 @@
             this.KeyField.HeaderText = "Key";
             this.KeyField.Name = "KeyField";
             // 
-            // Cancel
-            // 
-            this.Cancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.Cancel.Location = new System.Drawing.Point(255, 190);
-            this.Cancel.Margin = new System.Windows.Forms.Padding(4);
-            this.Cancel.Name = "Cancel";
-            this.Cancel.Size = new System.Drawing.Size(88, 26);
-            this.Cancel.TabIndex = 9;
-            this.Cancel.Text = "Cancel";
-            this.Cancel.UseVisualStyleBackColor = true;
-            this.Cancel.Click += new System.EventHandler(this.Cancel_Click);
-            // 
-            // OKbutton
-            // 
-            this.OKbutton.Location = new System.Drawing.Point(159, 190);
-            this.OKbutton.Margin = new System.Windows.Forms.Padding(4);
-            this.OKbutton.Name = "OKbutton";
-            this.OKbutton.Size = new System.Drawing.Size(88, 26);
-            this.OKbutton.TabIndex = 8;
-            this.OKbutton.Text = "OK";
-            this.OKbutton.UseVisualStyleBackColor = true;
-            this.OKbutton.Click += new System.EventHandler(this.OKbutton_Click);
-            // 
             // CNUnityForm
             // 
-            this.AcceptButton = this.OKbutton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.CancelButton = this.Cancel;
-            this.ClientSize = new System.Drawing.Size(356, 229);
-            this.Controls.Add(this.Cancel);
-            this.Controls.Add(this.OKbutton);
+            this.ClientSize = new System.Drawing.Size(432, 229);
             this.Controls.Add(this.specifyCNUnityList);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Fixed3D;
             this.MaximizeBox = false;
@@ -115,8 +88,6 @@
         #endregion
 
         private System.Windows.Forms.DataGridView specifyCNUnityList;
-        private System.Windows.Forms.Button Cancel;
-        private System.Windows.Forms.Button OKbutton;
         private System.Windows.Forms.DataGridViewTextBoxColumn NameField;
         private System.Windows.Forms.DataGridViewTextBoxColumn KeyField;
     }

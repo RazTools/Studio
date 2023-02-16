@@ -508,7 +508,7 @@ namespace AssetStudioGUI
             Properties.Settings.Default.skipContainer = skipContainer.Checked;
             Properties.Settings.Default.Save();
 
-            SkipContainer = enableResolveDependencies.Checked;
+            SkipContainer = skipContainer.Checked;
         }
         private void displayAssetInfo_Check(object sender, EventArgs e)
         {

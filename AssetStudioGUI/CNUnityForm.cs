@@ -79,5 +79,48 @@ namespace AssetStudioGUI
             DialogResult = DialogResult.Cancel;
             Close();
         }
+
+        private void specifyCNUnityList_RowHeaderMouseDoubleClick(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            var keys = new List<CNUnity.Entry>();
+            for (int i = specifyCNUnityList.Rows.Count - 1; i >= 0; i--)
+            {
+                var row = specifyCNUnityList.Rows[i];
+                var name = row.Cells["NameField"].Value as string;
+                var key = row.Cells["KeyField"].Value as string;
+
+                if (!(string.IsNullOrEmpty(name) || string.IsNullOrEmpty(key)))
+                {
+                    var cnunity = new CNUnity.Entry(name, key);
+
+                    if (cnunity.Validate())
+                    {
+                        keys.Add(cnunity);
+                        continue;
+                    }
+                }
+
+                if (specifyCNUnityList.CurrentCell.RowIndex == row.Index)
+                {
+                    var previousRow = specifyCNUnityList.Rows.Cast<DataGridViewRow>().ElementAtOrDefault(i - 1);
+                    if (previousRow != null)
+                    {
+                        specifyCNUnityList.CurrentCell = previousRow.Cells[0];
+                    }
+                }
+                if (i != specifyCNUnityList.RowCount - 1)
+                {
+                    specifyCNUnityList.Rows.RemoveAt(i);
+                }
+            }
+            CNUnityKeyManager.SaveEntries(keys.Reverse<CNUnity.Entry>().ToList());
+            CNUnityKeyManager.SetKey(specifyCNUnityList.CurrentRow.Index);
+
+            Properties.Settings.Default.selectedCNUnityKey = specifyCNUnityList.CurrentRow.Index;
+            Properties.Settings.Default.Save();
+
+            DialogResult = DialogResult.OK;
+            Close();
+        }
     }
 }

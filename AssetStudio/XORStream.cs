@@ -2,13 +2,11 @@
 
 namespace AssetStudio
 {
-    public class CryptoStream : BlockStream
+    public class XORStream : BlockStream
     {
-        private const long _dataPosition = 0x2A;
-
         private readonly byte[] _xorpad;
 
-        public CryptoStream(Stream stream, byte[] xorpad) : base(stream, _dataPosition)
+        public XORStream(Stream stream, long pos, byte[] xorpad) : base(stream, pos)
         {
             _xorpad = xorpad;
         }

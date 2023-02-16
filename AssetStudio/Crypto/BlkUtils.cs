@@ -5,10 +5,11 @@ namespace AssetStudio
 {
     public static class BlkUtils
     {
+        private const int DataPos = 0x2A;
         private const int KeySize = 0x1000;
         private const int SeedBlockSize = 0x800;
 
-        public static CryptoStream Decrypt(FileReader reader, Blk blk)
+        public static XORStream Decrypt(FileReader reader, Blk blk)
         {
             reader.Endian = EndianType.LittleEndian;
 
@@ -53,7 +54,7 @@ namespace AssetStudio
                 BinaryPrimitives.WriteUInt64LittleEndian(xorpad.AsSpan(i, 8), mt64.Int64());
             }
 
-            return new CryptoStream(reader.BaseStream, xorpad);
+            return new XORStream(reader.BaseStream, DataPos, xorpad);
         }
     }
 }
