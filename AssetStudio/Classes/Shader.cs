@@ -603,6 +603,17 @@ namespace AssetStudio
             m_GpuProgramType = (ShaderGpuProgramType)reader.ReadSByte();
             reader.AlignStream();
 
+            if (reader.Game.Name == "GI" && (m_GpuProgramType == ShaderGpuProgramType.Unknown || !Enum.IsDefined(typeof(ShaderGpuProgramType), m_GpuProgramType)))
+            {
+                reader.Position -= 4;
+                var m_LocalKeywordIndices = reader.ReadUInt16Array();
+                reader.AlignStream();
+
+                m_ShaderHardwareTier = reader.ReadSByte();
+                m_GpuProgramType = (ShaderGpuProgramType)reader.ReadSByte();
+                reader.AlignStream();
+            }
+
             if ((version[0] == 2020 && version[1] > 3) ||
                (version[0] == 2020 && version[1] == 3 && version[2] >= 2) || //2020.3.2f1 and up
                (version[0] == 2021 && version[1] > 1) ||
