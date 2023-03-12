@@ -16,11 +16,12 @@ namespace AssetStudio.FbxInterop
         private readonly bool _castToBone;
         private readonly float _boneSize;
         private readonly bool _exportAllUvsAsDiffuseMaps;
+        private readonly bool _exportUV0UV1;
         private readonly float _scaleFactor;
         private readonly int _versionIndex;
         private readonly bool _isAscii;
 
-        internal FbxExporter(string fileName, IImported imported, bool allNodes, bool exportSkins, bool castToBone, float boneSize, bool exportAllUvsAsDiffuseMaps, float scaleFactor, int versionIndex, bool isAscii)
+        internal FbxExporter(string fileName, IImported imported, bool allNodes, bool exportSkins, bool castToBone, float boneSize, bool exportAllUvsAsDiffuseMaps, bool exportUV0UV1, float scaleFactor, int versionIndex, bool isAscii)
         {
             _context = new FbxExporterContext();
 
@@ -31,6 +32,7 @@ namespace AssetStudio.FbxInterop
             _castToBone = castToBone;
             _boneSize = boneSize;
             _exportAllUvsAsDiffuseMaps = exportAllUvsAsDiffuseMaps;
+            _exportUV0UV1 = exportUV0UV1;
             _scaleFactor = scaleFactor;
             _versionIndex = versionIndex;
             _isAscii = isAscii;
@@ -173,7 +175,7 @@ namespace AssetStudio.FbxInterop
         {
             foreach (var meshFrame in meshFrames)
             {
-                _context.ExportMeshFromFrame(rootFrame, meshFrame, _imported.MeshList, _imported.MaterialList, _imported.TextureList, _exportSkins, _exportAllUvsAsDiffuseMaps);
+                _context.ExportMeshFromFrame(rootFrame, meshFrame, _imported.MeshList, _imported.MaterialList, _imported.TextureList, _exportSkins, _exportAllUvsAsDiffuseMaps, _exportUV0UV1);
             }
         }
 

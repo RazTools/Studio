@@ -495,6 +495,21 @@ namespace AssetStudioGUI.Properties
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool exportUV0UV1
+        {
+            get
+            {
+                return ((bool)(this["exportUV0UV1"]));
+            }
+            set
+            {
+                this["exportUV0UV1"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool isFileLogging
         {
             get

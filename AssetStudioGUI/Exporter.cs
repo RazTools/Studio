@@ -377,11 +377,12 @@ namespace AssetStudioGUI
             var castToBone = Properties.Settings.Default.castToBone;
             var boneSize = (int)Properties.Settings.Default.boneSize;
             var exportAllUvsAsDiffuseMaps = Properties.Settings.Default.exportAllUvsAsDiffuseMaps;
+            var exportUV0UV1 = Properties.Settings.Default.exportUV0UV1;
             var scaleFactor = (float)Properties.Settings.Default.scaleFactor;
             var fbxVersion = Properties.Settings.Default.fbxVersion;
             var fbxFormat = Properties.Settings.Default.fbxFormat;
             ModelExporter.ExportFbx(exportPath, convert, eulerFilter, filterPrecision,
-                exportAllNodes, exportSkins, exportAnimations, exportBlendShape, castToBone, boneSize, exportAllUvsAsDiffuseMaps, scaleFactor, fbxVersion, fbxFormat == 1);
+                exportAllNodes, exportSkins, exportAnimations, exportBlendShape, castToBone, boneSize, exportAllUvsAsDiffuseMaps, exportUV0UV1, scaleFactor, fbxVersion, fbxFormat == 1);
         }
 
         public static bool ExportDumpFile(AssetItem item, string exportPath)

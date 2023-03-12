@@ -38,6 +38,7 @@ namespace AssetStudioGUI
             exportBlendShape.Checked = Properties.Settings.Default.exportBlendShape;
             castToBone.Checked = Properties.Settings.Default.castToBone;
             exportAllUvsAsDiffuseMaps.Checked = Properties.Settings.Default.exportAllUvsAsDiffuseMaps;
+            exportUV0UV1.Checked = Properties.Settings.Default.exportUV0UV1;
             boneSize.Value = Properties.Settings.Default.boneSize;
             scaleFactor.Value = Properties.Settings.Default.scaleFactor;
             fbxVersion.SelectedIndex = Properties.Settings.Default.fbxVersion;
@@ -80,6 +81,7 @@ namespace AssetStudioGUI
             Properties.Settings.Default.exportBlendShape = exportBlendShape.Checked;
             Properties.Settings.Default.castToBone = castToBone.Checked;
             Properties.Settings.Default.exportAllUvsAsDiffuseMaps = exportAllUvsAsDiffuseMaps.Checked;
+            Properties.Settings.Default.exportUV0UV1 = exportUV0UV1.Checked;
             Properties.Settings.Default.boneSize = boneSize.Value;
             Properties.Settings.Default.scaleFactor = scaleFactor.Value;
             Properties.Settings.Default.fbxVersion = fbxVersion.SelectedIndex;
