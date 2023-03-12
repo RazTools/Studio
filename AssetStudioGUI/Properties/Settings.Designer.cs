@@ -12,7 +12,7 @@ namespace AssetStudioGUI.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.4.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.5.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -313,18 +313,6 @@ namespace AssetStudioGUI.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool skipRenderer {
-            get {
-                return ((bool)(this["skipRenderer"]));
-            }
-            set {
-                this["skipRenderer"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("0")]
         public int selectedGame {
             get {
@@ -344,18 +332,6 @@ namespace AssetStudioGUI.Properties {
             }
             set {
                 this["enableResolveDependencies"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("0")]
-        public int selectedCNUnityKey {
-            get {
-                return ((int)(this["selectedCNUnityKey"]));
-            }
-            set {
-                this["selectedCNUnityKey"] = value;
             }
         }
         
@@ -404,6 +380,32 @@ namespace AssetStudioGUI.Properties {
             }
             set {
                 this["skipContainer"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool exportUV0UV1 {
+            get {
+                return ((bool)(this["exportUV0UV1"]));
+            }
+            set {
+                this["exportUV0UV1"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("{\"GameObject\":true,\"Material\":true,\"Texture2D\":true,\"Mesh\":true,\"Renderer\":true,\"" +
+            "Shader\":true,\"TextAsset\":true,\"AnimationClip\":true,\"Font\":true,\"Sprite\":true,\"An" +
+            "imator\":true,\"MiHoYoBinData\":true,\"AssetBundle\":true}")]
+        public string exportableTypes {
+            get {
+                return ((string)(this["exportableTypes"]));
+            }
+            set {
+                this["exportableTypes"] = value;
             }
         }
     }

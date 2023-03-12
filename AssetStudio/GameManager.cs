@@ -12,7 +12,6 @@ namespace AssetStudio
         {
             int index = 0;
             Games.Add(index++, new(GameType.Normal));
-            Games.Add(index++, new Game(GameType.CNUnity));
             Games.Add(index++, new Mhy0(GameType.GI, GIMhy0ShiftRow, GIMhy0Key, GIMhy0Mul, GIExpansionKey, GISBox, GIInitVector, GIInitSeed));
             Games.Add(index++, new Mr0k(GameType.GI_Pack, PackExpansionKey, blockKey: PackBlockKey));
             Games.Add(index++, new Mr0k(GameType.GI_CB1));
@@ -31,6 +30,7 @@ namespace AssetStudio
             Games.Add(index++, new Game(GameType.FantasyOfWind));
             Games.Add(index++, new Game(GameType.ShiningNikki));
         }
+        public static Game GetGame(GameType gameType) => GetGame((int)gameType);
         public static Game GetGame(int index)
         {
             if (!Games.TryGetValue(index, out var format))
@@ -124,7 +124,6 @@ namespace AssetStudio
         SR_CB3,
         TOT,
         Naraka,
-        CNUnity,
         EnsembleStars,
         OPFP,
         AlchemyStars,
@@ -147,7 +146,6 @@ namespace AssetStudio
         public static bool IsSRCB3(this GameType type) => type == GameType.SR_CB3;
         public static bool IsTOT(this GameType type) => type == GameType.TOT;
         public static bool IsNaraka(this GameType type) => type == GameType.Naraka;
-        public static bool IsCNUnity(this GameType type) => type == GameType.CNUnity;
         public static bool IsOPFP(this GameType type) => type == GameType.OPFP;
         public static bool IsGIGroup(this GameType type) => type switch
         {

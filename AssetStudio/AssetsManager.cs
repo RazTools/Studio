@@ -443,7 +443,7 @@ namespace AssetStudio
                     foreach (var offset in offsets)
                     {
                         stream.Offset = offset;
-                        var dummyPath = Path.Combine("//?/block:/", reader.FileName, offset.ToString("X8"));
+                        var dummyPath = Path.Combine(reader.FileName, offset.ToString("X8"));
                         var subReader = new FileReader(dummyPath, stream, true);
                         LoadBundleFile(subReader, reader.FullPath, offset);
                     }
@@ -454,7 +454,7 @@ namespace AssetStudio
                     do
                     {
                         stream.Offset = stream.RelativePosition;
-                        var dummyPath = Path.Combine("//?/block:/", reader.FileName, stream.RelativePosition.ToString("X8"));
+                        var dummyPath = Path.Combine(reader.FileName, stream.RelativePosition.ToString("X8"));
                         var subReader = new FileReader(dummyPath, stream, true);
                         LoadBundleFile(subReader, reader.FullPath, stream.RelativePosition);
                     } while (stream.Remaining > 0);
@@ -480,7 +480,7 @@ namespace AssetStudio
                     foreach (var offset in offsets)
                     {
                         stream.Offset = offset;
-                        var dummyPath = Path.Combine("//?/blk:/", reader.FileName, offset.ToString("X8"));
+                        var dummyPath = Path.Combine(reader.FileName, offset.ToString("X8"));
                         var subReader = new FileReader(dummyPath, stream, true);
                         switch (subReader.FileType)
                         {
@@ -499,7 +499,7 @@ namespace AssetStudio
                     do
                     {
                         stream.Offset = stream.RelativePosition;
-                        var dummyPath = Path.Combine("//?/blk:/", reader.FileName, stream.RelativePosition.ToString("X8"));
+                        var dummyPath = Path.Combine(reader.FileName, stream.RelativePosition.ToString("X8"));
                         var subReader = new FileReader(dummyPath, stream, true);
                         switch (subReader.FileType)
                         {
@@ -626,10 +626,10 @@ namespace AssetStudio
                             case ClassIDType.Animation:
                                 obj = new Animation(objectReader);
                                 break;
-                            case ClassIDType.AnimationClip:
+                            case ClassIDType.AnimationClip when ExportableTypes[ClassIDType.AnimationClip]:
                                 obj = new AnimationClip(objectReader);
                                 break;
-                            case ClassIDType.Animator:
+                            case ClassIDType.Animator when ExportableTypes[ClassIDType.Animator]:
                                 obj = new Animator(objectReader);
                                 break;
                             case ClassIDType.AnimatorController:
@@ -638,7 +638,7 @@ namespace AssetStudio
                             case ClassIDType.AnimatorOverrideController:
                                 obj = new AnimatorOverrideController(objectReader);
                                 break;
-                            case ClassIDType.AssetBundle:
+                            case ClassIDType.AssetBundle when ExportableTypes[ClassIDType.AssetBundle]:
                                 obj = new AssetBundle(objectReader);
                                 break;
                             case ClassIDType.AudioClip:
@@ -647,30 +647,29 @@ namespace AssetStudio
                             case ClassIDType.Avatar:
                                 obj = new Avatar(objectReader);
                                 break;
-                            case ClassIDType.Font:
+                            case ClassIDType.Font when ExportableTypes[ClassIDType.Font]:
                                 obj = new Font(objectReader);
                                 break;
-                            case ClassIDType.GameObject:
+                            case ClassIDType.GameObject when ExportableTypes[ClassIDType.GameObject]:
                                 obj = new GameObject(objectReader);
                                 break;
-                            case ClassIDType.IndexObject:
+                            case ClassIDType.IndexObject when ExportableTypes[ClassIDType.MiHoYoBinData]:
                                 obj = new IndexObject(objectReader);
                                 break;
                             case ClassIDType.Material:
+                            case ClassIDType.Material when ExportableTypes[ClassIDType.Material]:
                                 obj = new Material(objectReader);
                                 break;
-                            case ClassIDType.Mesh:
+                            case ClassIDType.Mesh when ExportableTypes[ClassIDType.Mesh]:
                                 obj = new Mesh(objectReader);
                                 break;
                             case ClassIDType.MeshFilter:
                                 obj = new MeshFilter(objectReader);
                                 break;
-                            case ClassIDType.MeshRenderer:
-                                if (Renderer.Skipped)
-                                    goto default;
+                            case ClassIDType.MeshRenderer when ExportableTypes[ClassIDType.Renderer]:
                                 obj = new MeshRenderer(objectReader);
                                 break;
-                            case ClassIDType.MiHoYoBinData:
+                            case ClassIDType.MiHoYoBinData when ExportableTypes[ClassIDType.MiHoYoBinData]:
                                 obj = new MiHoYoBinData(objectReader);
                                 break;
                             case ClassIDType.MonoBehaviour:
@@ -688,24 +687,22 @@ namespace AssetStudio
                             case ClassIDType.RectTransform:
                                 obj = new RectTransform(objectReader);
                                 break;
-                            case ClassIDType.Shader:
+                            case ClassIDType.Shader when ExportableTypes[ClassIDType.Shader]:
                                 obj = new Shader(objectReader);
                                 break;
-                            case ClassIDType.SkinnedMeshRenderer:
-                                if (Renderer.Skipped)
-                                    goto default;
+                            case ClassIDType.SkinnedMeshRenderer when ExportableTypes[ClassIDType.Renderer]:
                                 obj = new SkinnedMeshRenderer(objectReader);
                                 break;
-                            case ClassIDType.Sprite:
+                            case ClassIDType.Sprite when ExportableTypes[ClassIDType.Sprite]:
                                 obj = new Sprite(objectReader);
                                 break;
                             case ClassIDType.SpriteAtlas:
                                 obj = new SpriteAtlas(objectReader);
                                 break;
-                            case ClassIDType.TextAsset:
+                            case ClassIDType.TextAsset when ExportableTypes[ClassIDType.TextAsset]:
                                 obj = new TextAsset(objectReader);
                                 break;
-                            case ClassIDType.Texture2D:
+                            case ClassIDType.Texture2D when ExportableTypes[ClassIDType.Texture2D]:
                                 obj = new Texture2D(objectReader);
                                 break;
                             case ClassIDType.Transform:

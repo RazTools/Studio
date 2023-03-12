@@ -15,7 +15,6 @@ namespace AssetStudio
         BlocksInfoAtTheEnd = 0x80,
         OldWebPluginCompatibility = 0x100,
         BlockInfoNeedPaddingAtStart = 0x200,
-        CNUnityEncryption = 0x400
     }
 
     [Flags]
@@ -23,7 +22,6 @@ namespace AssetStudio
     {
         CompressionTypeMask = 0x3f,
         Streamed = 0x40,
-        CNUnity = 0x100
     }
 
     public enum CompressionType
@@ -66,7 +64,6 @@ namespace AssetStudio
         }
 
         private Game Game;
-        private CNUnity CNUnity;
 
         public Header m_Header;
         private Node[] m_DirectoryInfo;
@@ -311,30 +308,6 @@ namespace AssetStudio
 
         private void ReadBlocksInfoAndDirectory(FileReader reader)
         {
-            if (Game.Type.IsCNUnity())
-            {
-                ArchiveFlags mask;
-
-                var version = ParseVersion();
-                //Flag changed it in these versions
-                if (version[0] < 2020 || //2020 and earlier
-                    (version[0] == 2020 && version[1] == 3 && version[2] <= 34) || //2020.3.34 and earlier
-                    (version[0] == 2021 && version[1] == 3 && version[2] <= 2) || //2021.3.2 and earlier
-                    (version[0] == 2022 && version[1] == 3 && version[2] <= 1)) //2022.3.1 and earlier
-                {
-                    mask = ArchiveFlags.BlockInfoNeedPaddingAtStart;
-                }
-                else
-                {
-                    mask = ArchiveFlags.CNUnityEncryption;
-                }
-
-                if ((m_Header.flags & mask) != 0)
-                {
-                    CNUnity = new CNUnity(reader);
-                }
-            }
-
             byte[] blocksInfoBytes;
             if (m_Header.version >= 7 && !Game.Type.IsSRGroup())
             {
@@ -424,7 +397,7 @@ namespace AssetStudio
                     };
                 }
             }
-            if (!Game.Type.IsCNUnity() && (m_Header.flags & ArchiveFlags.BlockInfoNeedPaddingAtStart) != 0)
+            if ((m_Header.flags & ArchiveFlags.BlockInfoNeedPaddingAtStart) != 0)
             {
                 reader.AlignStream(16);
             }
@@ -459,10 +432,6 @@ namespace AssetStudio
                             if (compressionType == CompressionType.Lz4Mr0k && Mr0kUtils.IsMr0k(compressedBytes))
                             {
                                 compressedBytesSpan = Mr0kUtils.Decrypt(compressedBytesSpan, (Mr0k)Game);
-                            }
-                            if (Game.Type.IsCNUnity() && (blockInfo.flags & StorageBlockFlags.CNUnity) != 0)
-                            {
-                                CNUnity.DecryptBlock(compressedBytesSpan, compressedSize, i);
                             }
                             if (Game.Type.IsOPFP())
                             {

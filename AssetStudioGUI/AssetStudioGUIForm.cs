@@ -107,13 +107,17 @@ namespace AssetStudioGUI
             displayAll.Checked = Properties.Settings.Default.displayAll;
             displayInfo.Checked = Properties.Settings.Default.displayInfo;
             enablePreview.Checked = Properties.Settings.Default.enablePreview;
-            enableResolveDependencies.Checked = Properties.Settings.Default.enableResolveDependencies;
-            skipContainer.Checked = Properties.Settings.Default.skipContainer;
-            assetsManager.ResolveDependencies = enableResolveDependencies.Checked;
-            Renderer.Skipped = Properties.Settings.Default.skipRenderer;
+            assetsManager.ResolveDependencies = Properties.Settings.Default.enableResolveDependencies;
             MiHoYoBinData.Exportable = Properties.Settings.Default.exportMiHoYoBinData;
             MiHoYoBinData.Encrypted = Properties.Settings.Default.encrypted;
             MiHoYoBinData.Key = Properties.Settings.Default.key;
+
+            var types = JsonConvert.DeserializeObject<Dictionary<ClassIDType, bool>>(Properties.Settings.Default.exportableTypes);
+            foreach (var exportable in types)
+            {
+                if (assetsManager.ExportableTypes.ContainsKey(exportable.Key))
+                    assetsManager.ExportableTypes[exportable.Key] = exportable.Value;
+            }
         }
 
         private void InitializeLogger()
@@ -152,7 +156,6 @@ namespace AssetStudioGUI
             Logger.Info($"Target Game type is {Studio.Game.Type}");
 
             CABMapNameComboBox.SelectedIndexChanged += new EventHandler(specifyNameComboBox_SelectedIndexChanged);
-            CNUnityKeyManager.SetKey(Properties.Settings.Default.selectedCNUnityKey);
         }
         private void AssetStudioGUIForm_DragEnter(object sender, DragEventArgs e)
         {
@@ -269,7 +272,7 @@ namespace AssetStudioGUI
                 {
                     productName = "no productName";
                 }
-            }            
+            }
 
             Text = $"Studio v{Application.ProductVersion} - {productName} - {assetsManager.assetsFileList[0].unityVersion} - {assetsManager.assetsFileList[0].m_TargetPlatform}";
 
@@ -494,22 +497,6 @@ namespace AssetStudioGUI
             Properties.Settings.Default.enablePreview = enablePreview.Checked;
             Properties.Settings.Default.Save();
         }
-
-        private void enableResolveDependencies_CheckedChanged(object sender, EventArgs e)
-        {
-            Properties.Settings.Default.enableResolveDependencies = enableResolveDependencies.Checked;
-            Properties.Settings.Default.Save();
-
-            assetsManager.ResolveDependencies = enableResolveDependencies.Checked;
-        }
-
-        private void skipContainer_CheckedChanged(object sender, EventArgs e)
-        {
-            Properties.Settings.Default.skipContainer = skipContainer.Checked;
-            Properties.Settings.Default.Save();
-
-            SkipContainer = skipContainer.Checked;
-        }
         private void displayAssetInfo_Check(object sender, EventArgs e)
         {
             if (displayInfo.Checked && assetInfoLabel.Text != null)
@@ -529,6 +516,12 @@ namespace AssetStudioGUI
         {
             var exportOpt = new ExportOptions();
             exportOpt.ShowDialog(this);
+            var types = JsonConvert.DeserializeObject<Dictionary<ClassIDType, bool>>(Properties.Settings.Default.exportableTypes);
+            foreach (var exportable in types)
+            {
+                if (assetsManager.ExportableTypes.ContainsKey(exportable.Key))
+                    assetsManager.ExportableTypes[exportable.Key] = exportable.Value;
+            }
         }
 
         private void assetListView_RetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
@@ -1737,7 +1730,7 @@ namespace AssetStudioGUI
             {
                 return;
             }
-            if (skipContainer.Checked)
+            if (Properties.Settings.Default.skipContainer)
             {
                 Logger.Info("Skip container is enabled, aborting...");
                 return;
@@ -1937,12 +1930,6 @@ namespace AssetStudioGUI
             InvokeUpdate(miscToolStripMenuItem, true);
         }
 
-        private void toolStripMenuItem23_Click(object sender, EventArgs e)
-        {
-            var form = new CNUnityForm();
-            form.Show();
-        }
-
         private void resetToolStripMenuItem_Click(object sender, EventArgs e)
         {
             ResetForm();
@@ -1978,7 +1965,7 @@ namespace AssetStudioGUI
 
         private async void loadAIToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (skipContainer.Checked)
+            if (Properties.Settings.Default.skipContainer)
             {
                 Logger.Info("Skip container is enabled, aborting...");
                 return;

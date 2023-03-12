@@ -4,6 +4,13 @@ using AssetStudio.PInvoke;
 
 namespace ACLLibs
 {
+    public struct DecompressedClip
+    {
+        public IntPtr Values;
+        public int ValuesCount;
+        public IntPtr Times;
+        public int TimesCount;
+    }
     public static class ACL
     {
         private const string DLL_NAME = "acl";
@@ -13,27 +20,30 @@ namespace ACLLibs
         }
         public static void DecompressAll(byte[] data, out float[] values, out float[] times)
         {
-            var pinned = GCHandle.Alloc(data, GCHandleType.Pinned);
-            var pData = pinned.AddrOfPinnedObject();
-            DecompressAll(pData, out var pValues, out var numValues, out var pTimes, out var numTimes);
-            pinned.Free();
+            var decompressedClip = new DecompressedClip();
+            DecompressAll(data, ref decompressedClip);
 
-            values = new float[numValues];
-            Marshal.Copy(pValues, values, 0, numValues);
+            values = new float[decompressedClip.ValuesCount];
+            Marshal.Copy(decompressedClip.Values, values, 0, decompressedClip.ValuesCount);
 
-            times = new float[numTimes];
-            Marshal.Copy(pTimes, times, 0, numTimes);
+            times = new float[decompressedClip.TimesCount];
+            Marshal.Copy(decompressedClip.Times, times, 0, decompressedClip.TimesCount);
+
+            Dispose(ref decompressedClip);
         }
 
         #region importfunctions
 
-        [DllImport(DLL_NAME)]
-        private static extern void DecompressAll(IntPtr data, out IntPtr pValues, out int numValues, out IntPtr pTimes, out int numTimes);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        private static extern void DecompressAll(byte[] data, ref DecompressedClip decompressedClip);
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        private static extern void Dispose(ref DecompressedClip decompressedClip);
 
         #endregion
     }
 
-    public static partial class SRACL
+    public static class SRACL
     {
         private const string DLL_NAME = "sracl";
         static SRACL()
@@ -42,22 +52,25 @@ namespace ACLLibs
         }
         public static void DecompressAll(byte[] data, out float[] values, out float[] times)
         {
-            var pinned = GCHandle.Alloc(data, GCHandleType.Pinned);
-            var pData = pinned.AddrOfPinnedObject();
-            DecompressAll(pData, out var pValues, out var numValues, out var pTimes, out var numTimes);
-            pinned.Free();
+            var decompressedClip = new DecompressedClip();
+            DecompressAll(data, ref decompressedClip);
 
-            values = new float[numValues];
-            Marshal.Copy(pValues, values, 0, numValues);
+            values = new float[decompressedClip.ValuesCount];
+            Marshal.Copy(decompressedClip.Values, values, 0, decompressedClip.ValuesCount);
 
-            times = new float[numTimes];
-            Marshal.Copy(pTimes, times, 0, numTimes);
+            times = new float[decompressedClip.TimesCount];
+            Marshal.Copy(decompressedClip.Times, times, 0, decompressedClip.TimesCount);
+
+            Dispose(ref decompressedClip);
         }
 
         #region importfunctions
 
-        [DllImport(DLL_NAME)]
-        private static extern void DecompressAll(IntPtr data, out IntPtr pValues, out int numValues, out IntPtr pTimes, out int numTimes);
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        private static extern void DecompressAll(byte[] data, ref DecompressedClip decompressedClip);
+
+        [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        private static extern void Dispose(ref DecompressedClip decompressedClip);
 
         #endregion
     }

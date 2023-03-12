@@ -74,17 +74,11 @@
     <Setting Name="encrypted" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
-    <Setting Name="skipRenderer" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">False</Value>
-    </Setting>
     <Setting Name="selectedGame" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">0</Value>
     </Setting>
     <Setting Name="enableResolveDependencies" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
-    </Setting>
-    <Setting Name="selectedCNUnityKey" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">0</Value>
     </Setting>
     <Setting Name="selectedAssetMapType" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">0</Value>
@@ -97,6 +91,12 @@
     </Setting>
     <Setting Name="skipContainer" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="exportUV0UV1" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="exportableTypes" Type="System.String" Scope="User">
+      <Value Profile="(Default)">{"GameObject":true,"Material":true,"Texture2D":true,"Mesh":true,"Renderer":true,"Shader":true,"TextAsset":true,"AnimationClip":true,"Font":true,"Sprite":true,"Animator":true,"MiHoYoBinData":true,"AssetBundle":true}</Value>
     </Setting>
   </Settings>
 </SettingsFile>
