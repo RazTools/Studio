@@ -19,6 +19,7 @@ namespace AssetStudio
         public string SpecifyUnityVersion;
         public CancellationTokenSource tokenSource = new CancellationTokenSource();
         public List<SerializedFile> assetsFileList = new List<SerializedFile>();
+        public Dictionary<ClassIDType, bool> ExportableTypes = new() { { ClassIDType.GameObject, true }, { ClassIDType.Material, true }, { ClassIDType.Texture2D, true }, { ClassIDType.Mesh, true }, { ClassIDType.Renderer, true }, { ClassIDType.Shader, true }, { ClassIDType.TextAsset, true }, { ClassIDType.AnimationClip, true }, { ClassIDType.Font, true }, { ClassIDType.Sprite, true }, { ClassIDType.Animator, true }, { ClassIDType.MiHoYoBinData, true }, { ClassIDType.AssetBundle, true } };
 
         internal Dictionary<string, int> assetsFileIndexCache = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         internal Dictionary<string, BinaryReader> resourceFileReaders = new Dictionary<string, BinaryReader>(StringComparer.OrdinalIgnoreCase);
