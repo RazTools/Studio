@@ -657,7 +657,6 @@ namespace AssetStudio
                             case ClassIDType.IndexObject when ExportableTypes[ClassIDType.MiHoYoBinData]:
                                 obj = new IndexObject(objectReader);
                                 break;
-                            case ClassIDType.Material:
                             case ClassIDType.Material when ExportableTypes[ClassIDType.Material]:
                                 obj = new Material(objectReader);
                                 break;
