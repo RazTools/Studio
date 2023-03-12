@@ -58,6 +58,7 @@ namespace AssetStudioCLI.Properties {
         public bool castToBone => AppSettings.Get("castToBone", false);
         public bool restoreExtensionName => AppSettings.Get("restoreExtensionName", true);
         public bool exportAllUvsAsDiffuseMaps => AppSettings.Get("exportAllUvsAsDiffuseMaps", false);
+        public bool exportUV0UV1 => AppSettings.Get("exportUV0UV1", false);
         public bool encrypted => AppSettings.Get("encrypted", true);
         public byte key => AppSettings.Get("key", (byte)0x93);
         public bool skipRenderer => AppSettings.Get("skipRenderer", false);
