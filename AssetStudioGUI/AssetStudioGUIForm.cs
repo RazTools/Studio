@@ -108,7 +108,6 @@ namespace AssetStudioGUI
             displayInfo.Checked = Properties.Settings.Default.displayInfo;
             enablePreview.Checked = Properties.Settings.Default.enablePreview;
             assetsManager.ResolveDependencies = Properties.Settings.Default.enableResolveDependencies;
-            MiHoYoBinData.Exportable = Properties.Settings.Default.exportMiHoYoBinData;
             MiHoYoBinData.Encrypted = Properties.Settings.Default.encrypted;
             MiHoYoBinData.Key = Properties.Settings.Default.key;
 
@@ -155,7 +154,7 @@ namespace AssetStudioGUI
             Studio.Game = GameManager.GetGame(Properties.Settings.Default.selectedGame);
             Logger.Info($"Target Game type is {Studio.Game.Type}");
 
-            CABMapNameComboBox.SelectedIndexChanged += new EventHandler(specifyNameComboBox_SelectedIndexChanged);
+            MapNameComboBox.SelectedIndexChanged += new EventHandler(specifyNameComboBox_SelectedIndexChanged);
         }
         private void AssetStudioGUIForm_DragEnter(object sender, DragEventArgs e)
         {
@@ -1719,8 +1718,8 @@ namespace AssetStudioGUI
         {
             if (assetHelpersToolStripMenuItem.Enabled)
             {
-                CABMapNameComboBox.Items.Clear();
-                CABMapNameComboBox.Items.AddRange(AssetsHelper.GetMaps());
+                MapNameComboBox.Items.Clear();
+                MapNameComboBox.Items.AddRange(AssetsHelper.GetMaps());
             }
         }
 
@@ -1780,14 +1779,18 @@ namespace AssetStudioGUI
                     if (int.TryParse(asset.Container, out var value))
                     {
                         var last = unchecked((uint)value);
-                        var path = ResourceIndex.GetAssetPath(last);
-                        if (!string.IsNullOrEmpty(path))
+                        var name = Path.GetFileNameWithoutExtension(asset.SourceFile.originalPath);
+                        if (uint.TryParse(name, out var id))
                         {
-                            asset.Container = path;
-                            asset.SubItems[1].Text = path;
-                            if (asset.Type == ClassIDType.MiHoYoBinData)
+                            var path = ResourceIndex.GetContainer(id, last);
+                            if (!string.IsNullOrEmpty(path))
                             {
-                                asset.Text = Path.GetFileNameWithoutExtension(path);
+                                asset.Container = path;
+                                asset.SubItems[1].Text = path;
+                                if (asset.Type == ClassIDType.MiHoYoBinData)
+                                {
+                                    asset.Text = Path.GetFileNameWithoutExtension(path);
+                                }
                             }
                         }
                     }
@@ -1841,7 +1844,7 @@ namespace AssetStudioGUI
             miscToolStripMenuItem.DropDown.Visible = false;
             InvokeUpdate(miscToolStripMenuItem, false);
 
-            var name = CABMapNameComboBox.SelectedItem.ToString();
+            var name = MapNameComboBox.SelectedItem.ToString();
             await Task.Run(() => AssetsHelper.LoadMap(name));
 
             ResetForm();
@@ -1856,8 +1859,8 @@ namespace AssetStudioGUI
             miscToolStripMenuItem.DropDown.Visible = false;
             InvokeUpdate(miscToolStripMenuItem, false);
 
-            var input = CABMapNameComboBox.Text;
-            var selectedText = CABMapNameComboBox.SelectedText;
+            var input = MapNameComboBox.Text;
+            var selectedText = MapNameComboBox.SelectedText;
             var name = "";
 
             if (!string.IsNullOrEmpty(selectedText))
@@ -1877,14 +1880,14 @@ namespace AssetStudioGUI
             }
             else
             {
-                Logger.Error("CABMap name is empty, please enter any name in ComboBox above");
+                Logger.Error("Map name is empty, please enter any name in ComboBox above");
                 InvokeUpdate(miscToolStripMenuItem, true);
                 return;
             }
 
-            if (File.Exists(Path.Combine(AssetsHelper.CABMapName, $"{name}.bin")))
+            if (File.Exists(Path.Combine(AssetsHelper.MapName, $"{name}.bin")))
             {
-                var acceptOverride = MessageBox.Show("CABMap already exist, Do you want to override it ?", "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                var acceptOverride = MessageBox.Show("Map already exist, Do you want to override it ?", "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
                 if (acceptOverride != DialogResult.Yes)
                 {
                     InvokeUpdate(miscToolStripMenuItem, true);
@@ -1899,7 +1902,7 @@ namespace AssetStudioGUI
                 Logger.Info("Scanning for files");
                 var files = Directory.GetFiles(openFolderDialog.Folder, "*.*", SearchOption.AllDirectories).ToArray();
                 Logger.Info($"Found {files.Length} files");
-                await Task.Run(() => AssetsHelper.BuildCABMap(files, name, openFolderDialog.Folder, Studio.Game));
+                await Task.Run(() => AssetsHelper.BuildMap(files, name, openFolderDialog.Folder, Studio.Game));
             }
             InvokeUpdate(miscToolStripMenuItem, true);
         }
@@ -1909,22 +1912,22 @@ namespace AssetStudioGUI
             miscToolStripMenuItem.DropDown.Visible = false;
             InvokeUpdate(miscToolStripMenuItem, false);
 
-            var acceptDelete = MessageBox.Show("CABMap will be deleted, this can't be undone, continue ?", "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            var acceptDelete = MessageBox.Show("Map will be deleted, this can't be undone, continue ?", "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
             if (acceptDelete != DialogResult.Yes)
             {
                 InvokeUpdate(miscToolStripMenuItem, true);
                 return;
             }
 
-            var name = CABMapNameComboBox.Text.ToString();
-            var path = Path.Combine(AssetsHelper.CABMapName, $"{name}.bin");
+            var name = MapNameComboBox.Text.ToString();
+            var path = Path.Combine(AssetsHelper.MapName, $"{name}.bin");
             if (File.Exists(path))
             {
                 File.Delete(path);
                 Logger.Info($"{name} deleted successfully !!");
-                CABMapNameComboBox.SelectedIndexChanged -= new EventHandler(specifyNameComboBox_SelectedIndexChanged);
-                CABMapNameComboBox.SelectedIndex = 0;
-                CABMapNameComboBox.SelectedIndexChanged += new EventHandler(specifyNameComboBox_SelectedIndexChanged);
+                MapNameComboBox.SelectedIndexChanged -= new EventHandler(specifyNameComboBox_SelectedIndexChanged);
+                MapNameComboBox.SelectedIndex = 0;
+                MapNameComboBox.SelectedIndexChanged += new EventHandler(specifyNameComboBox_SelectedIndexChanged);
             }
 
             InvokeUpdate(miscToolStripMenuItem, true);

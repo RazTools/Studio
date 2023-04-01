@@ -91,6 +91,22 @@ namespace AssetStudioCLI
             return true;
         }
 
+        public static bool ExportMonoBehaviour(AssetItem item, string exportPath)
+        {
+            if (!TryExportFile(exportPath, item, ".json", out var exportFullPath))
+                return false;
+            var m_MonoBehaviour = (MonoBehaviour)item.Asset;
+            var type = m_MonoBehaviour.ToType();
+            if (type == null)
+            {
+                var m_Type = Studio.MonoBehaviourToTypeTree(m_MonoBehaviour);
+                type = m_MonoBehaviour.ToType(m_Type);
+            }
+            var str = JsonConvert.SerializeObject(type, Formatting.Indented);
+            File.WriteAllText(exportFullPath, str);
+            return true;
+        }
+
         public static bool ExportMiHoYoBinData(AssetItem item, string exportPath)
         {
             string exportFullPath;
@@ -315,6 +331,13 @@ namespace AssetStudioCLI
             return true;
         }
 
+        public static bool ExportGameObject(AssetItem item, string exportPath, List <AssetItem> animationList = null)
+        {
+            var m_GameObject = (GameObject)item.Asset;
+            ExportGameObject(m_GameObject, exportPath, animationList);
+            return true;
+        }
+
         public static void ExportGameObject(GameObject gameObject, string exportPath, List<AssetItem> animationList = null)
         {
             var convert = animationList != null
@@ -369,6 +392,8 @@ namespace AssetStudioCLI
         {
             switch (item.Type)
             {
+                case ClassIDType.GameObject:
+                    return ExportGameObject(item, exportPath);
                 case ClassIDType.Texture2D:
                     return ExportTexture2D(item, exportPath);
                 case ClassIDType.AudioClip:
@@ -378,7 +403,7 @@ namespace AssetStudioCLI
                 case ClassIDType.TextAsset:
                     return ExportTextAsset(item, exportPath);
                 case ClassIDType.MonoBehaviour:
-                    return false;
+                    return ExportMonoBehaviour(item, exportPath);
                 case ClassIDType.Font:
                     return ExportFont(item, exportPath);
                 case ClassIDType.Mesh:
@@ -390,7 +415,7 @@ namespace AssetStudioCLI
                 case ClassIDType.Sprite:
                     return ExportSprite(item, exportPath);
                 case ClassIDType.Animator:
-                    return ExportAnimator(item, exportPath, new List<AssetItem>());
+                    return ExportAnimator(item, exportPath);
                 case ClassIDType.AnimationClip:
                     return false;
                 case ClassIDType.MiHoYoBinData:

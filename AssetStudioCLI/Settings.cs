@@ -24,6 +24,7 @@ namespace AssetStudioCLI.Properties {
             }
             catch (Exception)
             {
+                Console.WriteLine($"Invalid value at \"{key}\", switching to default value [{defaultValue}] !!");
                 return defaultValue;
             }
             

@@ -387,6 +387,11 @@ namespace AssetStudio
             ObjectsDic.Add(obj.m_PathID, obj);
         }
 
+        public bool IsLoaded(ObjectInfo objInfo)
+        {
+            return ObjectsDic.TryGetValue(objInfo.m_PathID, out var obj) && obj.type == (ClassIDType)objInfo.classID;
+        }
+
         private static int DecodeClassID(int value)
         {
             var bytes = BitConverter.GetBytes(value);

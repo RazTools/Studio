@@ -157,6 +157,9 @@ namespace AssetStudio
                     case GameType.ShiningNikki:
                         reader = ParseShiningNikki(reader);
                         break;
+                    case GameType.HelixWaltz2:
+                        reader = ParseHelixWaltz2(reader);
+                        break;
                 }
             }
             if (reader.FileType == FileType.BundleFile && game.Type.IsBlockFile())

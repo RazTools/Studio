@@ -7,8 +7,8 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Windows.Forms;
+using System.Xml;
 using System.Xml.Linq;
-using static AssetStudio.ImportHelper;
 using static AssetStudioGUI.Exporter;
 using Object = AssetStudio.Object;
 
@@ -220,7 +220,10 @@ namespace AssetStudioGUI
                     if (int.TryParse(asset.Container, out var value))
                     {
                         var last = unchecked((uint)value);
-                        var path = ResourceIndex.GetAssetPath(last);
+                        var name = Path.GetFileNameWithoutExtension(asset.SourceFile.originalPath);
+                        if (uint.TryParse(name, out var id))
+                        {
+                            var path = ResourceIndex.GetContainer(id, last);
                         if (!string.IsNullOrEmpty(path))
                         {
                             asset.Container = path;
@@ -231,6 +234,7 @@ namespace AssetStudioGUI
                         }
                     }
                 }
+                }
                 Logger.Info("Updated !!");
             }
         }
@@ -239,12 +243,12 @@ namespace AssetStudioGUI
         {
             StatusStripUpdate("Building asset list...");
 
+            int i = 0;
             string productName = null;
             var objectCount = assetsManager.assetsFileList.Sum(x => x.Objects.Count);
             var objectAssetItemDic = new Dictionary<Object, AssetItem>(objectCount);
             var mihoyoBinDataNames = new List<(PPtr<Object>, string)>();
             var containers = new List<(PPtr<Object>, string)>();
-            int i = 0;
             Progress.Reset();
             foreach (var assetsFile in assetsManager.assetsFileList)
             {
@@ -257,7 +261,7 @@ namespace AssetStudioGUI
                     }
                     var assetItem = new AssetItem(asset);
                     objectAssetItemDic.Add(asset, assetItem);
-                    assetItem.UniqueID = " #" + i;
+                    assetItem.UniqueID = "#" + i;
                     var exportable = false;
                     switch (asset)
                     {
@@ -340,7 +344,7 @@ namespace AssetStudioGUI
                             assetItem.Text = "IndexObject";
                             break;
                         case MiHoYoBinData m_MiHoYoBinData:
-                            exportable = MiHoYoBinData.Exportable;
+                            exportable = true;
                             break;
                         case ResourceManager m_ResourceManager:
                             foreach (var m_Container in m_ResourceManager.m_Container)
@@ -629,25 +633,30 @@ namespace AssetStudioGUI
                 {
                     case ExportListType.XML:
                         var filename = Path.Combine(savePath, "assets.xml");
-                        var doc = new XDocument(
-                            new XElement("Assets",
-                                new XAttribute("filename", filename),
-                                new XAttribute("createdAt", DateTime.UtcNow.ToString("s")),
-                                toExportAssets.Select(
-                                    asset => new XElement("Asset",
-                                        new XElement("Name", asset.Text),
-                                        new XElement("Container", asset.Container),
-                                        new XElement("Type", new XAttribute("id", (int)asset.Type), asset.TypeString),
-                                        new XElement("PathID", asset.m_PathID),
-                                        new XElement("Source", asset.SourceFile.fullName),
-                                        new XElement("Size", asset.FullSize)
-                                    )
-                                )
-                            )
-                        );
-
-                        doc.Save(filename);
-
+                        var settings = new XmlWriterSettings() { Indent = true };
+                        using (XmlWriter writer = XmlWriter.Create(filename, settings))
+                        {
+                            writer.WriteStartDocument();
+                            writer.WriteStartElement("Assets");
+                            writer.WriteAttributeString("filename", filename);
+                            writer.WriteAttributeString("createdAt", DateTime.UtcNow.ToString("s"));
+                            foreach (var asset in toExportAssets)
+                            {
+                                writer.WriteStartElement("Asset");
+                                writer.WriteElementString("Name", asset.Name);
+                                writer.WriteElementString("Container", asset.Container);
+                                writer.WriteStartElement("Type");
+                                writer.WriteAttributeString("id", ((int)asset.Type).ToString());
+                                writer.WriteValue(asset.TypeString);
+                                writer.WriteEndElement();
+                                writer.WriteElementString("PathID", asset.m_PathID.ToString());
+                                writer.WriteElementString("Source", asset.SourceFile.fullName);
+                                writer.WriteElementString("Size", asset.FullSize.ToString());
+                                writer.WriteEndElement();
+                            }
+                            writer.WriteEndElement();
+                            writer.WriteEndDocument();
+                        }
                         break;
                 }
 

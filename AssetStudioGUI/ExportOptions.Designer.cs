@@ -557,9 +557,9 @@ namespace AssetStudioGUI
             label7.AutoSize = true;
             label7.Location = new System.Drawing.Point(7, 94);
             label7.Name = "label7";
-            label7.Size = new System.Drawing.Size(91, 15);
+            label7.Size = new System.Drawing.Size(95, 15);
             label7.TabIndex = 16;
-            label7.Text = "Exporable Types";
+            label7.Text = "Exportable Types";
             // 
             // exportableTypes
             // 

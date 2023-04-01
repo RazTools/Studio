@@ -350,18 +350,6 @@ namespace AssetStudioGUI.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
-        public bool exportMiHoYoBinData {
-            get {
-                return ((bool)(this["exportMiHoYoBinData"]));
-            }
-            set {
-                this["exportMiHoYoBinData"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool collectAnimations {
             get {
                 return ((bool)(this["collectAnimations"]));

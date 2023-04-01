@@ -4,7 +4,7 @@ namespace AssetStudio
 {
     public static class OPFPUtils
     {
-        public static readonly string[] EncrytpedFolders = { "UI/", "Atlas/", "UITexture/", "DynamicAtlas/" };
+        public static readonly string[] EncrytpedFolders = { "UITexture", "DynamicAtlas", "UI", "Atlas" };
 
         public static void Decrypt(Span<byte> data, string path)
         {

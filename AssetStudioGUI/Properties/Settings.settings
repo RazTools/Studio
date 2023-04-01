@@ -83,9 +83,6 @@
     <Setting Name="selectedAssetMapType" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">0</Value>
     </Setting>
-    <Setting Name="exportMiHoYoBinData" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">True</Value>
-    </Setting>
     <Setting Name="collectAnimations" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>

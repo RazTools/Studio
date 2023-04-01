@@ -374,5 +374,52 @@ namespace AssetStudio
             var stream = new BlockStream(reader.BaseStream, idx);
             return new FileReader(reader.FullPath, stream);
         }
+        public static FileReader ParseHelixWaltz2(FileReader reader)
+        {
+            var originalHeader = new byte[] { 0x55, 0x6E, 0x69, 0x74, 0x79, 0x46, 0x53, 0x00, 0x00, 0x00, 0x00, 0x07, 0x35, 0x2E, 0x78, 0x2E };
+
+            var signature = reader.ReadStringToNull();
+            reader.AlignStream();
+
+            if (signature != "SzxFS")
+            {
+                reader.Position = 0;
+                return reader;
+            }
+
+            var seed = reader.ReadInt32();
+            reader.Position = 0x10;
+            var data = reader.ReadBytes((int)reader.Remaining);
+
+            var sbox = new byte[0x100];
+            for (int i = 0; i < sbox.Length; i++)
+            {
+                sbox[i] = (byte)i;
+            }
+
+            var key = new byte[0x100];
+            var random = new Random(seed);
+            for (int i = 0; i < key.Length; i++)
+            {
+                var idx = random.Next(i, 0x100);
+                var b = sbox[idx];
+                sbox[idx] = sbox[i];
+                sbox[i] = b;
+                key[b] = (byte)i;
+            }
+
+            for (int i = 0; i < data.Length; i++)
+            {
+                var idx = data[i];
+                data[i] = key[idx]; 
+            }
+
+            MemoryStream ms = new();
+            ms.Write(originalHeader);
+            ms.Write(data);
+            ms.Position = 0;
+
+            return new FileReader(reader.FullPath, ms);
+        }
     }
 }

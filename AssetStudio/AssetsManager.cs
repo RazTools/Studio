@@ -19,15 +19,34 @@ namespace AssetStudio
         public string SpecifyUnityVersion;
         public CancellationTokenSource tokenSource = new CancellationTokenSource();
         public List<SerializedFile> assetsFileList = new List<SerializedFile>();
-        public Dictionary<ClassIDType, bool> ExportableTypes = new() { { ClassIDType.GameObject, true }, { ClassIDType.Material, true }, { ClassIDType.Texture2D, true }, { ClassIDType.Mesh, true }, { ClassIDType.Renderer, true }, { ClassIDType.Shader, true }, { ClassIDType.TextAsset, true }, { ClassIDType.AnimationClip, true }, { ClassIDType.Font, true }, { ClassIDType.Sprite, true }, { ClassIDType.Animator, true }, { ClassIDType.MiHoYoBinData, true }, { ClassIDType.AssetBundle, true } };
+        public Dictionary<ClassIDType, bool> ExportableTypes = new Dictionary<ClassIDType, bool>();
 
         internal Dictionary<string, int> assetsFileIndexCache = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         internal Dictionary<string, BinaryReader> resourceFileReaders = new Dictionary<string, BinaryReader>(StringComparer.OrdinalIgnoreCase);
 
-        private List<string> importFiles = new List<string>();
-        private HashSet<string> importFilesHash = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        private HashSet<string> noexistFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        private HashSet<string> assetsFileListHash = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        internal List<string> importFiles = new List<string>();
+        internal HashSet<string> importFilesHash = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        internal HashSet<string> noexistFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        internal HashSet<string> assetsFileListHash = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        public AssetsManager()
+        {
+            ExportableTypes.Add(ClassIDType.GameObject, true);
+            ExportableTypes.Add(ClassIDType.Material, true);
+            ExportableTypes.Add(ClassIDType.Texture2D, true);
+            ExportableTypes.Add(ClassIDType.AudioClip, true);
+            ExportableTypes.Add(ClassIDType.VideoClip, true);
+            ExportableTypes.Add(ClassIDType.Mesh, false);
+            ExportableTypes.Add(ClassIDType.Renderer, false);
+            ExportableTypes.Add(ClassIDType.Shader, true);
+            ExportableTypes.Add(ClassIDType.TextAsset, true);
+            ExportableTypes.Add(ClassIDType.AnimationClip, true);
+            ExportableTypes.Add(ClassIDType.MonoBehaviour, true);
+            ExportableTypes.Add(ClassIDType.Font, true);
+            ExportableTypes.Add(ClassIDType.Sprite, true);
+            ExportableTypes.Add(ClassIDType.Animator, true);
+            ExportableTypes.Add(ClassIDType.MiHoYoBinData, true);
+        }
 
         public void LoadFiles(params string[] files)
         {
@@ -88,6 +107,11 @@ namespace AssetStudio
                     Logger.Info("Loading files has been aborted !!");
                     break;
                 }
+                if (!SkipProcess && !tokenSource.IsCancellationRequested)
+                {
+                    ReadAssets();
+                    ProcessAssets();
+            }
             }
 
             importFiles.Clear();
@@ -96,12 +120,12 @@ namespace AssetStudio
             assetsFileListHash.Clear();
             AssetsHelper.ClearOffsets();
 
-            if (!SkipProcess && !tokenSource.IsCancellationRequested)
-            {
-                ReadAssets();
-                ProcessAssets();
+            //if (!SkipProcess && !tokenSource.IsCancellationRequested)
+            //{
+            //    ReadAssets();
+            //    ProcessAssets();
+            //}
             }
-        }
 
         private void LoadFile(string fullName)
         {
@@ -153,8 +177,6 @@ namespace AssetStudio
                     assetsFileList.Add(assetsFile);
                     assetsFileListHash.Add(assetsFile.fileName);
 
-                    if (ResolveDependencies)
-                    {
                         foreach (var sharedFile in assetsFile.m_Externals)
                         {
                             var sharedFileName = sharedFile.fileName;
@@ -185,7 +207,6 @@ namespace AssetStudio
                             }
                         }
                     }
-                }
                 catch (Exception e)
                 {
                     Logger.Error($"Error while reading assets file {reader.FullPath}", e);
@@ -216,37 +237,37 @@ namespace AssetStudio
                     assetsFileList.Add(assetsFile);
                     assetsFileListHash.Add(assetsFile.fileName);
 
-                    if (ResolveDependencies)
-                    {
-                        foreach (var sharedFile in assetsFile.m_Externals)
-                        {
-                            var sharedFileName = sharedFile.fileName;
-
-                            if (!importFilesHash.Contains(sharedFileName))
-                            {
-                                var sharedFilePath = Path.Combine(Path.GetDirectoryName(originalPath), sharedFileName);
-                                if (!noexistFiles.Contains(sharedFilePath))
-                                {
-                                    if (AssetsHelper.TryAdd(sharedFileName, out var path))
-                                    {
-                                        sharedFilePath = path;
-                                    }
-                                    if (File.Exists(sharedFilePath))
-                                    {
-                                        if (!importFiles.Contains(sharedFilePath))
-                                        {
-                                            importFiles.Add(sharedFilePath);
-                                        }
-                                        importFilesHash.Add(sharedFileName);
-                                    }
-                                    else
-                                    {
-                                        noexistFiles.Add(sharedFilePath);
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    //if (ResolveDependencies)
+                    //{
+                    //    foreach (var sharedFile in assetsFile.m_Externals)
+                    //    {
+                    //        var sharedFileName = sharedFile.fileName;
+                    //
+                    //        if (!importFilesHash.Contains(sharedFileName))
+                    //        {
+                    //            var sharedFilePath = Path.Combine(Path.GetDirectoryName(originalPath), sharedFileName);
+                    //            if (!noexistFiles.Contains(sharedFilePath))
+                    //            {
+                    //                if (AssetsHelper.TryAdd(sharedFileName, out var path))
+                    //                {
+                    //                    sharedFilePath = path;
+                    //                }
+                    //                if (File.Exists(sharedFilePath))
+                    //                {
+                    //                    if (!importFiles.Contains(sharedFilePath))
+                    //                    {
+                    //                        importFiles.Add(sharedFilePath);
+                    //                    }
+                    //                    importFilesHash.Add(sharedFileName);
+                    //                }
+                    //                else
+                    //                {
+                    //                    noexistFiles.Add(sharedFilePath);
+                    //                }
+                    //            }
+                    //        }
+                    //    }
+                    //}
                 }
                 catch (Exception e)
                 {
@@ -618,6 +639,10 @@ namespace AssetStudio
                         Logger.Info("Reading assets has been aborted !!");
                         return;
                     }
+                    if (assetsFile.IsLoaded(objectInfo))
+                    {
+                        continue;
+                    }
                     var objectReader = new ObjectReader(assetsFile.reader, assetsFile, objectInfo, Game);
                     try
                     {
@@ -639,10 +664,10 @@ namespace AssetStudio
                             case ClassIDType.AnimatorOverrideController:
                                 obj = new AnimatorOverrideController(objectReader);
                                 break;
-                            case ClassIDType.AssetBundle when ExportableTypes[ClassIDType.AssetBundle]:
+                            case ClassIDType.AssetBundle:
                                 obj = new AssetBundle(objectReader);
                                 break;
-                            case ClassIDType.AudioClip:
+                            case ClassIDType.AudioClip when ExportableTypes[ClassIDType.AudioClip]:
                                 obj = new AudioClip(objectReader);
                                 break;
                             case ClassIDType.Avatar:
@@ -672,7 +697,7 @@ namespace AssetStudio
                             case ClassIDType.MiHoYoBinData when ExportableTypes[ClassIDType.MiHoYoBinData]:
                                 obj = new MiHoYoBinData(objectReader);
                                 break;
-                            case ClassIDType.MonoBehaviour:
+                            case ClassIDType.MonoBehaviour when ExportableTypes[ClassIDType.MonoBehaviour]:
                                 obj = new MonoBehaviour(objectReader);
                                 break;
                             case ClassIDType.MonoScript:
@@ -708,7 +733,7 @@ namespace AssetStudio
                             case ClassIDType.Transform:
                                 obj = new Transform(objectReader);
                                 break;
-                            case ClassIDType.VideoClip:
+                            case ClassIDType.VideoClip when ExportableTypes[ClassIDType.VideoClip]:
                                 obj = new VideoClip(objectReader);
                                 break;
                             case ClassIDType.ResourceManager:

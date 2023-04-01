@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using static AssetStudioCLI.Exporter;
 using Object = AssetStudio.Object;
 using System.Globalization;
+using System.Xml;
 
 namespace AssetStudioCLI
 {
@@ -17,9 +18,11 @@ namespace AssetStudioCLI
     public enum MapOpType
     {
         None,
-        AssetMap,
-        CABMap,
-        Both
+        Load,
+        Build,
+        Both,
+        List,
+        All = Build | Load | List
     }
 
     public enum AssetGroupOption
@@ -32,9 +35,12 @@ namespace AssetStudioCLI
 
     internal static class Studio
     {
-        public static AssetsManager assetsManager = new AssetsManager() { ResolveDependencies = false };
-        public static List<AssetItem> exportableAssets = new List<AssetItem>();
         public static Game Game;
+        public static bool ModelOnly = false;
+        public static bool SkipContainer = false;
+        public static AssetsManager assetsManager = new AssetsManager() { ResolveDependencies = false };
+        public static AssemblyLoader assemblyLoader = new AssemblyLoader();
+        public static List<AssetItem> exportableAssets = new List<AssetItem>();
 
         public static int ExtractFolder(string path, string savePath)
         {
@@ -213,13 +219,17 @@ namespace AssetStudioCLI
                     if (int.TryParse(asset.Container, out var value))
                     {
                         var last = unchecked((uint)value);
-                        var path = ResourceIndex.GetAssetPath(last);
-                        if (!string.IsNullOrEmpty(path))
+                        var name = Path.GetFileNameWithoutExtension(asset.SourceFile.originalPath);
+                        if (uint.TryParse(name, out var id))
                         {
-                            asset.Container = path;
-                            if (asset.Type == ClassIDType.MiHoYoBinData)
+                            var path = ResourceIndex.GetContainer(id, last);
+                            if (!string.IsNullOrEmpty(path))
                             {
-                                asset.Text = Path.GetFileNameWithoutExtension(path);
+                                asset.Container = path;
+                                if (asset.Type == ClassIDType.MiHoYoBinData)
+                                {
+                                    asset.Text = Path.GetFileNameWithoutExtension(path);
+                                }
                             }
                         }
                     }
@@ -228,121 +238,16 @@ namespace AssetStudioCLI
             }
         }
 
-        public static void BuildAssetData(ClassIDType[] typeFilters, Regex[] nameFilters, Regex[] containerFilters, ref int i)
+        public static void BuildAssetData(Regex[] nameFilters, Regex[] containerFilters, ref int i)
         {
-            string productName = null;
-            var objectCount = assetsManager.assetsFileList.Sum(x => x.Objects.Count);
-            var objectAssetItemDic = new Dictionary<Object, AssetItem>(objectCount);
+            var objectAssetItemDic = new Dictionary<Object, AssetItem>();
             var mihoyoBinDataNames = new List<(PPtr<Object>, string)>();
             var containers = new List<(PPtr<Object>, string)>();
             foreach (var assetsFile in assetsManager.assetsFileList)
             {
                 foreach (var asset in assetsFile.Objects)
                 {
-                    var assetItem = new AssetItem(asset);
-                    objectAssetItemDic.Add(asset, assetItem);
-                    assetItem.UniqueID = "#" + i++;
-                    assetItem.Text = "";
-                    var exportable = false;
-                    switch (asset)
-                    {
-                        case GameObject m_GameObject:
-                            assetItem.Text = m_GameObject.m_Name;
-                            break;
-                        case Texture2D m_Texture2D:
-                            if (!string.IsNullOrEmpty(m_Texture2D.m_StreamData?.path))
-                                assetItem.FullSize = asset.byteSize + m_Texture2D.m_StreamData.size;
-                            assetItem.Text = m_Texture2D.m_Name;
-                            exportable = true;
-                            break;
-                        case AudioClip m_AudioClip:
-                            if (!string.IsNullOrEmpty(m_AudioClip.m_Source))
-                                assetItem.FullSize = asset.byteSize + m_AudioClip.m_Size;
-                            assetItem.Text = m_AudioClip.m_Name;
-                            break;
-                        case VideoClip m_VideoClip:
-                            if (!string.IsNullOrEmpty(m_VideoClip.m_OriginalPath))
-                                assetItem.FullSize = asset.byteSize + (long)m_VideoClip.m_ExternalResources.m_Size;
-                            assetItem.Text = m_VideoClip.m_Name;
-                            break;
-                        case Shader m_Shader:
-                            assetItem.Text = m_Shader.m_ParsedForm?.m_Name ?? m_Shader.m_Name;
-                            exportable = true;
-                            break;
-                        case Mesh _:
-                        case TextAsset _:
-                        case AnimationClip _:
-                        case Font _:
-                        case MovieTexture _:
-                        case Sprite _:
-                        case Material _:
-                            assetItem.Text = ((NamedObject)asset).m_Name;
-                            exportable = true;
-                            break;
-                        case Animator m_Animator:
-                            if (m_Animator.m_GameObject.TryGet(out var gameObject))
-                            {
-                                assetItem.Text = gameObject.m_Name;
-                            }
-                            exportable = true;
-                            break;
-                        case MonoBehaviour m_MonoBehaviour:
-                            if (m_MonoBehaviour.m_Name == "" && m_MonoBehaviour.m_Script.TryGet(out var m_Script))
-                            {
-                                assetItem.Text = m_Script.m_ClassName;
-                            }
-                            else
-                            {
-                                assetItem.Text = m_MonoBehaviour.m_Name;
-                            }
-                            break;
-                        case PlayerSettings m_PlayerSettings:
-                            productName = m_PlayerSettings.productName;
-                            break;
-                        case AssetBundle m_AssetBundle:
-                            foreach (var m_Container in m_AssetBundle.m_Container)
-                            {
-                                var preloadIndex = m_Container.Value.preloadIndex;
-                                var preloadSize = m_Container.Value.preloadSize;
-                                var preloadEnd = preloadIndex + preloadSize;
-                                for (int k = preloadIndex; k < preloadEnd; k++)
-                                {
-                                    containers.Add((m_AssetBundle.m_PreloadTable[k], m_Container.Key));
-                                }
-                            }
-                            assetItem.Text = m_AssetBundle.m_Name;
-                            break;
-                        case IndexObject m_IndexObject:
-                            foreach (var index in m_IndexObject.AssetMap)
-                            {
-                                mihoyoBinDataNames.Add((index.Value.Object, index.Key));
-                            }
-                            assetItem.Text = "IndexObject";
-                            break;
-                        case MiHoYoBinData m_MiHoYoBinData:
-                            exportable = MiHoYoBinData.Exportable;
-                            break;
-                        case ResourceManager m_ResourceManager:
-                            foreach (var m_Container in m_ResourceManager.m_Container)
-                            {
-                                containers.Add((m_Container.Value, m_Container.Key));
-                            }
-                            break;
-                        case NamedObject m_NamedObject:
-                            assetItem.Text = m_NamedObject.m_Name;
-                            exportable = true;
-                            break;
-                    }
-                    if (assetItem.Text == "")
-                    {
-                        assetItem.Text = assetItem.TypeString + assetItem.UniqueID;
-                    }
-                    var isMatchRegex = nameFilters.Length == 0 || nameFilters.Any(x => x.IsMatch(assetItem.Text));
-                    var isFilteredType = typeFilters.Length == 0 || typeFilters.Contains(assetItem.Asset.type);
-                    if (isMatchRegex && isFilteredType && exportable)
-                    {
-                        exportableAssets.Add(assetItem);
-                    }
+                    ProcessAssetData(asset, nameFilters, objectAssetItemDic, mihoyoBinDataNames, containers, ref i);
                 }
             }
             foreach ((var pptr, var name) in mihoyoBinDataNames)
@@ -358,26 +263,138 @@ namespace AssetStudioCLI
                     else assetItem.Text = $"BinFile #{assetItem.m_PathID}";
                 }
             }
-            foreach ((var pptr, var container) in containers)
+            if (!SkipContainer)
             {
-                if (pptr.TryGet(out var obj))
+                foreach ((var pptr, var container) in containers)
                 {
-                    var item = objectAssetItemDic[obj];
-                    if (containerFilters.IsNullOrEmpty() || containerFilters.Any(x => x.IsMatch(container)))
+                    if (pptr.TryGet(out var obj))
                     {
-                        item.Container = container;
+                        if (!objectAssetItemDic.TryGetValue(obj, out var item))
+                        {
+                            ProcessAssetData(obj, nameFilters, objectAssetItemDic, mihoyoBinDataNames, containers, ref i);
+                            item = objectAssetItemDic[obj];
+                        }
+                        if (containerFilters.IsNullOrEmpty() || containerFilters.Any(x => x.IsMatch(container)))
+                        {
+                            item.Container = container;
+                        }
+                        else
+                        {
+                            exportableAssets.Remove(item);
+                        }
+                    }
+                }
+                containers.Clear();
+                if (Game.Type.IsGISubGroup())
+                {
+                    UpdateContainers();
+                }
+            }
+        }
+
+        public static void ProcessAssetData(Object asset, Regex[] nameFilters, Dictionary<Object, AssetItem> objectAssetItemDic, List<(PPtr<Object>, string)> mihoyoBinDataNames, List<(PPtr<Object>, string)> containers, ref int i) 
+        {
+            var assetItem = new AssetItem(asset);
+            objectAssetItemDic.Add(asset, assetItem);
+            assetItem.UniqueID = "#" + i++;
+            var exportable = false;
+            switch (asset)
+            {
+                case GameObject m_GameObject:
+                    assetItem.Text = m_GameObject.m_Name;
+                    exportable = ModelOnly && m_GameObject.HasModel();
+                    break;
+                case Texture2D m_Texture2D:
+                    if (!string.IsNullOrEmpty(m_Texture2D.m_StreamData?.path))
+                        assetItem.FullSize = asset.byteSize + m_Texture2D.m_StreamData.size;
+                    assetItem.Text = m_Texture2D.m_Name;
+                    exportable = !ModelOnly;
+                    break;
+                case AudioClip m_AudioClip:
+                    if (!string.IsNullOrEmpty(m_AudioClip.m_Source))
+                        assetItem.FullSize = asset.byteSize + m_AudioClip.m_Size;
+                    assetItem.Text = m_AudioClip.m_Name;
+                    exportable = !ModelOnly;
+                    break;
+                case VideoClip m_VideoClip:
+                    if (!string.IsNullOrEmpty(m_VideoClip.m_OriginalPath))
+                        assetItem.FullSize = asset.byteSize + (long)m_VideoClip.m_ExternalResources.m_Size;
+                    assetItem.Text = m_VideoClip.m_Name;
+                    exportable = !ModelOnly;
+                    break;
+                case Shader m_Shader:
+                    assetItem.Text = m_Shader.m_ParsedForm?.m_Name ?? m_Shader.m_Name;
+                    exportable = !ModelOnly;
+                    break;
+                case Mesh _:
+                case TextAsset _:
+                case AnimationClip _:
+                case Font _:
+                case Sprite _:
+                case Material _:
+                    assetItem.Text = ((NamedObject)asset).m_Name;
+                    exportable = !ModelOnly;
+                    break;
+                case Animator m_Animator:
+                    if (m_Animator.m_GameObject.TryGet(out var gameObject))
+                    {
+                        assetItem.Text = gameObject.m_Name;
+                    }
+                    exportable = !ModelOnly;
+                    break;
+                case MonoBehaviour m_MonoBehaviour:
+                    if (m_MonoBehaviour.m_Name == "" && m_MonoBehaviour.m_Script.TryGet(out var m_Script))
+                    {
+                        assetItem.Text = m_Script.m_ClassName;
                     }
                     else
                     {
-                        exportableAssets.Remove(item);
+                        assetItem.Text = m_MonoBehaviour.m_Name;
                     }
-                }
+                    exportable = !ModelOnly;
+                    break;
+                case AssetBundle m_AssetBundle:
+                    foreach (var m_Container in m_AssetBundle.m_Container)
+                    {
+                        var preloadIndex = m_Container.Value.preloadIndex;
+                        var preloadSize = m_Container.Value.preloadSize;
+                        var preloadEnd = preloadIndex + preloadSize;
+                        for (int k = preloadIndex; k < preloadEnd; k++)
+                        {
+                            containers.Add((m_AssetBundle.m_PreloadTable[k], m_Container.Key));
+                        }
+                    }
+                    assetItem.Text = m_AssetBundle.m_Name;
+                    break;
+                case IndexObject m_IndexObject:
+                    foreach (var index in m_IndexObject.AssetMap)
+                    {
+                        mihoyoBinDataNames.Add((index.Value.Object, index.Key));
+                    }
+                    assetItem.Text = "IndexObject";
+                    break;
+                case MiHoYoBinData m_MiHoYoBinData:
+                    exportable = !ModelOnly;
+                    break;
+                case ResourceManager m_ResourceManager:
+                    foreach (var m_Container in m_ResourceManager.m_Container)
+                    {
+                        containers.Add((m_Container.Value, m_Container.Key));
+                    }
+                    break;
+                case NamedObject m_NamedObject:
+                    assetItem.Text = m_NamedObject.m_Name;
+                    break;
             }
-            if (Game.Type.IsGISubGroup())
+            if (assetItem.Text == "")
             {
-                UpdateContainers();
+                assetItem.Text = assetItem.TypeString + assetItem.UniqueID;
             }
-            containers.Clear();
+            var isMatchRegex = nameFilters.Length == 0 || nameFilters.Any(x => x.IsMatch(assetItem.Text));
+            if (isMatchRegex && exportable)
+            {
+                exportableAssets.Add(assetItem);
+            }
         }
 
         public static void ExportAssets(string savePath, List<AssetItem> toExportAssets, AssetGroupOption assetGroupOption)
@@ -448,28 +465,35 @@ namespace AssetStudioCLI
             {
                 case ExportListType.XML:
                     filename = Path.Combine(savePath, $"{exportListName}.xml");
-                    var doc = new XDocument(
-                        new XElement("Assets",
-                            new XAttribute("filename", filename),
-                            new XAttribute("createdAt", DateTime.UtcNow.ToString("s")),
-                            toExportAssets.Select(
-                                asset => new XElement("Asset",
-                                    new XElement("Name", asset.Name),
-                                    new XElement("Container", asset.Container),
-                                    new XElement("Type", new XAttribute("id", (int)asset.Type), asset.Type.ToString()),
-                                    new XElement("PathID", asset.PathID),
-                                    new XElement("Source", asset.Source)
-                                )
-                            )
-                        )
-                    );
-                    doc.Save(filename);
+                    var settings = new XmlWriterSettings() { Indent = true };
+                    using (XmlWriter writer = XmlWriter.Create(filename, settings))
+                    {
+                        writer.WriteStartDocument();
+                        writer.WriteStartElement("Assets");
+                        writer.WriteAttributeString("filename", filename);
+                        writer.WriteAttributeString("createdAt", DateTime.UtcNow.ToString("s"));
+                        foreach (var asset in toExportAssets)
+                        {
+                            writer.WriteStartElement("Asset");
+                            writer.WriteElementString("Name", asset.Name);
+                            writer.WriteElementString("Container", asset.Container);
+                            writer.WriteStartElement("Type");
+                            writer.WriteAttributeString("id", ((int)asset.Type).ToString());
+                            writer.WriteValue(asset.Type.ToString());
+                            writer.WriteEndElement();
+                            writer.WriteElementString("PathID", asset.PathID.ToString());
+                            writer.WriteElementString("Source", asset.Source);
+                            writer.WriteEndElement();
+                        }
+                        writer.WriteEndElement();
+                        writer.WriteEndDocument();
+                    }
                     break;
                 case ExportListType.JSON:
                     filename = Path.Combine(savePath, $"{exportListName}.json");
                     using (StreamWriter file = File.CreateText(filename))
                     {
-                        JsonSerializer serializer = new JsonSerializer() { Formatting = Formatting.Indented };
+                        JsonSerializer serializer = new JsonSerializer() { Formatting = Newtonsoft.Json.Formatting.Indented };
                         serializer.Converters.Add(new StringEnumConverter());
                         serializer.Serialize(file, toExportAssets);
                     }
@@ -481,6 +505,11 @@ namespace AssetStudioCLI
             Logger.Info(statusText);
 
             Logger.Info($"AssetMap build successfully !!");
+        }
+
+        public static TypeTree MonoBehaviourToTypeTree(MonoBehaviour m_MonoBehaviour)
+        {
+            return m_MonoBehaviour.ConvertToTypeTree(assemblyLoader);
         }
     }
 }

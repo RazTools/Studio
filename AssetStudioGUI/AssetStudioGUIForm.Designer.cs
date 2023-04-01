@@ -93,8 +93,8 @@ namespace AssetStudioGUI
             clearConsoleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             miscToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             assetHelpersToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            cABMapToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            CABMapNameComboBox = new System.Windows.Forms.ToolStripComboBox();
+            MapToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            MapNameComboBox = new System.Windows.Forms.ToolStripComboBox();
             toolStripMenuItem20 = new System.Windows.Forms.ToolStripMenuItem();
             toolStripMenuItem21 = new System.Windows.Forms.ToolStripMenuItem();
             assetMapToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -604,37 +604,37 @@ namespace AssetStudioGUI
             // 
             // assetHelpersToolStripMenuItem
             // 
-            assetHelpersToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { cABMapToolStripMenuItem, assetMapToolStripMenuItem });
+            assetHelpersToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { MapToolStripMenuItem, assetMapToolStripMenuItem });
             assetHelpersToolStripMenuItem.Name = "assetHelpersToolStripMenuItem";
             assetHelpersToolStripMenuItem.Size = new System.Drawing.Size(145, 22);
             assetHelpersToolStripMenuItem.Text = "Asset Helpers";
             assetHelpersToolStripMenuItem.DropDownOpening += assetHelpersToolStripMenuItem_DropDownOpening;
             // 
-            // cABMapToolStripMenuItem
+            // MapToolStripMenuItem
             // 
-            cABMapToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { CABMapNameComboBox, toolStripMenuItem20, toolStripMenuItem21 });
-            cABMapToolStripMenuItem.Name = "cABMapToolStripMenuItem";
-            cABMapToolStripMenuItem.Size = new System.Drawing.Size(126, 22);
-            cABMapToolStripMenuItem.Text = "CABMap";
+            MapToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { MapNameComboBox, toolStripMenuItem20, toolStripMenuItem21 });
+            MapToolStripMenuItem.Name = "MapToolStripMenuItem";
+            MapToolStripMenuItem.Size = new System.Drawing.Size(126, 22);
+            MapToolStripMenuItem.Text = "Map";
             // 
-            // CABMapNameComboBox
+            // MapNameComboBox
             // 
-            CABMapNameComboBox.Name = "CABMapNameComboBox";
-            CABMapNameComboBox.Size = new System.Drawing.Size(121, 23);
-            CABMapNameComboBox.ToolTipText = "Enter name of CABMap here";
+            MapNameComboBox.Name = "MapNameComboBox";
+            MapNameComboBox.Size = new System.Drawing.Size(121, 23);
+            MapNameComboBox.ToolTipText = "Enter name of Map here";
             // 
             // toolStripMenuItem20
             // 
             toolStripMenuItem20.Name = "toolStripMenuItem20";
             toolStripMenuItem20.Size = new System.Drawing.Size(181, 22);
-            toolStripMenuItem20.Text = "Build CABMap";
+            toolStripMenuItem20.Text = "Build Map";
             toolStripMenuItem20.Click += toolStripMenuItem20_Click;
             // 
             // toolStripMenuItem21
             // 
             toolStripMenuItem21.Name = "toolStripMenuItem21";
             toolStripMenuItem21.Size = new System.Drawing.Size(181, 22);
-            toolStripMenuItem21.Text = "Clear CABMap";
+            toolStripMenuItem21.Text = "Clear Map";
             toolStripMenuItem21.Click += toolStripMenuItem21_Click;
             // 
             // assetMapToolStripMenuItem
@@ -1362,13 +1362,13 @@ namespace AssetStudioGUI
         private System.Windows.Forms.ToolStripMenuItem assetHelpersToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem20;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem22;
-        private System.Windows.Forms.ToolStripComboBox CABMapNameComboBox;
+        private System.Windows.Forms.ToolStripComboBox MapNameComboBox;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator5;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator6;
         private System.Windows.Forms.ToolStripMenuItem resetToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem abortStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem21;
-        private System.Windows.Forms.ToolStripMenuItem cABMapToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem MapToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem assetMapToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem loadAIToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem clearConsoleToolStripMenuItem;
