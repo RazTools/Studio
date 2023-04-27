@@ -78,7 +78,7 @@ namespace AssetStudio
                 if (await NeedDownload(version, versionIndex.MappedPath))
                 {
                     Logger.Info("Downloading...");
-                    var json = await DownloadString(url, TimeSpan.FromMinutes(1));
+                    var json = await DownloadString(url, TimeSpan.FromMinutes(2));
                     if (string.IsNullOrEmpty(json))
                     {
                         Logger.Warning("Could not load AI !!");

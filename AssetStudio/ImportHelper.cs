@@ -279,7 +279,7 @@ namespace AssetStudio
             var idx = data.Search("UnityFS");
             if (idx != -1)
             {
-                stream = new BlockStream(stream, idx);
+                stream = new SubStream(stream, idx);
             }
 
             return new FileReader(reader.FullPath, stream);
@@ -295,11 +295,11 @@ namespace AssetStudio
                 var idx2 = data[(idx + 1)..].Search("UnityFS");
                 if (idx2 != -1)
                 {
-                    stream = new BlockStream(stream, idx + idx2 + 1);
+                    stream = new SubStream(stream, idx + idx2 + 1);
                 }
                 else
                 {
-                    stream = new BlockStream(stream, idx);
+                    stream = new SubStream(stream, idx);
                 }
             }
 
@@ -371,7 +371,7 @@ namespace AssetStudio
                 reader.Position = 0;
                 return reader;
             }
-            var stream = new BlockStream(reader.BaseStream, idx);
+            var stream = new SubStream(reader.BaseStream, idx);
             return new FileReader(reader.FullPath, stream);
         }
         public static FileReader ParseHelixWaltz2(FileReader reader)

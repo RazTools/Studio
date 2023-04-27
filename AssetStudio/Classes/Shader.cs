@@ -585,7 +585,7 @@ namespace AssetStudio
             m_BlobIndex = reader.ReadUInt32();
             m_Channels = new ParserBindChannels(reader);
 
-            if ((version[0] >= 2019 && version[0] < 2021) || (version[0] == 2021 && version[1] < 2)) //2019 ~2021.1
+            if ((version[0] >= 2019 && version[0] < 2021) || (version[0] == 2021 && version[1] < 2) || reader.Match("E99740711222CD922E9A6F92FF1EB07A") || reader.Match("450A058C218DAF000647948F2F59DA6D")) //2019 ~2021.1
             {
                 var m_GlobalKeywordIndices = reader.ReadUInt16Array();
                 reader.AlignStream();
@@ -604,17 +604,6 @@ namespace AssetStudio
             m_ShaderHardwareTier = reader.ReadSByte();
             m_GpuProgramType = (ShaderGpuProgramType)reader.ReadSByte();
             reader.AlignStream();
-
-            if (reader.Game.Type.IsGI() && (m_GpuProgramType == ShaderGpuProgramType.Unknown || !Enum.IsDefined(typeof(ShaderGpuProgramType), m_GpuProgramType)))
-            {
-                reader.Position -= 4;
-                var m_LocalKeywordIndices = reader.ReadUInt16Array();
-                reader.AlignStream();
-
-                m_ShaderHardwareTier = reader.ReadSByte();
-                m_GpuProgramType = (ShaderGpuProgramType)reader.ReadSByte();
-                reader.AlignStream();
-            }
 
             if ((version[0] == 2020 && version[1] > 3) ||
                (version[0] == 2020 && version[1] == 3 && version[2] >= 2) || //2020.3.2f1 and up
@@ -695,6 +684,16 @@ namespace AssetStudio
                 else
                 {
                     var m_ShaderRequirements = reader.ReadInt32();
+                }
+            }
+
+            if (reader.Match("E99740711222CD922E9A6F92FF1EB07A"))
+            {
+                int numInstancedStructuredBuffers = reader.ReadInt32();
+                var m_InstancedStructuredBuffers = new ConstantBuffer[numInstancedStructuredBuffers];
+                for (int i = 0; i < numInstancedStructuredBuffers; i++)
+                {
+                    m_InstancedStructuredBuffers[i] = new ConstantBuffer(reader);
                 }
             }
         }

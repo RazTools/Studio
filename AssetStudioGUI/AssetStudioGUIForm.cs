@@ -1899,8 +1899,9 @@ namespace AssetStudioGUI
             openFolderDialog.Title = "Select Game Folder";
             if (openFolderDialog.ShowDialog(this) == DialogResult.OK)
             {
-                Logger.Info("Scanning for files");
+                Logger.Info("Scanning for files...");
                 var files = Directory.GetFiles(openFolderDialog.Folder, "*.*", SearchOption.AllDirectories).ToArray();
+                files = files.Where(x => FileReader.IsReadable(x, Studio.Game)).ToArray();
                 Logger.Info($"Found {files.Length} files");
                 await Task.Run(() => AssetsHelper.BuildMap(files, name, openFolderDialog.Folder, Studio.Game));
             }
@@ -2017,8 +2018,9 @@ namespace AssetStudioGUI
             openFolderDialog.Title = $"Select Game Folder";
             if (openFolderDialog.ShowDialog(this) == DialogResult.OK)
             {
-                Logger.Info("Scanning for files");
+                Logger.Info("Scanning for files...");
                 var files = Directory.GetFiles(openFolderDialog.Folder, "*.*", SearchOption.AllDirectories).ToArray();
+                files = files.Where(x => FileReader.IsReadable(x, Studio.Game)).ToArray();
                 Logger.Info($"Found {files.Length} files");
 
                 var saveFolderDialog = new OpenFolderDialog();
@@ -2317,7 +2319,7 @@ namespace AssetStudioGUI
         private void InitOpenTK()
         {
             ChangeGLSize(glControl.Size);
-            GL.ClearColor(Color4.Darkgray);
+            GL.ClearColor(Color4.Cadetblue);
             pgmID = GL.CreateProgram();
             LoadShader("vs", ShaderType.VertexShader, pgmID, out ShaderHandle vsID);
             LoadShader("fs", ShaderType.FragmentShader, pgmID, out ShaderHandle fsID);

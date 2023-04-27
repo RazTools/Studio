@@ -21,7 +21,7 @@ namespace AssetStudio
         public int[] version => assetsFile.version;
         public BuildType buildType => assetsFile.buildType;
 
-        public ObjectReader(EndianBinaryReader reader, SerializedFile assetsFile, ObjectInfo objectInfo, Game game) : base(reader.BaseStream, reader.Endian)
+        public ObjectReader(EndianBinaryReader reader, SerializedFile assetsFile, ObjectInfo objectInfo, Game game) : base(new SubStream(reader.BaseStream, objectInfo.byteStart, objectInfo.byteSize), reader.Endian)
         {
             this.assetsFile = assetsFile;
             Game = game;
@@ -41,9 +41,11 @@ namespace AssetStudio
             m_Version = assetsFile.header.m_Version;
         }
 
+        public bool Match(string hash) => Convert.ToHexString(serializedType.m_OldTypeHash) == hash;
+
         public void Reset()
         {
-            Position = byteStart;
+            Position = 0;
         }
     }
 }

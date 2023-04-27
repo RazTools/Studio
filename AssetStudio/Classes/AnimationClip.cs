@@ -672,7 +672,7 @@ namespace AssetStudio
             {
                 m_ConstantClip = new ConstantClip(reader);
             }
-            if (reader.Game.Type.IsGIGroup() || reader.Game.Type.IsBH3() || reader.Game.Type.IsZZZCB1())
+            if (reader.Game.Type.IsGIGroup() || reader.Game.Type.IsBH3Group() || reader.Game.Type.IsZZZCB1())
             {
                 m_ACLClip.Read(reader);
             }

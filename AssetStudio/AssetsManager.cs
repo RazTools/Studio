@@ -107,11 +107,6 @@ namespace AssetStudio
                     Logger.Info("Loading files has been aborted !!");
                     break;
                 }
-                if (!SkipProcess && !tokenSource.IsCancellationRequested)
-                {
-                    ReadAssets();
-                    ProcessAssets();
-            }
             }
 
             importFiles.Clear();
@@ -120,12 +115,12 @@ namespace AssetStudio
             assetsFileListHash.Clear();
             AssetsHelper.ClearOffsets();
 
-            //if (!SkipProcess && !tokenSource.IsCancellationRequested)
-            //{
-            //    ReadAssets();
-            //    ProcessAssets();
-            //}
+            if (!SkipProcess && !tokenSource.IsCancellationRequested)
+            {
+                ReadAssets();
+                ProcessAssets();
             }
+        }
 
         private void LoadFile(string fullName)
         {
@@ -177,36 +172,36 @@ namespace AssetStudio
                     assetsFileList.Add(assetsFile);
                     assetsFileListHash.Add(assetsFile.fileName);
 
-                        foreach (var sharedFile in assetsFile.m_Externals)
-                        {
-                            var sharedFileName = sharedFile.fileName;
+                    foreach (var sharedFile in assetsFile.m_Externals)
+                    {
+                        var sharedFileName = sharedFile.fileName;
 
-                            if (!importFilesHash.Contains(sharedFileName))
+                        if (!importFilesHash.Contains(sharedFileName))
+                        {
+                            var sharedFilePath = Path.Combine(Path.GetDirectoryName(reader.FullPath), sharedFileName);
+                            if (!noexistFiles.Contains(sharedFilePath))
                             {
-                                var sharedFilePath = Path.Combine(Path.GetDirectoryName(reader.FullPath), sharedFileName);
-                                if (!noexistFiles.Contains(sharedFilePath))
+                                if (!File.Exists(sharedFilePath))
                                 {
-                                    if (!File.Exists(sharedFilePath))
+                                    var findFiles = Directory.GetFiles(Path.GetDirectoryName(reader.FullPath), sharedFileName, SearchOption.AllDirectories);
+                                    if (findFiles.Length > 0)
                                     {
-                                        var findFiles = Directory.GetFiles(Path.GetDirectoryName(reader.FullPath), sharedFileName, SearchOption.AllDirectories);
-                                        if (findFiles.Length > 0)
-                                        {
-                                            sharedFilePath = findFiles[0];
-                                        }
+                                        sharedFilePath = findFiles[0];
                                     }
-                                    if (File.Exists(sharedFilePath))
-                                    {
-                                        importFiles.Add(sharedFilePath);
-                                        importFilesHash.Add(sharedFileName);
-                                    }
-                                    else
-                                    {
-                                        noexistFiles.Add(sharedFilePath);
-                                    }
+                                }
+                                if (File.Exists(sharedFilePath))
+                                {
+                                    importFiles.Add(sharedFilePath);
+                                    importFilesHash.Add(sharedFileName);
+                                }
+                                else
+                                {
+                                    noexistFiles.Add(sharedFilePath);
                                 }
                             }
                         }
                     }
+                }
                 catch (Exception e)
                 {
                     Logger.Error($"Error while reading assets file {reader.FullPath}", e);
@@ -237,37 +232,37 @@ namespace AssetStudio
                     assetsFileList.Add(assetsFile);
                     assetsFileListHash.Add(assetsFile.fileName);
 
-                    //if (ResolveDependencies)
-                    //{
-                    //    foreach (var sharedFile in assetsFile.m_Externals)
-                    //    {
-                    //        var sharedFileName = sharedFile.fileName;
-                    //
-                    //        if (!importFilesHash.Contains(sharedFileName))
-                    //        {
-                    //            var sharedFilePath = Path.Combine(Path.GetDirectoryName(originalPath), sharedFileName);
-                    //            if (!noexistFiles.Contains(sharedFilePath))
-                    //            {
-                    //                if (AssetsHelper.TryAdd(sharedFileName, out var path))
-                    //                {
-                    //                    sharedFilePath = path;
-                    //                }
-                    //                if (File.Exists(sharedFilePath))
-                    //                {
-                    //                    if (!importFiles.Contains(sharedFilePath))
-                    //                    {
-                    //                        importFiles.Add(sharedFilePath);
-                    //                    }
-                    //                    importFilesHash.Add(sharedFileName);
-                    //                }
-                    //                else
-                    //                {
-                    //                    noexistFiles.Add(sharedFilePath);
-                    //                }
-                    //            }
-                    //        }
-                    //    }
-                    //}
+                    if (ResolveDependencies)
+                    {
+                        foreach (var sharedFile in assetsFile.m_Externals)
+                        {
+                            var sharedFileName = sharedFile.fileName;
+                    
+                            if (!importFilesHash.Contains(sharedFileName))
+                            {
+                                var sharedFilePath = Path.Combine(Path.GetDirectoryName(originalPath), sharedFileName);
+                                if (!noexistFiles.Contains(sharedFilePath))
+                                {
+                                    if (AssetsHelper.TryAdd(sharedFileName, out var path))
+                                    {
+                                        sharedFilePath = path;
+                                    }
+                                    if (File.Exists(sharedFilePath))
+                                    {
+                                        if (!importFiles.Contains(sharedFilePath))
+                                        {
+                                            importFiles.Add(sharedFilePath);
+                                        }
+                                        importFilesHash.Add(sharedFileName);
+                                    }
+                                    else
+                                    {
+                                        noexistFiles.Add(sharedFilePath);
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
                 catch (Exception e)
                 {
@@ -279,9 +274,12 @@ namespace AssetStudio
                 Logger.Info($"Skipping {originalPath} ({reader.FileName})");
         }
 
-        private void LoadBundleFile(FileReader reader, string originalPath = null, long originalOffset = 0)
+        private void LoadBundleFile(FileReader reader, string originalPath = null, long originalOffset = 0, bool log = true)
         {
-            Logger.Info("Loading " + reader.FullPath);
+            if (log)
+            {
+                Logger.Info("Loading " + reader.FullPath);
+            }
             try
             {
                 var bundleFile = new BundleFile(reader, Game);
@@ -459,15 +457,18 @@ namespace AssetStudio
             Logger.Info("Loading " + reader.FullPath);
             try
             {
-                using var stream = new BlockStream(reader.BaseStream, 0);
+                using var stream = new SubStream(reader.BaseStream, 0);
                 if (AssetsHelper.TryGet(reader.FullPath, out var offsets))
                 {
                     foreach (var offset in offsets)
                     {
+                        var name = offset.ToString("X8");
+                        Logger.Info($"Loading Block {name}");
+
                         stream.Offset = offset;
-                        var dummyPath = Path.Combine(reader.FileName, offset.ToString("X8"));
+                        var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), name);
                         var subReader = new FileReader(dummyPath, stream, true);
-                        LoadBundleFile(subReader, reader.FullPath, offset);
+                        LoadBundleFile(subReader, reader.FullPath, offset, false);
                     }
                     AssetsHelper.Remove(reader.FullPath);
                 }
@@ -475,12 +476,15 @@ namespace AssetStudio
                 {
                     do
                     {
-                        stream.Offset = stream.RelativePosition;
-                        var dummyPath = Path.Combine(reader.FileName, stream.RelativePosition.ToString("X8"));
+                        var name = stream.AbsolutePosition.ToString("X8");
+                        Logger.Info($"Loading Block {name}");
+
+                        stream.Offset = stream.AbsolutePosition;
+                        var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), name);
                         var subReader = new FileReader(dummyPath, stream, true);
-                        LoadBundleFile(subReader, reader.FullPath, stream.RelativePosition);
+                        LoadBundleFile(subReader, reader.FullPath, stream.AbsolutePosition, false);
                     } while (stream.Remaining > 0);
-                }
+                }    
             }
             catch (Exception e)
             {
@@ -501,16 +505,19 @@ namespace AssetStudio
                 {
                     foreach (var offset in offsets)
                     {
+                        var name = offset.ToString("X8");
+                        Logger.Info($"Loading Block {name}");
+
                         stream.Offset = offset;
-                        var dummyPath = Path.Combine(reader.FileName, offset.ToString("X8"));
+                        var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), name);
                         var subReader = new FileReader(dummyPath, stream, true);
                         switch (subReader.FileType)
                         {
                             case FileType.BundleFile:
-                                LoadBundleFile(subReader, reader.FullPath, offset);
+                                LoadBundleFile(subReader, reader.FullPath, offset, false);
                                 break;
                             case FileType.Mhy0File:
-                                LoadMhy0File(subReader, reader.FullPath, offset);
+                                LoadMhy0File(subReader, reader.FullPath, offset, false);
                                 break;
                         }
                     }
@@ -520,18 +527,22 @@ namespace AssetStudio
                 {
                     do
                     {
-                        stream.Offset = stream.RelativePosition;
-                        var dummyPath = Path.Combine(reader.FileName, stream.RelativePosition.ToString("X8"));
+                        var name = stream.Position.ToString("X8");
+                        Logger.Info($"Loading Block {name}");
+
+                        var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), name);
                         var subReader = new FileReader(dummyPath, stream, true);
                         switch (subReader.FileType)
                         {
                             case FileType.BundleFile:
-                                LoadBundleFile(subReader, reader.FullPath, stream.RelativePosition);
+                                LoadBundleFile(subReader, reader.FullPath, stream.Position, false);
                                 break;
                             case FileType.Mhy0File:
-                                LoadMhy0File(subReader, reader.FullPath, stream.RelativePosition);
+                                LoadMhy0File(subReader, reader.FullPath, stream.Position, false);
                                 break;
                         }
+
+                        stream.Offset += stream.Position;
                     } while (stream.Remaining > 0);
                 }
             }
@@ -548,9 +559,12 @@ namespace AssetStudio
                 reader.Dispose();
             }
         } 
-        private void LoadMhy0File(FileReader reader, string originalPath = null, long originalOffset = 0)
+        private void LoadMhy0File(FileReader reader, string originalPath = null, long originalOffset = 0, bool log = true)
         {
-            Logger.Info("Loading " + reader.FullPath);
+            if (log)
+            {
+                Logger.Info("Loading " + reader.FullPath);
+            }
             try
             {
                 var mhy0File = new Mhy0File(reader, reader.FullPath, (Mhy0)Game);

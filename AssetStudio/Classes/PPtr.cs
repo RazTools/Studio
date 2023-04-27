@@ -41,26 +41,6 @@ namespace AssetStudio
                     var name = m_External.fileName;
                     if (!assetsFileIndexCache.TryGetValue(name, out index))
                     {
-                        if (assetsManager.ResolveDependencies && !assetsManager.importFilesHash.Contains(name))
-                        {
-                            var sharedFilePath = Path.Combine(Path.GetDirectoryName(assetsFile.originalPath), name);
-                            if (!assetsManager.noexistFiles.Contains(sharedFilePath))
-                            {
-                                if (TryAdd(name, out var path))
-                                {
-                                    sharedFilePath = path;
-                                }
-                                if (File.Exists(sharedFilePath))
-                                {
-                                    assetsManager.importFilesHash.Add(name);
-                                    assetsManager.LoadFiles(sharedFilePath);
-                                }
-                                else
-                                {
-                                    assetsManager.noexistFiles.Add(sharedFilePath);
-                                }
-                            }
-                        }
                         index = assetsFileList.FindIndex(x => x.fileName.Equals(name, StringComparison.OrdinalIgnoreCase));
                         assetsFileIndexCache.Add(name, index);
                     }

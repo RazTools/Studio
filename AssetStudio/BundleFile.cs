@@ -112,7 +112,7 @@ namespace AssetStudio
             switch (header.signature)
             {
                 case "UnityFS":
-                    if (Game.Type.IsBH3())
+                    if (Game.Type.IsBH3Group())
                     {
                         var version = reader.ReadUInt32();
                         if (version > 11)
@@ -277,7 +277,7 @@ namespace AssetStudio
 
         private void ReadHeader(FileReader reader)
         {
-            if (Game.Type.IsBH3() && XORShift128.Init)
+            if ((Game.Type.IsBH3Group()) && XORShift128.Init)
             {
                 m_Header.flags = (ArchiveFlags)reader.ReadUInt32();
                 m_Header.size = reader.ReadInt64();

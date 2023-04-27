@@ -8,6 +8,7 @@ using Newtonsoft.Json.Converters;
 using Newtonsoft.Json;
 using System.Text.RegularExpressions;
 using System.Xml;
+using System.Text;
 
 namespace AssetStudio
 {
@@ -82,10 +83,11 @@ namespace AssetStudio
 
         public static void BuildMap(string[] files, string mapName, string baseFolder, Game game)
         {
-            Logger.Info($"Processing...");
+            Logger.Info($"Building Map...");
             try
             {
                 Map.Clear();
+                Progress.Reset();
                 var collision = 0;
                 BaseFolder = baseFolder;
                 assetsManager.Game = game;
@@ -118,7 +120,8 @@ namespace AssetStudio
                             }
                             Map.Add(assetsFile.fileName, entry);
                         }
-                        Logger.Info($"Processed {Path.GetFileName(file)}");
+                        Logger.Info($"[{i + 1}/{files.Length}] Processed {Path.GetFileName(file)}");
+                        Progress.Report(i + 1, files.Length);
                     }
                     assetsManager.Clear();
                 }
@@ -156,7 +159,9 @@ namespace AssetStudio
 
         public static void BuildBoth(string[] files, string mapName, string baseFolder, Game game, string savePath, ExportListType exportListType, ManualResetEvent resetEvent = null, Regex[] nameFilters = null, Regex[] containerFilters = null)
         {
+            Logger.Info($"Building Both...");
             Map.Clear();
+            Progress.Reset();
             var collision = 0;
             BaseFolder = baseFolder;
             assetsManager.Game = game;
@@ -203,74 +208,89 @@ namespace AssetStudio
                                 Source = file,
                                 PathID = objectReader.m_PathID,
                                 Type = objectReader.type,
-                                Container = ""
+                                Container = string.Empty,
+                                Name = string.Empty
                             };
 
                             var exportable = true;
-                            switch (objectReader.type)
+                            try
                             {
-                                case ClassIDType.AssetBundle:
-                                    var assetBundle = new AssetBundle(objectReader);
-                                    foreach (var m_Container in assetBundle.m_Container)
-                                    {
-                                        var preloadIndex = m_Container.Value.preloadIndex;
-                                        var preloadSize = m_Container.Value.preloadSize;
-                                        var preloadEnd = preloadIndex + preloadSize;
-                                        for (int k = preloadIndex; k < preloadEnd; k++)
+                                switch (objectReader.type)
+                                {
+                                    case ClassIDType.AssetBundle:
+                                        var assetBundle = new AssetBundle(objectReader);
+                                        foreach (var m_Container in assetBundle.m_Container)
                                         {
-                                            containers.Add((assetBundle.m_PreloadTable[k], m_Container.Key));
+                                            var preloadIndex = m_Container.Value.preloadIndex;
+                                            var preloadSize = m_Container.Value.preloadSize;
+                                            var preloadEnd = preloadIndex + preloadSize;
+                                            for (int k = preloadIndex; k < preloadEnd; k++)
+                                            {
+                                                containers.Add((assetBundle.m_PreloadTable[k], m_Container.Key));
+                                            }
                                         }
-                                    }
-                                    obj = null;
-                                    asset.Name = assetBundle.m_Name;
-                                    exportable = false;
-                                    break;
-                                case ClassIDType.GameObject:
-                                    var gameObject = new GameObject(objectReader);
-                                    obj = gameObject;
-                                    asset.Name = gameObject.m_Name;
-                                    exportable = false;
-                                    break;
-                                case ClassIDType.Shader:
-                                    asset.Name = objectReader.ReadAlignedString();
-                                    if (string.IsNullOrEmpty(asset.Name))
-                                    {
-                                        var m_parsedForm = new SerializedShader(objectReader);
-                                        asset.Name = m_parsedForm.m_Name;
-                                    }
-                                    break;
-                                case ClassIDType.Animator:
-                                    var component = new PPtr<Object>(objectReader);
-                                    animators.Add((component, asset));
-                                    break;
-                                case ClassIDType.MiHoYoBinData:
-                                    var MiHoYoBinData = new MiHoYoBinData(objectReader);
-                                    obj = MiHoYoBinData;
-                                    exportable = true;
-                                    break;
-                                case ClassIDType.IndexObject:
-                                    var indexObject = new IndexObject(objectReader);
-                                    obj = null;
-                                    foreach (var index in indexObject.AssetMap)
-                                    {
-                                        mihoyoBinDataNames.Add((index.Value.Object, index.Key));
-                                    }
-                                    asset.Name = "IndexObject";
-                                    break;
-                                case ClassIDType.Font:
-                                case ClassIDType.Material:
-                                case ClassIDType.Texture:
-                                case ClassIDType.Mesh:
-                                case ClassIDType.Sprite:
-                                case ClassIDType.TextAsset:
-                                case ClassIDType.Texture2D:
-                                case ClassIDType.VideoClip:
-                                case ClassIDType.AudioClip:
-                                    asset.Name = objectReader.ReadAlignedString();
-                                    break;
-                                default:
-                                    exportable = false;
-                                    break;
+                                        obj = null;
+                                        asset.Name = assetBundle.m_Name;
+                                        exportable = false;
+                                        break;
+                                    case ClassIDType.GameObject:
+                                        var gameObject = new GameObject(objectReader);
+                                        obj = gameObject;
+                                        asset.Name = gameObject.m_Name;
+                                        exportable = false;
+                                        break;
+                                    case ClassIDType.Shader:
+                                        asset.Name = objectReader.ReadAlignedString();
+                                        if (string.IsNullOrEmpty(asset.Name))
+                                        {
+                                            var m_parsedForm = new SerializedShader(objectReader);
+                                            asset.Name = m_parsedForm.m_Name;
+                                        }
+                                        break;
+                                    case ClassIDType.Animator:
+                                        var component = new PPtr<Object>(objectReader);
+                                        animators.Add((component, asset));
+                                        break;
+                                    case ClassIDType.MiHoYoBinData:
+                                        var MiHoYoBinData = new MiHoYoBinData(objectReader);
+                                        obj = MiHoYoBinData;
+                                        exportable = true;
+                                        break;
+                                    case ClassIDType.IndexObject:
+                                        var indexObject = new IndexObject(objectReader);
+                                        obj = null;
+                                        foreach (var index in indexObject.AssetMap)
+                                        {
+                                            mihoyoBinDataNames.Add((index.Value.Object, index.Key));
+                                        }
+                                        asset.Name = "IndexObject";
+                                        break;
+                                    case ClassIDType.Font:
+                                    case ClassIDType.Material:
+                                    case ClassIDType.Texture:
+                                    case ClassIDType.Mesh:
+                                    case ClassIDType.Sprite:
+                                    case ClassIDType.TextAsset:
+                                    case ClassIDType.Texture2D:
+                                    case ClassIDType.VideoClip:
+                                    case ClassIDType.AudioClip:
+                                        asset.Name = objectReader.ReadAlignedString();
+                                        break;
+                                    default:
+                                        exportable = false;
+                                        break;
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                var sb = new StringBuilder();
+                                sb.AppendLine("Unable to load object")
+                                    .AppendLine($"Assets {assetsFile.fileName}")
+                                    .AppendLine($"Path {assetsFile.originalPath}")
+                                    .AppendLine($"Type {objectReader.type}")
+                                    .AppendLine($"PathID {objectReader.m_PathID}")
+                                    .Append(e);
+                                Logger.Error(sb.ToString());
                             }
                             if (obj != null)
                             {
@@ -319,7 +339,8 @@ namespace AssetStudio
                             }
                         }
                     }
-                    Logger.Info($"Processed {Path.GetFileName(file)}");
+                    Logger.Info($"[{i + 1}/{files.Length}] Processed {Path.GetFileName(file)}");
+                    Progress.Report(i + 1, files.Length);
                 }
                 assetsManager.Clear();
             }
@@ -421,6 +442,7 @@ namespace AssetStudio
 
         public static AssetEntry[] BuildAssetMap(string[] files, Game game, Regex[] nameFilters = null, Regex[] containerFilters = null)
         {
+            Progress.Reset();
             assetsManager.Game = game;
             var assets = new List<AssetEntry>();
             for (int i = 0; i < files.Length; i++)
@@ -448,70 +470,84 @@ namespace AssetStudio
                             };
                         
                             var exportable = true;
-                            switch (objectReader.type)
+                            try
                             {
-                                case ClassIDType.AssetBundle:
-                                    var assetBundle = new AssetBundle(objectReader);
-                                    foreach (var m_Container in assetBundle.m_Container)
-                                    {
-                                        var preloadIndex = m_Container.Value.preloadIndex;
-                                        var preloadSize = m_Container.Value.preloadSize;
-                                        var preloadEnd = preloadIndex + preloadSize;
-                                        for (int k = preloadIndex; k < preloadEnd; k++)
+                                switch (objectReader.type)
+                                {
+                                    case ClassIDType.AssetBundle:
+                                        var assetBundle = new AssetBundle(objectReader);
+                                        foreach (var m_Container in assetBundle.m_Container)
                                         {
-                                            containers.Add((assetBundle.m_PreloadTable[k], m_Container.Key));
+                                            var preloadIndex = m_Container.Value.preloadIndex;
+                                            var preloadSize = m_Container.Value.preloadSize;
+                                            var preloadEnd = preloadIndex + preloadSize;
+                                            for (int k = preloadIndex; k < preloadEnd; k++)
+                                            {
+                                                containers.Add((assetBundle.m_PreloadTable[k], m_Container.Key));
+                                            }
                                         }
-                                    }
-                                    obj = null;
-                                    asset.Name = assetBundle.m_Name;
-                                    exportable = false;
-                                    break;
-                                case ClassIDType.GameObject:
-                                    var gameObject = new GameObject(objectReader);
-                                    obj = gameObject;
-                                    asset.Name = gameObject.m_Name;
-                                    exportable = false;
-                                    break;
-                                case ClassIDType.Shader:
-                                    asset.Name = objectReader.ReadAlignedString();
-                                    if (string.IsNullOrEmpty(asset.Name))
-                                    {
-                                        var m_parsedForm = new SerializedShader(objectReader);
-                                        asset.Name = m_parsedForm.m_Name;
-                                    }
-                                    break;
-                                case ClassIDType.Animator:
-                                    var component = new PPtr<Object>(objectReader);
-                                    animators.Add((component, asset));
-                                    break;
-                                case ClassIDType.MiHoYoBinData:
-                                    var MiHoYoBinData = new MiHoYoBinData(objectReader);
-                                    obj = MiHoYoBinData;
-                                    exportable = true;
-                                    break;
-                                case ClassIDType.IndexObject:
-                                    var indexObject = new IndexObject(objectReader);
-                                    obj = null;
-                                    foreach (var index in indexObject.AssetMap)
-                                    {
-                                        mihoyoBinDataNames.Add((index.Value.Object, index.Key));
-                                    }
-                                    asset.Name = "IndexObject";
-                                    break;
-                                case ClassIDType.Font:
-                                case ClassIDType.Material:
-                                case ClassIDType.Texture:
-                                case ClassIDType.Mesh:
-                                case ClassIDType.Sprite:
-                                case ClassIDType.TextAsset:
-                                case ClassIDType.Texture2D:
-                                case ClassIDType.VideoClip:
-                                case ClassIDType.AudioClip:
-                                    asset.Name = objectReader.ReadAlignedString();
-                                    break;
-                                default:
-                                    exportable = false;
-                                    break;
+                                        obj = null;
+                                        asset.Name = assetBundle.m_Name;
+                                        exportable = false;
+                                        break;
+                                    case ClassIDType.GameObject:
+                                        var gameObject = new GameObject(objectReader);
+                                        obj = gameObject;
+                                        asset.Name = gameObject.m_Name;
+                                        exportable = false;
+                                        break;
+                                    case ClassIDType.Shader:
+                                        asset.Name = objectReader.ReadAlignedString();
+                                        if (string.IsNullOrEmpty(asset.Name))
+                                        {
+                                            var m_parsedForm = new SerializedShader(objectReader);
+                                            asset.Name = m_parsedForm.m_Name;
+                                        }
+                                        break;
+                                    case ClassIDType.Animator:
+                                        var component = new PPtr<Object>(objectReader);
+                                        animators.Add((component, asset));
+                                        break;
+                                    case ClassIDType.MiHoYoBinData:
+                                        var MiHoYoBinData = new MiHoYoBinData(objectReader);
+                                        obj = MiHoYoBinData;
+                                        exportable = true;
+                                        break;
+                                    case ClassIDType.IndexObject:
+                                        var indexObject = new IndexObject(objectReader);
+                                        obj = null;
+                                        foreach (var index in indexObject.AssetMap)
+                                        {
+                                            mihoyoBinDataNames.Add((index.Value.Object, index.Key));
+                                        }
+                                        asset.Name = "IndexObject";
+                                        break;
+                                    case ClassIDType.Font:
+                                    case ClassIDType.Material:
+                                    case ClassIDType.Texture:
+                                    case ClassIDType.Mesh:
+                                    case ClassIDType.Sprite:
+                                    case ClassIDType.TextAsset:
+                                    case ClassIDType.Texture2D:
+                                    case ClassIDType.VideoClip:
+                                    case ClassIDType.AudioClip:
+                                        asset.Name = objectReader.ReadAlignedString();
+                                        break;
+                                    default:
+                                        exportable = false;
+                                        break;
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                var sb = new StringBuilder();
+                                sb.AppendLine("Unable to load object")
+                                    .AppendLine($"Assets {assetsFile.fileName}")
+                                    .AppendLine($"Path {assetsFile.originalPath}")
+                                    .AppendLine($"Type {objectReader.type}")
+                                    .AppendLine($"PathID {objectReader.m_PathID}")
+                                    .Append(e);
+                                Logger.Error(sb.ToString());
                             }
                             if (obj != null)
                             {
@@ -560,7 +596,8 @@ namespace AssetStudio
                             }
                         }
                     }
-                    Logger.Info($"Processed {Path.GetFileName(file)}");
+                    Logger.Info($"[{i + 1}/{files.Length}] Processed {Path.GetFileName(file)}");
+                    Progress.Report(i + 1, files.Length);
                 }
                 assetsManager.Clear();
             }

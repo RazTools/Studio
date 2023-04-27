@@ -79,8 +79,9 @@ namespace AssetStudioCLI
                     assemblyLoader.Load(o.DummyDllFolder.FullName);
                 }
 
-                Logger.Info("Scanning for files");
+                Logger.Info("Scanning for files...");
                 var files = o.Input.Attributes.HasFlag(FileAttributes.Directory) ? Directory.GetFiles(o.Input.FullName, "*.*", SearchOption.AllDirectories).OrderBy(x => x.Length).ToArray() : new string[] { o.Input.FullName };
+                files = files.Where(x => FileReader.IsReadable(x, game)).ToArray();
                 Logger.Info(string.Format("Found {0} file(s)", files.Length));
 
                 if (o.MapOp.HasFlag(MapOpType.Build))
@@ -105,6 +106,12 @@ namespace AssetStudioCLI
                     }
                     var resetEvent = new ManualResetEvent(false);
                     AssetsHelper.ExportAssetsMap(assets, o.MapName, o.Output.FullName, o.MapType, resetEvent);
+                    resetEvent.WaitOne();
+                }
+                if (o.MapOp.HasFlag(MapOpType.Both))
+                {
+                    var resetEvent = new ManualResetEvent(false);
+                    AssetsHelper.BuildBoth(files, o.MapName, o.Input.FullName, game, o.Output.FullName, o.MapType, resetEvent, o.NameFilter, o.ContainerFilter);
                     resetEvent.WaitOne();
                 }
                 if (o.MapOp.Equals(MapOpType.None) || o.MapOp.HasFlag(MapOpType.Load))

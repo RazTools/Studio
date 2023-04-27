@@ -20,9 +20,9 @@ namespace AssetStudioCLI
         None,
         Load,
         Build,
-        Both,
-        List,
-        All = Build | Load | List
+        List = 4,
+        Both = 8,
+        All = Both | Load,
     }
 
     public enum AssetGroupOption
@@ -127,8 +127,8 @@ namespace AssetStudioCLI
                 using var stream = BlkUtils.Decrypt(reader, (Blk)Game);
                 do
                 {
-                    stream.Offset = stream.RelativePosition;
-                    var dummyPath = Path.Combine(reader.FullPath, stream.RelativePosition.ToString("X8"));
+                    stream.Offset = stream.AbsolutePosition;
+                    var dummyPath = Path.Combine(reader.FullPath, stream.AbsolutePosition.ToString("X8"));
                     var subReader = new FileReader(dummyPath, stream, true);
                     var subSavePath = Path.Combine(savePath, reader.FileName + "_unpacked");
                     switch (subReader.FileType)
@@ -153,12 +153,12 @@ namespace AssetStudioCLI
         {
             int total = 0;
             Logger.Info($"Decompressing {reader.FileName} ...");
-            using var stream = new BlockStream(reader.BaseStream, 0);
+            using var stream = new SubStream(reader.BaseStream, 0);
             do
             {
-                stream.Offset = stream.RelativePosition;
+                stream.Offset = stream.AbsolutePosition;
                 var subSavePath = Path.Combine(savePath, reader.FileName + "_unpacked");
-                var dummyPath = Path.Combine(reader.FullPath, stream.RelativePosition.ToString("X8"));
+                var dummyPath = Path.Combine(reader.FullPath, stream.AbsolutePosition.ToString("X8"));
                 var subReader = new FileReader(dummyPath, stream, true);
                 total += ExtractBundleFile(subReader, subSavePath);
             } while (stream.Remaining > 0);

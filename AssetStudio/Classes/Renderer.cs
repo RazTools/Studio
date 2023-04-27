@@ -48,7 +48,7 @@ namespace AssetStudio
                     {
                         var m_DynamicOccludee = reader.ReadByte();
                     }
-                    if (reader.Game.Type.IsBH3())
+                    if (reader.Game.Type.IsBH3Group())
                     {
                         var m_AllowHalfResolution = reader.ReadByte();
                     }
