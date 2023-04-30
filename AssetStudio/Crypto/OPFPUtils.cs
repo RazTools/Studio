@@ -1,39 +1,71 @@
 ﻿using System;
+using System.IO;
+using System.Linq;
 
 namespace AssetStudio
 {
     public static class OPFPUtils
     {
-        public static readonly string[] EncrytpedFolders = { "UITexture", "DynamicAtlas", "UI", "Atlas" };
+        private static readonly string BaseFolder = "BundleResources";
+        private static readonly string[] V0_Prefixes = { "UI/", "Atlas/", "UITexture/" };
+        private static readonly string[] V1_Prefixes = { "DynamicAtlas/", "Atlas/Skill", "Atlas/PlayerTitle", "UITexture/HeroCardEP12", "UITexture/HeroCardEP13" };
 
         public static void Decrypt(Span<byte> data, string path)
         {
-            if (IsEncryptionBundle(path, out var key))
+            if (IsEncryptionBundle(path, out var key, out var version))
             {
-                data[0] ^= key;
-                for (int i = 1; i < data.Length; i++)
+                switch (version)
                 {
-                    data[i] ^= data[i - 1];
+                    case 0:
+                        data[0] ^= key;
+                        for (int i = 1; i < data.Length; i++)
+                        {
+                            data[i] ^= data[i - 1];
+                        }
+                        break;
+                    case 1:
+                        for (int i = 1; i < data.Length; i++)
+                        {
+                            var idx = (i + data.Length + key * key) % (i + 1);
+                            (data[i], data[idx]) = (data[idx], data[i]);
+                            data[i] ^= key;
+                            data[idx] ^= key;
+                        }
+                        break;
                 }
             }
         }
-        private static bool IsEncryptionBundle(string path, out byte key) 
+        private static bool IsEncryptionBundle(string path, out byte key, out int version) 
         {
-            path = path.Replace("\\", "/");
-            foreach(var encryptedFolder in EncrytpedFolders)
+            if (IsFixedPath(path, out var relativePath))
             {
-                var index = path.IndexOf(encryptedFolder, 0, path.Length, StringComparison.OrdinalIgnoreCase);
-                if (index != -1)
+                if (V1_Prefixes.Any(prefix => relativePath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
                 {
-                    var assetPath = path[index..];
-                    if (assetPath.StartsWith(encryptedFolder, StringComparison.OrdinalIgnoreCase))
-                    {
-                        key = (byte)assetPath.Length;
-                        return true;
-                    }
+                    key = (byte)Path.GetFileName(relativePath).Length;
+                    version = 1;
+                    return true;
+                }
+                else if (V0_Prefixes.Any(prefix => relativePath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+                {
+                    key = (byte)relativePath.Length;
+                    version = 0;
+                    return true;
                 }
             }
             key = 0x00;
+            version = 0;
+            return false;
+        }
+        private static bool IsFixedPath(string path, out string fixedPath)
+        {
+            var dirs = path.Split(Path.DirectorySeparatorChar);
+            if (dirs.Contains(BaseFolder))
+            {
+                var idx = Array.IndexOf(dirs, BaseFolder);
+                fixedPath = string.Join(Path.DirectorySeparatorChar, dirs[(idx+1)..]).Replace("\\", "/");
+                return true;
+            }
+            fixedPath = string.Empty;
             return false;
         }
     }
