@@ -154,7 +154,7 @@ namespace AssetStudioGUI
         {
             int total = 0;
             StatusStripUpdate($"Decompressing {reader.FileName} ...");
-            using var stream = new SubStream(reader.BaseStream, 0);
+            using var stream = new OffsetStream(reader.BaseStream, 0);
             do
             {
                 stream.Offset = stream.AbsolutePosition;
@@ -224,16 +224,16 @@ namespace AssetStudioGUI
                         if (uint.TryParse(name, out var id))
                         {
                             var path = ResourceIndex.GetContainer(id, last);
-                        if (!string.IsNullOrEmpty(path))
-                        {
-                            asset.Container = path;
-                            if (asset.Type == ClassIDType.MiHoYoBinData)
+                            if (!string.IsNullOrEmpty(path))
                             {
-                                asset.Text = Path.GetFileNameWithoutExtension(path);
+                                asset.Container = path;
+                                if (asset.Type == ClassIDType.MiHoYoBinData)
+                                {
+                                    asset.Text = Path.GetFileNameWithoutExtension(path);
+                                }
                             }
                         }
                     }
-                }
                 }
                 Logger.Info("Updated !!");
             }
@@ -347,10 +347,10 @@ namespace AssetStudioGUI
                             exportable = true;
                             break;
                         case ResourceManager m_ResourceManager:
-                            foreach (var m_Container in m_ResourceManager.m_Container)
-                            {
-                                containers.Add((m_Container.Value, m_Container.Key));
-                            }
+                                foreach (var m_Container in m_ResourceManager.m_Container)
+                                {
+                                    containers.Add((m_Container.Value, m_Container.Key));
+                                }
                             break;
                         case NamedObject m_NamedObject:
                             assetItem.Text = m_NamedObject.m_Name;
@@ -369,6 +369,11 @@ namespace AssetStudioGUI
             }
             foreach((var pptr, var name) in mihoyoBinDataNames)
             {
+                if (assetsManager.tokenSource.IsCancellationRequested)
+                {
+                    Logger.Info("Processing asset namnes has been cancelled !!");
+                    return (string.Empty, Array.Empty<TreeNode>().ToList());
+                }
                 if (pptr.TryGet<MiHoYoBinData>(out var obj))
                 {
                     var assetItem = objectAssetItemDic[obj];
@@ -384,6 +389,11 @@ namespace AssetStudioGUI
             {
                 foreach ((var pptr, var container) in containers)
                 {
+                    if (assetsManager.tokenSource.IsCancellationRequested)
+                    {
+                        Logger.Info("Processing containers been cancelled !!");
+                        return (string.Empty, Array.Empty<TreeNode>().ToList());
+                    }
                     if (pptr.TryGet(out var obj))
                     {
                         objectAssetItemDic[obj].Container = container;
@@ -397,6 +407,11 @@ namespace AssetStudioGUI
             }
             foreach (var tmp in exportableAssets)
             {
+                if (assetsManager.tokenSource.IsCancellationRequested)
+                {
+                    Logger.Info("Processing subitems been cancelled !!");
+                    return (string.Empty, Array.Empty<TreeNode>().ToList());
+                }
                 tmp.SetSubItems();
             }
 
@@ -492,6 +507,11 @@ namespace AssetStudioGUI
             var typeMap = new Dictionary<string, SortedDictionary<int, TypeTreeItem>>();
             foreach (var assetsFile in assetsManager.assetsFileList)
             {
+                if (assetsManager.tokenSource.IsCancellationRequested)
+                {
+                    Logger.Info("Processing class structure been cancelled !!");
+                    return new Dictionary<string, SortedDictionary<int, TypeTreeItem>>();
+                }
                 if (typeMap.TryGetValue(assetsFile.unityVersion, out var curVer))
                 {
                     foreach (var type in assetsFile.m_Types.Where(x => x.m_Type != null))

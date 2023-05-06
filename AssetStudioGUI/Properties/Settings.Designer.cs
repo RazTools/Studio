@@ -385,15 +385,25 @@ namespace AssetStudioGUI.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("{\"GameObject\":true,\"Material\":true,\"Texture2D\":true,\"Mesh\":true,\"Renderer\":true,\"" +
-            "Shader\":true,\"TextAsset\":true,\"AnimationClip\":true,\"Font\":true,\"Sprite\":true,\"An" +
-            "imator\":true,\"MiHoYoBinData\":true,\"AssetBundle\":true}")]
-        public string exportableTypes {
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool disableShader {
             get {
-                return ((string)(this["exportableTypes"]));
+                return ((bool)(this["disableShader"]));
             }
             set {
-                this["exportableTypes"] = value;
+                this["disableShader"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool disableRenderer {
+            get {
+                return ((bool)(this["disableRenderer"]));
+            }
+            set {
+                this["disableRenderer"] = value;
             }
         }
     }

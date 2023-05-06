@@ -42,27 +42,12 @@ namespace AssetStudioGUI
             collectAnimations.Checked = Properties.Settings.Default.collectAnimations;
             encrypted.Checked = Properties.Settings.Default.encrypted;
             key.Value = Properties.Settings.Default.key;
-
-            exportableTypes.Items.AddRange(Studio.assetsManager.ExportableTypes.Keys.Select(x => x.ToString()).ToArray());
-            var types = JsonConvert.DeserializeObject<Dictionary<ClassIDType, bool>>(Properties.Settings.Default.exportableTypes);
-            foreach (var exportable in types)
-            {
-                var idx = exportableTypes.Items.IndexOf(exportable.Key.ToString());
-                if (idx != -1)
-                    exportableTypes.SetItemChecked(idx, exportable.Value);
-            }
+            disableRenderer.Checked = Properties.Settings.Default.disableRenderer;
+            disableShader.Checked = Properties.Settings.Default.disableShader;
         }
 
         private void OKbutton_Click(object sender, EventArgs e)
         {
-            var types = new Dictionary<ClassIDType, bool>();
-            for (int i = 0; i < exportableTypes.Items.Count; i++)
-            {
-                var type = Enum.Parse<ClassIDType>(exportableTypes.Items[i].ToString());
-                var state = exportableTypes.GetItemChecked(i);
-                types.Add(type, state);
-            }
-            Properties.Settings.Default.exportableTypes = JsonConvert.SerializeObject(types);
             Properties.Settings.Default.assetGroupOption = assetGroupOptions.SelectedIndex;
             Properties.Settings.Default.restoreExtensionName = restoreExtensionName.Checked;
             Properties.Settings.Default.convertTexture = converttexture.Checked;
@@ -92,9 +77,13 @@ namespace AssetStudioGUI
             Properties.Settings.Default.collectAnimations = collectAnimations.Checked;
             Properties.Settings.Default.encrypted = encrypted.Checked;
             Properties.Settings.Default.key = (byte)key.Value;
+            Properties.Settings.Default.disableRenderer = disableRenderer.Checked;
+            Properties.Settings.Default.disableShader = disableShader.Checked;
             Properties.Settings.Default.Save();
             MiHoYoBinData.Key = (byte)key.Value;
             MiHoYoBinData.Encrypted = encrypted.Checked;
+            Renderer.Parsable = !Properties.Settings.Default.disableRenderer;
+            Shader.Parsable = !Properties.Settings.Default.disableShader;
             DialogResult = DialogResult.OK;
             Close();
         }

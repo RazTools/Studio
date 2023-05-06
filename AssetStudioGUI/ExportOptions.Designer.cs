@@ -71,12 +71,12 @@ namespace AssetStudioGUI
             key = new System.Windows.Forms.NumericUpDown();
             keyToolTip = new System.Windows.Forms.ToolTip(components);
             groupBox4 = new System.Windows.Forms.GroupBox();
-            label7 = new System.Windows.Forms.Label();
-            exportableTypes = new System.Windows.Forms.CheckedListBox();
             skipContainer = new System.Windows.Forms.CheckBox();
             enableResolveDependencies = new System.Windows.Forms.CheckBox();
             resolveToolTip = new System.Windows.Forms.ToolTip(components);
             skipToolTip = new System.Windows.Forms.ToolTip(components);
+            disableRenderer = new System.Windows.Forms.CheckBox();
+            disableShader = new System.Windows.Forms.CheckBox();
             groupBox1.SuspendLayout();
             panel1.SuspendLayout();
             groupBox2.SuspendLayout();
@@ -537,8 +537,8 @@ namespace AssetStudioGUI
             // groupBox4
             // 
             groupBox4.AutoSize = true;
-            groupBox4.Controls.Add(label7);
-            groupBox4.Controls.Add(exportableTypes);
+            groupBox4.Controls.Add(disableShader);
+            groupBox4.Controls.Add(disableRenderer);
             groupBox4.Controls.Add(skipContainer);
             groupBox4.Controls.Add(key);
             groupBox4.Controls.Add(encrypted);
@@ -551,24 +551,6 @@ namespace AssetStudioGUI
             groupBox4.TabIndex = 13;
             groupBox4.TabStop = false;
             groupBox4.Text = "Options";
-            // 
-            // label7
-            // 
-            label7.AutoSize = true;
-            label7.Location = new System.Drawing.Point(7, 94);
-            label7.Name = "label7";
-            label7.Size = new System.Drawing.Size(95, 15);
-            label7.TabIndex = 16;
-            label7.Text = "Exportable Types";
-            // 
-            // exportableTypes
-            // 
-            exportableTypes.CheckOnClick = true;
-            exportableTypes.FormattingEnabled = true;
-            exportableTypes.Location = new System.Drawing.Point(102, 94);
-            exportableTypes.Name = "exportableTypes";
-            exportableTypes.Size = new System.Drawing.Size(152, 58);
-            exportableTypes.TabIndex = 15;
             // 
             // skipContainer
             // 
@@ -597,6 +579,30 @@ namespace AssetStudioGUI
             enableResolveDependencies.Text = "Enable resolve dependencies";
             resolveToolTip.SetToolTip(enableResolveDependencies, "Toggle the behaviour of loading assets.\r\nDisable to load file(s) without its dependencies.");
             enableResolveDependencies.UseVisualStyleBackColor = true;
+            // 
+            // disableRenderer
+            // 
+            disableRenderer.AutoSize = true;
+            disableRenderer.Location = new System.Drawing.Point(8, 96);
+            disableRenderer.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            disableRenderer.Name = "disableRenderer";
+            disableRenderer.Size = new System.Drawing.Size(114, 19);
+            disableRenderer.TabIndex = 15;
+            disableRenderer.Text = "Disable Renderer";
+            skipToolTip.SetToolTip(disableRenderer, "Skips the container recovery step.\nImproves loading when dealing with a large number of files.");
+            disableRenderer.UseVisualStyleBackColor = true;
+            // 
+            // disableShader
+            // 
+            disableShader.AutoSize = true;
+            disableShader.Location = new System.Drawing.Point(8, 121);
+            disableShader.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            disableShader.Name = "disableShader";
+            disableShader.Size = new System.Drawing.Size(103, 19);
+            disableShader.TabIndex = 16;
+            disableShader.Text = "Disable Shader";
+            skipToolTip.SetToolTip(disableShader, "Skips the container recovery step.\nImproves loading when dealing with a large number of files.");
+            disableShader.UseVisualStyleBackColor = true;
             // 
             // ExportOptions
             // 
@@ -679,7 +685,7 @@ namespace AssetStudioGUI
         private System.Windows.Forms.CheckBox skipContainer;
         private System.Windows.Forms.ToolTip resolveToolTip;
         private System.Windows.Forms.ToolTip skipToolTip;
-        private System.Windows.Forms.CheckedListBox exportableTypes;
-        private System.Windows.Forms.Label label7;
+        private System.Windows.Forms.CheckBox disableShader;
+        private System.Windows.Forms.CheckBox disableRenderer;
     }
 }

@@ -110,13 +110,8 @@ namespace AssetStudioGUI
             assetsManager.ResolveDependencies = Properties.Settings.Default.enableResolveDependencies;
             MiHoYoBinData.Encrypted = Properties.Settings.Default.encrypted;
             MiHoYoBinData.Key = Properties.Settings.Default.key;
-
-            var types = JsonConvert.DeserializeObject<Dictionary<ClassIDType, bool>>(Properties.Settings.Default.exportableTypes);
-            foreach (var exportable in types)
-            {
-                if (assetsManager.ExportableTypes.ContainsKey(exportable.Key))
-                    assetsManager.ExportableTypes[exportable.Key] = exportable.Value;
-            }
+            Renderer.Parsable = !Properties.Settings.Default.disableRenderer;
+            Shader.Parsable = !Properties.Settings.Default.disableShader;
         }
 
         private void InitializeLogger()
@@ -515,12 +510,6 @@ namespace AssetStudioGUI
         {
             var exportOpt = new ExportOptions();
             exportOpt.ShowDialog(this);
-            var types = JsonConvert.DeserializeObject<Dictionary<ClassIDType, bool>>(Properties.Settings.Default.exportableTypes);
-            foreach (var exportable in types)
-            {
-                if (assetsManager.ExportableTypes.ContainsKey(exportable.Key))
-                    assetsManager.ExportableTypes[exportable.Key] = exportable.Value;
-            }
         }
 
         private void assetListView_RetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
@@ -763,6 +752,9 @@ namespace AssetStudioGUI
             {
                 switch (assetItem.Asset)
                 {
+                    case GameObject m_GameObject:
+                        PreviewGameObject(m_GameObject);
+                        break;
                     case Texture2D m_Texture2D:
                         PreviewTexture2D(assetItem, m_Texture2D);
                         break;
@@ -791,8 +783,9 @@ namespace AssetStudioGUI
                     case Sprite m_Sprite:
                         PreviewSprite(assetItem, m_Sprite);
                         break;
-                    case Animator _:
-                        StatusStripUpdate("Can be exported to FBX file.");
+                    case Animator m_Animator:
+                        //StatusStripUpdate("Can be exported to FBX file.");
+                        PreviewAnimator(m_Animator);
                         break;
                     case AnimationClip _:
                         StatusStripUpdate("Can be exported with Animator or Objects");
@@ -1234,6 +1227,163 @@ namespace AssetStudioGUI
             else
             {
                 StatusStripUpdate("Unable to preview this mesh");
+            }
+        }
+
+        private void PreviewGameObject(GameObject m_GameObject)
+        {
+            var model = new ModelConverter(m_GameObject, Properties.Settings.Default.convertType, Studio.Game, false, Array.Empty<AnimationClip>());
+            if (model.MeshList.Count > 0)
+            {
+                viewMatrixData = Matrix4.CreateRotationY(-(float)Math.PI / 4) * Matrix4.CreateRotationX(-(float)Math.PI / 6);
+                #region Vertices
+                vertexData = model.MeshList.SelectMany(x => x.VertexList).Select(x => new Vector3(x.Vertex.X, x.Vertex.Y, x.Vertex.Z)).ToArray();
+                // Calculate Bounding
+                Vector3 min = vertexData.Aggregate(Vector3.ComponentMin);
+                Vector3 max = vertexData.Aggregate(Vector3.ComponentMax);
+
+                // Calculate modelMatrix
+                Vector3 dist = max - min;
+                Vector3 offset = (max - min) / 2;
+                float d = Math.Max(1e-5f, dist.Length);
+                modelMatrixData = Matrix4.CreateTranslation(-offset) * Matrix4.CreateScale(2f / d);
+                #endregion
+                #region Indicies
+                int meshOffset = 0;
+                var indices = new List<int>();
+                foreach (var mesh in model.MeshList)
+                {
+                    foreach (var submesh in mesh.SubmeshList)
+                    {
+                        foreach (var face in submesh.FaceList)
+                        {
+                            foreach (var index in face.VertexIndices)
+                            {
+                                indices.Add(submesh.BaseVertex + index + meshOffset);
+                            }
+                        }
+                    }
+                    meshOffset += mesh.VertexList.Count;
+                }
+                indiceData = indices.ToArray();
+                #endregion
+                #region Normals
+                normalData = model.MeshList.SelectMany(x => x.VertexList).Select(x => new Vector3(x.Normal.X, x.Normal.Y, x.Normal.Z)).ToArray();
+                // calculate normal by ourself
+                normal2Data = new Vector3[vertexData.Length];
+                int[] normalCalculatedCount = new int[vertexData.Length];
+                Array.Fill(normal2Data, Vector3.Zero);
+                Array.Fill(normalCalculatedCount, 0);
+                for (int j = 0; j < indiceData.Length; j += 3)
+                {
+                    Vector3 dir1 = vertexData[indiceData[j + 1]] - vertexData[indiceData[j]];
+                    Vector3 dir2 = vertexData[indiceData[j + 2]] - vertexData[indiceData[j]];
+                    Vector3 normal = Vector3.Cross(dir1, dir2);
+                    normal.Normalize();
+                    for (int k = 0; k < 3; k++)
+                    {
+                        normal2Data[indiceData[j + k]] += normal;
+                        normalCalculatedCount[indiceData[j + k]]++;
+                    }
+                }
+                for (int j = 0; j < vertexData.Length; j++)
+                {
+                    if (normalCalculatedCount[j] == 0)
+                        normal2Data[j] = new Vector3(0, 1, 0);
+                    else
+                        normal2Data[j] /= normalCalculatedCount[j];
+                }
+                #endregion
+                #region Colors
+                colorData = model.MeshList.SelectMany(x => x.VertexList).Select(x => new Vector4(x.Color.R, x.Color.G, x.Color.B, x.Color.A)).ToArray();
+                #endregion
+                glControl.Visible = true;
+                CreateVAO();
+                StatusStripUpdate("Using OpenGL Version: " + GL.GetString(StringName.Version) + "\n"
+                                  + "'Mouse Left'=Rotate | 'Mouse Right'=Move | 'Mouse Wheel'=Zoom \n"
+                                  + "'Ctrl W'=Wireframe | 'Ctrl S'=Shade | 'Ctrl N'=ReNormal ");
+            }
+            else
+            {
+                StatusStripUpdate("Unable to preview this model");
+            }
+        }
+        private void PreviewAnimator(Animator m_Animator)
+        {
+            var model = new ModelConverter(m_Animator, Properties.Settings.Default.convertType, Studio.Game, false, Array.Empty<AnimationClip>());
+            if (model.MeshList.Count > 0)
+            {
+                viewMatrixData = Matrix4.CreateRotationY(-(float)Math.PI / 4) * Matrix4.CreateRotationX(-(float)Math.PI / 6);
+                #region Vertices
+                vertexData = model.MeshList.SelectMany(x => x.VertexList).Select(x => new Vector3(x.Vertex.X, x.Vertex.Y, x.Vertex.Z)).ToArray();
+                // Calculate Bounding
+                Vector3 min = vertexData.Aggregate(Vector3.ComponentMin);
+                Vector3 max = vertexData.Aggregate(Vector3.ComponentMax);
+
+                // Calculate modelMatrix
+                Vector3 dist = max - min;
+                Vector3 offset = (max - min) / 2;
+                float d = Math.Max(1e-5f, dist.Length);
+                modelMatrixData = Matrix4.CreateTranslation(-offset) * Matrix4.CreateScale(2f / d);
+                #endregion
+                #region Indicies
+                int meshOffset = 0;
+                var indices = new List<int>();
+                foreach (var mesh in model.MeshList)
+                {
+                    foreach (var submesh in mesh.SubmeshList)
+                    {
+                        foreach (var face in submesh.FaceList)
+                        {
+                            foreach (var index in face.VertexIndices)
+                            {
+                                indices.Add(submesh.BaseVertex + index + meshOffset);
+                            }
+                        }
+                    }
+                    meshOffset += mesh.VertexList.Count;
+                }
+                indiceData = indices.ToArray();
+                #endregion
+                #region Normals
+                normalData = model.MeshList.SelectMany(x => x.VertexList).Select(x => new Vector3(x.Normal.X, x.Normal.Y, x.Normal.Z)).ToArray();
+                // calculate normal by ourself
+                normal2Data = new Vector3[vertexData.Length];
+                int[] normalCalculatedCount = new int[vertexData.Length];
+                Array.Fill(normal2Data, Vector3.Zero);
+                Array.Fill(normalCalculatedCount, 0);
+                for (int j = 0; j < indiceData.Length; j += 3)
+                {
+                    Vector3 dir1 = vertexData[indiceData[j + 1]] - vertexData[indiceData[j]];
+                    Vector3 dir2 = vertexData[indiceData[j + 2]] - vertexData[indiceData[j]];
+                    Vector3 normal = Vector3.Cross(dir1, dir2);
+                    normal.Normalize();
+                    for (int k = 0; k < 3; k++)
+                    {
+                        normal2Data[indiceData[j + k]] += normal;
+                        normalCalculatedCount[indiceData[j + k]]++;
+                    }
+                }
+                for (int j = 0; j < vertexData.Length; j++)
+                {
+                    if (normalCalculatedCount[j] == 0)
+                        normal2Data[j] = new Vector3(0, 1, 0);
+                    else
+                        normal2Data[j] /= normalCalculatedCount[j];
+                }
+                #endregion
+                #region Colors
+                colorData = model.MeshList.SelectMany(x => x.VertexList).Select(x => new Vector4(x.Color.R, x.Color.G, x.Color.B, x.Color.A)).ToArray();
+                #endregion
+                glControl.Visible = true;
+                CreateVAO();
+                StatusStripUpdate("Using OpenGL Version: " + GL.GetString(StringName.Version) + "\n"
+                                  + "'Mouse Left'=Rotate | 'Mouse Right'=Move | 'Mouse Wheel'=Zoom \n"
+                                  + "'Ctrl W'=Wireframe | 'Ctrl S'=Shade | 'Ctrl N'=ReNormal ");
+            }
+            else
+            {
+                StatusStripUpdate("Unable to preview this model");
             }
         }
 
@@ -1714,9 +1864,9 @@ namespace AssetStudioGUI
             }
         }
 
-        private void assetHelpersToolStripMenuItem_DropDownOpening(object sender, EventArgs e)
+        private void miscToolStripMenuItem_DropDownOpening(object sender, EventArgs e)
         {
-            if (assetHelpersToolStripMenuItem.Enabled)
+            if (miscToolStripMenuItem.Enabled)
             {
                 MapNameComboBox.Items.Clear();
                 MapNameComboBox.Items.AddRange(AssetsHelper.GetMaps());
@@ -1831,10 +1981,11 @@ namespace AssetStudioGUI
             Properties.Settings.Default.selectedGame = specifyGame.SelectedIndex;
             Properties.Settings.Default.Save();
 
+            ResetForm();
+
             Studio.Game = GameManager.GetGame(Properties.Settings.Default.selectedGame);
             Logger.Info($"Target Game is {Studio.Game.Name}");
 
-            ResetForm();
             assetsManager.SpecifyUnityVersion = specifyUnityVersion.Text;
             assetsManager.Game = Studio.Game;
         }
@@ -1844,17 +1995,18 @@ namespace AssetStudioGUI
             miscToolStripMenuItem.DropDown.Visible = false;
             InvokeUpdate(miscToolStripMenuItem, false);
 
-            var name = MapNameComboBox.SelectedItem.ToString();
-            await Task.Run(() => AssetsHelper.LoadMap(name));
-
             ResetForm();
+
+            var name = MapNameComboBox.SelectedItem.ToString();
+            await Task.Run(() => AssetsHelper.LoadCABMap(name));
+
             assetsManager.SpecifyUnityVersion = specifyUnityVersion.Text;
             assetsManager.Game = Studio.Game;
 
             InvokeUpdate(miscToolStripMenuItem, true);
         }
 
-        private async void toolStripMenuItem20_Click(object sender, EventArgs e)
+        private async void buildMapToolStripMenuItem_Click(object sender, EventArgs e)
         {
             miscToolStripMenuItem.DropDown.Visible = false;
             InvokeUpdate(miscToolStripMenuItem, false);
@@ -1903,12 +2055,83 @@ namespace AssetStudioGUI
                 var files = Directory.GetFiles(openFolderDialog.Folder, "*.*", SearchOption.AllDirectories).ToArray();
                 files = files.Where(x => FileReader.IsReadable(x, Studio.Game)).ToArray();
                 Logger.Info($"Found {files.Length} files");
-                await Task.Run(() => AssetsHelper.BuildMap(files, name, openFolderDialog.Folder, Studio.Game));
+                await Task.Run(() => AssetsHelper.BuildCABMap(files, name, openFolderDialog.Folder, Studio.Game));
             }
             InvokeUpdate(miscToolStripMenuItem, true);
         }
 
-        private void toolStripMenuItem21_Click(object sender, EventArgs e)
+        private async void buildBothToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            miscToolStripMenuItem.DropDown.Visible = false;
+            InvokeUpdate(miscToolStripMenuItem, false);
+
+            var input = MapNameComboBox.Text;
+            var selectedText = MapNameComboBox.SelectedText;
+            var exportListType = (ExportListType)assetMapTypeComboBox.SelectedItem;
+            var name = "";
+
+            if (!string.IsNullOrEmpty(selectedText))
+            {
+                name = selectedText;
+            }
+            else if (!string.IsNullOrEmpty(input))
+            {
+                if (input.IndexOfAny(Path.GetInvalidFileNameChars()) != -1)
+                {
+                    Logger.Warning("Name has invalid characters !!");
+                    InvokeUpdate(miscToolStripMenuItem, true);
+                    return;
+                }
+
+                name = input;
+            }
+            else
+            {
+                Logger.Error("Map name is empty, please enter any name in ComboBox above");
+                InvokeUpdate(miscToolStripMenuItem, true);
+                return;
+            }
+
+            if (File.Exists(Path.Combine(AssetsHelper.MapName, $"{name}.bin")))
+            {
+                var acceptOverride = MessageBox.Show("Map already exist, Do you want to override it ?", "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (acceptOverride != DialogResult.Yes)
+                {
+                    InvokeUpdate(miscToolStripMenuItem, true);
+                    return;
+                }
+            }
+
+            var openFolderDialog = new OpenFolderDialog();
+            openFolderDialog.Title = "Select Game Folder";
+            if (openFolderDialog.ShowDialog(this) == DialogResult.OK)
+            {
+                var saveFolderDialog = new OpenFolderDialog();
+                saveFolderDialog.InitialFolder = saveDirectoryBackup;
+                saveFolderDialog.Title = "Select Output Folder";
+                if (saveFolderDialog.ShowDialog(this) == DialogResult.OK)
+                {
+                    if (File.Exists(Path.Combine(saveFolderDialog.Folder, $"{name}{exportListType.GetExtension()}")))
+                    {
+                        var acceptOverride = MessageBox.Show("AssetMap already exist, Do you want to override it ?", "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                        if (acceptOverride != DialogResult.Yes)
+                        {
+                            InvokeUpdate(miscToolStripMenuItem, true);
+                            return;
+                        }
+                    }
+                    saveDirectoryBackup = saveFolderDialog.Folder;
+                    Logger.Info("Scanning for files...");
+                    var files = Directory.GetFiles(openFolderDialog.Folder, "*.*", SearchOption.AllDirectories).ToArray();
+                    files = files.Where(x => FileReader.IsReadable(x, Studio.Game)).ToArray();
+                    Logger.Info($"Found {files.Length} files");
+                    await Task.Run(() => AssetsHelper.BuildBoth(files, name, openFolderDialog.Folder, Studio.Game, saveFolderDialog.Folder, exportListType));
+                }
+            }
+            InvokeUpdate(miscToolStripMenuItem, true);
+        }
+
+        private void clearMapToolStripMenuItem_Click(object sender, EventArgs e)
         {
             miscToolStripMenuItem.DropDown.Visible = false;
             InvokeUpdate(miscToolStripMenuItem, false);
@@ -1993,7 +2216,7 @@ namespace AssetStudioGUI
             Console.Clear();
         }
 
-        private async void toolStripMenuItem22_Click(object sender, EventArgs e)
+        private async void buildAssetMapToolStripMenuItem_Click(object sender, EventArgs e)
         {
             miscToolStripMenuItem.DropDown.Visible = false;
             InvokeUpdate(miscToolStripMenuItem, false);
@@ -2038,8 +2261,7 @@ namespace AssetStudioGUI
                         }
                     }
                     saveDirectoryBackup = saveFolderDialog.Folder;
-                    var toExportAssets = await Task.Run(() => AssetsHelper.BuildAssetMap(files, Studio.Game));
-                    AssetsHelper.ExportAssetsMap(toExportAssets, name, saveFolderDialog.Folder, exportListType);
+                    await Task.Run(() => AssetsHelper.BuildAssetMap(files, name, Studio.Game, saveFolderDialog.Folder, exportListType));
                 }
             }
             InvokeUpdate(miscToolStripMenuItem, true);

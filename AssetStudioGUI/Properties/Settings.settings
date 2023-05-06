@@ -92,8 +92,11 @@
     <Setting Name="exportUV0UV1" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
-    <Setting Name="exportableTypes" Type="System.String" Scope="User">
-      <Value Profile="(Default)">{"GameObject":true,"Material":true,"Texture2D":true,"Mesh":true,"Renderer":true,"Shader":true,"TextAsset":true,"AnimationClip":true,"Font":true,"Sprite":true,"Animator":true,"MiHoYoBinData":true,"AssetBundle":true}</Value>
+    <Setting Name="disableShader" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="disableRenderer" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
     </Setting>
   </Settings>
 </SettingsFile>

@@ -2,10 +2,12 @@
 
 namespace AssetStudio
 {
-    public class XORStream : SubStream
+    public class XORStream : OffsetStream
     {
         private readonly byte[] _xorpad;
         private readonly long _offset;
+
+        private long Index => AbsolutePosition - _offset;
 
         public XORStream(Stream stream, long offset, byte[] xorpad) : base(stream, offset)
         {
@@ -15,11 +17,14 @@ namespace AssetStudio
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            var pos = AbsolutePosition - _offset;
+            var pos = Index;
             var read = base.Read(buffer, offset, count);
-            for (int i = 0; i < count; i++)
+            if (pos >= 0)
             {
-                buffer[i] ^= _xorpad[pos++ % _xorpad.Length];
+                for (int i = offset; i < count; i++)
+                {
+                    buffer[i] ^= _xorpad[pos++ % _xorpad.Length];
+                }
             }
             return read;
         }

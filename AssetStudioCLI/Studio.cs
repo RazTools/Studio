@@ -19,8 +19,8 @@ namespace AssetStudioCLI
     {
         None,
         Load,
-        Build,
-        List = 4,
+        CABMap,
+        AssetMap = 4,
         Both = 8,
         All = Both | Load,
     }
@@ -153,7 +153,7 @@ namespace AssetStudioCLI
         {
             int total = 0;
             Logger.Info($"Decompressing {reader.FileName} ...");
-            using var stream = new SubStream(reader.BaseStream, 0);
+            using var stream = new OffsetStream(reader.BaseStream, 0);
             do
             {
                 stream.Offset = stream.AbsolutePosition;
@@ -238,7 +238,7 @@ namespace AssetStudioCLI
             }
         }
 
-        public static void BuildAssetData(Regex[] nameFilters, Regex[] containerFilters, ref int i)
+        public static void BuildAssetData(ClassIDType[] typeFilters, Regex[] nameFilters, Regex[] containerFilters, ref int i)
         {
             var objectAssetItemDic = new Dictionary<Object, AssetItem>();
             var mihoyoBinDataNames = new List<(PPtr<Object>, string)>();
@@ -247,7 +247,7 @@ namespace AssetStudioCLI
             {
                 foreach (var asset in assetsFile.Objects)
                 {
-                    ProcessAssetData(asset, nameFilters, objectAssetItemDic, mihoyoBinDataNames, containers, ref i);
+                    ProcessAssetData(asset, typeFilters, nameFilters, objectAssetItemDic, mihoyoBinDataNames, containers, ref i);
                 }
             }
             foreach ((var pptr, var name) in mihoyoBinDataNames)
@@ -269,11 +269,7 @@ namespace AssetStudioCLI
                 {
                     if (pptr.TryGet(out var obj))
                     {
-                        if (!objectAssetItemDic.TryGetValue(obj, out var item))
-                        {
-                            ProcessAssetData(obj, nameFilters, objectAssetItemDic, mihoyoBinDataNames, containers, ref i);
-                            item = objectAssetItemDic[obj];
-                        }
+                        var item = objectAssetItemDic[obj];
                         if (containerFilters.IsNullOrEmpty() || containerFilters.Any(x => x.IsMatch(container)))
                         {
                             item.Container = container;
@@ -292,7 +288,7 @@ namespace AssetStudioCLI
             }
         }
 
-        public static void ProcessAssetData(Object asset, Regex[] nameFilters, Dictionary<Object, AssetItem> objectAssetItemDic, List<(PPtr<Object>, string)> mihoyoBinDataNames, List<(PPtr<Object>, string)> containers, ref int i) 
+        public static void ProcessAssetData(Object asset, ClassIDType[] typeFilters, Regex[] nameFilters, Dictionary<Object, AssetItem> objectAssetItemDic, List<(PPtr<Object>, string)> mihoyoBinDataNames, List<(PPtr<Object>, string)> containers, ref int i) 
         {
             var assetItem = new AssetItem(asset);
             objectAssetItemDic.Add(asset, assetItem);
@@ -322,7 +318,7 @@ namespace AssetStudioCLI
                     assetItem.Text = m_VideoClip.m_Name;
                     exportable = !ModelOnly;
                     break;
-                case Shader m_Shader:
+                case Shader m_Shader when Shader.Parsable:
                     assetItem.Text = m_Shader.m_ParsedForm?.m_Name ?? m_Shader.m_Name;
                     exportable = !ModelOnly;
                     break;
@@ -351,7 +347,7 @@ namespace AssetStudioCLI
                     {
                         assetItem.Text = m_MonoBehaviour.m_Name;
                     }
-                    exportable = !ModelOnly;
+                    exportable = !ModelOnly && assemblyLoader.Loaded;
                     break;
                 case AssetBundle m_AssetBundle:
                     foreach (var m_Container in m_AssetBundle.m_Container)
@@ -390,8 +386,10 @@ namespace AssetStudioCLI
             {
                 assetItem.Text = assetItem.TypeString + assetItem.UniqueID;
             }
-            var isMatchRegex = nameFilters.Length == 0 || nameFilters.Any(x => x.IsMatch(assetItem.Text));
-            if (isMatchRegex && exportable)
+            
+            var isMatchRegex = nameFilters.IsNullOrEmpty() || nameFilters.Any(x => x.IsMatch(assetItem.Text));
+            var isFilteredType = typeFilters.IsNullOrEmpty() || typeFilters.Contains(assetItem.Type);
+            if (isMatchRegex && isFilteredType && exportable)
             {
                 exportableAssets.Add(assetItem);
             }

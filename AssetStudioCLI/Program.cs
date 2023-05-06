@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using AssetStudio;
+using AssetStudioCLI.Properties;
 using static AssetStudioCLI.Studio;
 
 namespace AssetStudioCLI 
@@ -26,47 +27,16 @@ namespace AssetStudioCLI
 
                 Studio.Game = game;
                 Logger.Default = new ConsoleLogger();
+                Shader.Parsable = !Settings.Default.disableShader;
+                Renderer.Parsable = !Settings.Default.disableRenderer;
                 assetsManager.Silent = o.Silent;
                 assetsManager.Game = game;
-
-
-                if (!o.TypeFilter.IsNullOrEmpty())
-                {
-                    foreach (var kv in assetsManager.ExportableTypes)
-                    {
-                        assetsManager.ExportableTypes[kv.Key] = o.TypeFilter.Contains(kv.Key);
-                    }
-                    
-                }
-
-                if (o.Model)
-                {
-                    foreach (var kv in assetsManager.ExportableTypes)
-                    {
-                        assetsManager.ExportableTypes[kv.Key] = false;
-                    }
-
-                    assetsManager.ExportableTypes[ClassIDType.Animator] = true;
-                    assetsManager.ExportableTypes[ClassIDType.GameObject] = true;
-                    assetsManager.ExportableTypes[ClassIDType.Texture2D] = true;
-                    assetsManager.ExportableTypes[ClassIDType.Material] = true;
-                    assetsManager.ExportableTypes[ClassIDType.Renderer] = true;
-                    assetsManager.ExportableTypes[ClassIDType.Mesh] = true;
-
-                    ModelOnly = true;
-                }
+                ModelOnly = o.Model;
 
                 if (o.Key != default)
                 {
-                    if (!assetsManager.ExportableTypes[ClassIDType.MiHoYoBinData])
-                    {
-                        Logger.Warning("Key is set but MiHoYoBinData is skipped, ignoring key...");
-                    }
-                    else
-                    {
-                        MiHoYoBinData.Encrypted = true;
-                        MiHoYoBinData.Key = o.Key;
-                    }
+                    MiHoYoBinData.Encrypted = true;
+                    MiHoYoBinData.Key = o.Key;
                 }
 
                 if (o.AIFile != null && game.Type.IsGISubGroup())
@@ -82,36 +52,35 @@ namespace AssetStudioCLI
                 Logger.Info("Scanning for files...");
                 var files = o.Input.Attributes.HasFlag(FileAttributes.Directory) ? Directory.GetFiles(o.Input.FullName, "*.*", SearchOption.AllDirectories).OrderBy(x => x.Length).ToArray() : new string[] { o.Input.FullName };
                 files = files.Where(x => FileReader.IsReadable(x, game)).ToArray();
-                Logger.Info(string.Format("Found {0} file(s)", files.Length));
+                Logger.Info($"Found {files.Length} files");
 
-                if (o.MapOp.HasFlag(MapOpType.Build))
+                if (o.MapOp.HasFlag(MapOpType.CABMap))
                 {
-                    AssetsHelper.BuildMap(files, o.MapName, o.Input.FullName, game);
+                    AssetsHelper.BuildCABMap(files, o.MapName, o.Input.FullName, game);
                 }
                 if (o.MapOp.HasFlag(MapOpType.Load))
                 {
-                    AssetsHelper.LoadMap(o.MapName);
+                    AssetsHelper.LoadCABMap(o.MapName);
                     assetsManager.ResolveDependencies = true;
                 }
-                if (o.MapOp.HasFlag(MapOpType.List))
+                if (o.MapOp.HasFlag(MapOpType.AssetMap))
                 {
                     if (files.Length == 1)
                     {
                         throw new Exception("Unable to build AssetMap with input_path as a file !!");
                     }
-                    var assets = AssetsHelper.BuildAssetMap(files, game, o.NameFilter, o.ContainerFilter);
                     if (!o.Output.Exists)
                     {
                         o.Output.Create();
                     }
                     var resetEvent = new ManualResetEvent(false);
-                    AssetsHelper.ExportAssetsMap(assets, o.MapName, o.Output.FullName, o.MapType, resetEvent);
+                    AssetsHelper.BuildAssetMap(files, o.MapName, game, o.Output.FullName, o.MapType, resetEvent, o.TypeFilter, o.NameFilter, o.ContainerFilter);
                     resetEvent.WaitOne();
                 }
                 if (o.MapOp.HasFlag(MapOpType.Both))
                 {
                     var resetEvent = new ManualResetEvent(false);
-                    AssetsHelper.BuildBoth(files, o.MapName, o.Input.FullName, game, o.Output.FullName, o.MapType, resetEvent, o.NameFilter, o.ContainerFilter);
+                    AssetsHelper.BuildBoth(files, o.MapName, o.Input.FullName, game, o.Output.FullName, o.MapType, resetEvent, o.TypeFilter, o.NameFilter, o.ContainerFilter);
                     resetEvent.WaitOne();
                 }
                 if (o.MapOp.Equals(MapOpType.None) || o.MapOp.HasFlag(MapOpType.Load))
@@ -122,7 +91,7 @@ namespace AssetStudioCLI
                         assetsManager.LoadFiles(file);
                         if (assetsManager.assetsFileList.Count > 0)
                         {
-                            BuildAssetData(o.NameFilter, o.ContainerFilter, ref i);
+                            BuildAssetData(o.TypeFilter, o.NameFilter, o.ContainerFilter, ref i);
                             ExportAssets(o.Output.FullName, exportableAssets, o.GroupAssetsType);
                         }
                         exportableAssets.Clear();

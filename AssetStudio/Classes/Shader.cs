@@ -578,6 +578,9 @@ namespace AssetStudio
         public UAVParameter[] m_UAVParams;
         public SamplerParameter[] m_Samplers;
 
+        private static bool HasGlobalLocalKeywordIndices(ObjectReader reader) => reader.serializedType.Match("E99740711222CD922E9A6F92FF1EB07A") || reader.serializedType.Match("450A058C218DAF000647948F2F59DA6D");
+        private static bool HasInstancedStructuredBuffers(ObjectReader reader) => reader.serializedType.Match("E99740711222CD922E9A6F92FF1EB07A");
+
         public SerializedSubProgram(ObjectReader reader)
         {
             var version = reader.version;
@@ -585,7 +588,7 @@ namespace AssetStudio
             m_BlobIndex = reader.ReadUInt32();
             m_Channels = new ParserBindChannels(reader);
 
-            if ((version[0] >= 2019 && version[0] < 2021) || (version[0] == 2021 && version[1] < 2) || reader.Match("E99740711222CD922E9A6F92FF1EB07A") || reader.Match("450A058C218DAF000647948F2F59DA6D")) //2019 ~2021.1
+            if ((version[0] >= 2019 && version[0] < 2021) || (version[0] == 2021 && version[1] < 2) || HasGlobalLocalKeywordIndices(reader)) //2019 ~2021.1
             {
                 var m_GlobalKeywordIndices = reader.ReadUInt16Array();
                 reader.AlignStream();
@@ -687,7 +690,7 @@ namespace AssetStudio
                 }
             }
 
-            if (reader.Match("E99740711222CD922E9A6F92FF1EB07A"))
+            if (HasInstancedStructuredBuffers(reader))
             {
                 int numInstancedStructuredBuffers = reader.ReadInt32();
                 var m_InstancedStructuredBuffers = new ConstantBuffer[numInstancedStructuredBuffers];
@@ -974,6 +977,8 @@ namespace AssetStudio
 
     public class Shader : NamedObject
     {
+        public static bool Parsable;
+
         public byte[] m_Script;
         //5.3 - 5.4
         public uint decompressedSize;

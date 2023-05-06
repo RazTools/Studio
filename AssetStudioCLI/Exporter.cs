@@ -334,26 +334,24 @@ namespace AssetStudioCLI
         public static bool ExportGameObject(AssetItem item, string exportPath, List <AssetItem> animationList = null)
         {
             var m_GameObject = (GameObject)item.Asset;
-            ExportGameObject(m_GameObject, exportPath, animationList);
-            return true;
+            exportPath = Path.Combine(exportPath, m_GameObject.m_Name) + Path.DirectorySeparatorChar;
+            return ExportGameObject(m_GameObject, exportPath, animationList);
         }
 
-        public static void ExportGameObject(GameObject gameObject, string exportPath, List<AssetItem> animationList = null)
+        public static bool ExportGameObject(GameObject gameObject, string exportPath, List<AssetItem> animationList = null)
         {
             var convert = animationList != null
                 ? new ModelConverter(gameObject, Properties.Settings.Default.convertType, Studio.Game, Properties.Settings.Default.collectAnimations, animationList.Select(x => (AnimationClip)x.Asset).ToArray())
                 : new ModelConverter(gameObject, Properties.Settings.Default.convertType, Studio.Game, Properties.Settings.Default.collectAnimations);
+            
+            if (convert.MeshList.Count == 0)
+            {
+                Logger.Info($"GameObject {gameObject.m_Name} has no mesh, skipping...");
+                return false;
+            }
             exportPath = exportPath + FixFileName(gameObject.m_Name) + ".fbx";
             ExportFbx(convert, exportPath);
-        }
-
-        public static void ExportGameObjectMerge(List<GameObject> gameObject, string exportPath, List<AssetItem> animationList = null)
-        {
-            var rootName = Path.GetFileNameWithoutExtension(exportPath);
-            var convert = animationList != null
-                ? new ModelConverter(rootName, gameObject, Properties.Settings.Default.convertType, Studio.Game, Properties.Settings.Default.collectAnimations, animationList.Select(x => (AnimationClip)x.Asset).ToArray())
-                : new ModelConverter(rootName, gameObject, Properties.Settings.Default.convertType, Studio.Game, Properties.Settings.Default.collectAnimations);
-            ExportFbx(convert, exportPath);
+            return true;
         }
 
         private static void ExportFbx(IImported convert, string exportPath)

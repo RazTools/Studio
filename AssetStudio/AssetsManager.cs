@@ -19,7 +19,6 @@ namespace AssetStudio
         public string SpecifyUnityVersion;
         public CancellationTokenSource tokenSource = new CancellationTokenSource();
         public List<SerializedFile> assetsFileList = new List<SerializedFile>();
-        public Dictionary<ClassIDType, bool> ExportableTypes = new Dictionary<ClassIDType, bool>();
 
         internal Dictionary<string, int> assetsFileIndexCache = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         internal Dictionary<string, BinaryReader> resourceFileReaders = new Dictionary<string, BinaryReader>(StringComparer.OrdinalIgnoreCase);
@@ -28,25 +27,6 @@ namespace AssetStudio
         internal HashSet<string> importFilesHash = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         internal HashSet<string> noexistFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         internal HashSet<string> assetsFileListHash = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        public AssetsManager()
-        {
-            ExportableTypes.Add(ClassIDType.GameObject, true);
-            ExportableTypes.Add(ClassIDType.Material, true);
-            ExportableTypes.Add(ClassIDType.Texture2D, true);
-            ExportableTypes.Add(ClassIDType.AudioClip, true);
-            ExportableTypes.Add(ClassIDType.VideoClip, true);
-            ExportableTypes.Add(ClassIDType.Mesh, false);
-            ExportableTypes.Add(ClassIDType.Renderer, false);
-            ExportableTypes.Add(ClassIDType.Shader, true);
-            ExportableTypes.Add(ClassIDType.TextAsset, true);
-            ExportableTypes.Add(ClassIDType.AnimationClip, true);
-            ExportableTypes.Add(ClassIDType.MonoBehaviour, true);
-            ExportableTypes.Add(ClassIDType.Font, true);
-            ExportableTypes.Add(ClassIDType.Sprite, true);
-            ExportableTypes.Add(ClassIDType.Animator, true);
-            ExportableTypes.Add(ClassIDType.MiHoYoBinData, true);
-        }
 
         public void LoadFiles(params string[] files)
         {
@@ -115,7 +95,7 @@ namespace AssetStudio
             assetsFileListHash.Clear();
             AssetsHelper.ClearOffsets();
 
-            if (!SkipProcess && !tokenSource.IsCancellationRequested)
+            if (!SkipProcess)
             {
                 ReadAssets();
                 ProcessAssets();
@@ -457,7 +437,7 @@ namespace AssetStudio
             Logger.Info("Loading " + reader.FullPath);
             try
             {
-                using var stream = new SubStream(reader.BaseStream, 0);
+                using var stream = new OffsetStream(reader.BaseStream, 0);
                 if (AssetsHelper.TryGet(reader.FullPath, out var offsets))
                 {
                     foreach (var offset in offsets)
@@ -527,7 +507,7 @@ namespace AssetStudio
                 {
                     do
                     {
-                        var name = stream.Position.ToString("X8");
+                        var name = stream.AbsolutePosition.ToString("X8");
                         Logger.Info($"Loading Block {name}");
 
                         var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), name);
@@ -535,14 +515,14 @@ namespace AssetStudio
                         switch (subReader.FileType)
                         {
                             case FileType.BundleFile:
-                                LoadBundleFile(subReader, reader.FullPath, stream.Position, false);
+                                LoadBundleFile(subReader, reader.FullPath, stream.AbsolutePosition, false);
                                 break;
                             case FileType.Mhy0File:
-                                LoadMhy0File(subReader, reader.FullPath, stream.Position, false);
+                                LoadMhy0File(subReader, reader.FullPath, stream.AbsolutePosition, false);
                                 break;
                         }
 
-                        stream.Offset += stream.Position;
+                        stream.Offset = stream.AbsolutePosition;
                     } while (stream.Remaining > 0);
                 }
             }
@@ -650,12 +630,8 @@ namespace AssetStudio
                 {
                     if (tokenSource.IsCancellationRequested)
                     {
-                        Logger.Info("Reading assets has been aborted !!");
+                        Logger.Info("Reading assets has been cancelled !!");
                         return;
-                    }
-                    if (assetsFile.IsLoaded(objectInfo))
-                    {
-                        continue;
                     }
                     var objectReader = new ObjectReader(assetsFile.reader, assetsFile, objectInfo, Game);
                     try
@@ -666,10 +642,10 @@ namespace AssetStudio
                             case ClassIDType.Animation:
                                 obj = new Animation(objectReader);
                                 break;
-                            case ClassIDType.AnimationClip when ExportableTypes[ClassIDType.AnimationClip]:
+                            case ClassIDType.AnimationClip:
                                 obj = new AnimationClip(objectReader);
                                 break;
-                            case ClassIDType.Animator when ExportableTypes[ClassIDType.Animator]:
+                            case ClassIDType.Animator:
                                 obj = new Animator(objectReader);
                                 break;
                             case ClassIDType.AnimatorController:
@@ -681,37 +657,37 @@ namespace AssetStudio
                             case ClassIDType.AssetBundle:
                                 obj = new AssetBundle(objectReader);
                                 break;
-                            case ClassIDType.AudioClip when ExportableTypes[ClassIDType.AudioClip]:
+                            case ClassIDType.AudioClip:
                                 obj = new AudioClip(objectReader);
                                 break;
                             case ClassIDType.Avatar:
                                 obj = new Avatar(objectReader);
                                 break;
-                            case ClassIDType.Font when ExportableTypes[ClassIDType.Font]:
+                            case ClassIDType.Font:
                                 obj = new Font(objectReader);
                                 break;
-                            case ClassIDType.GameObject when ExportableTypes[ClassIDType.GameObject]:
+                            case ClassIDType.GameObject:
                                 obj = new GameObject(objectReader);
                                 break;
-                            case ClassIDType.IndexObject when ExportableTypes[ClassIDType.MiHoYoBinData]:
+                            case ClassIDType.IndexObject:
                                 obj = new IndexObject(objectReader);
                                 break;
-                            case ClassIDType.Material when ExportableTypes[ClassIDType.Material]:
+                            case ClassIDType.Material:
                                 obj = new Material(objectReader);
                                 break;
-                            case ClassIDType.Mesh when ExportableTypes[ClassIDType.Mesh]:
+                            case ClassIDType.Mesh:
                                 obj = new Mesh(objectReader);
                                 break;
                             case ClassIDType.MeshFilter:
                                 obj = new MeshFilter(objectReader);
                                 break;
-                            case ClassIDType.MeshRenderer when ExportableTypes[ClassIDType.Renderer]:
+                            case ClassIDType.MeshRenderer when Renderer.Parsable:
                                 obj = new MeshRenderer(objectReader);
                                 break;
-                            case ClassIDType.MiHoYoBinData when ExportableTypes[ClassIDType.MiHoYoBinData]:
+                            case ClassIDType.MiHoYoBinData:
                                 obj = new MiHoYoBinData(objectReader);
                                 break;
-                            case ClassIDType.MonoBehaviour when ExportableTypes[ClassIDType.MonoBehaviour]:
+                            case ClassIDType.MonoBehaviour:
                                 obj = new MonoBehaviour(objectReader);
                                 break;
                             case ClassIDType.MonoScript:
@@ -726,28 +702,28 @@ namespace AssetStudio
                             case ClassIDType.RectTransform:
                                 obj = new RectTransform(objectReader);
                                 break;
-                            case ClassIDType.Shader when ExportableTypes[ClassIDType.Shader]:
+                            case ClassIDType.Shader when Shader.Parsable:
                                 obj = new Shader(objectReader);
                                 break;
-                            case ClassIDType.SkinnedMeshRenderer when ExportableTypes[ClassIDType.Renderer]:
+                            case ClassIDType.SkinnedMeshRenderer when Renderer.Parsable:
                                 obj = new SkinnedMeshRenderer(objectReader);
                                 break;
-                            case ClassIDType.Sprite when ExportableTypes[ClassIDType.Sprite]:
+                            case ClassIDType.Sprite:
                                 obj = new Sprite(objectReader);
                                 break;
                             case ClassIDType.SpriteAtlas:
                                 obj = new SpriteAtlas(objectReader);
                                 break;
-                            case ClassIDType.TextAsset when ExportableTypes[ClassIDType.TextAsset]:
+                            case ClassIDType.TextAsset:
                                 obj = new TextAsset(objectReader);
                                 break;
-                            case ClassIDType.Texture2D when ExportableTypes[ClassIDType.Texture2D]:
+                            case ClassIDType.Texture2D:
                                 obj = new Texture2D(objectReader);
                                 break;
                             case ClassIDType.Transform:
                                 obj = new Transform(objectReader);
                                 break;
-                            case ClassIDType.VideoClip when ExportableTypes[ClassIDType.VideoClip]:
+                            case ClassIDType.VideoClip:
                                 obj = new VideoClip(objectReader);
                                 break;
                             case ClassIDType.ResourceManager:
@@ -778,9 +754,6 @@ namespace AssetStudio
 
         private void ProcessAssets()
         {
-            if (tokenSource.IsCancellationRequested)
-                return;
-
             Logger.Info("Process Assets...");
 
             foreach (var assetsFile in assetsFileList)
@@ -789,62 +762,62 @@ namespace AssetStudio
                 {
                     if (tokenSource.IsCancellationRequested)
                     {
-                        Logger.Info("Processing assets has been aborted !!");
+                        Logger.Info("Processing assets has been cancelled !!");
                         return;
                     }
                     if (obj is GameObject m_GameObject)
                     {
-                        foreach (var pptr in m_GameObject.m_Components)
-                        {
-                            if (pptr.TryGet(out var m_Component))
+                            foreach (var pptr in m_GameObject.m_Components)
                             {
-                                switch (m_Component)
+                            if (pptr.TryGet(out var m_Component))
                                 {
+                                switch (m_Component)
+                                    {
                                     case Transform m_Transform:
                                         m_GameObject.m_Transform = m_Transform;
-                                        break;
+                                            break;
                                     case MeshRenderer m_MeshRenderer:
                                         m_GameObject.m_MeshRenderer = m_MeshRenderer;
-                                        break;
+                                            break;
                                     case MeshFilter m_MeshFilter:
                                         m_GameObject.m_MeshFilter = m_MeshFilter;
-                                        break;
+                                            break;
                                     case SkinnedMeshRenderer m_SkinnedMeshRenderer:
                                         m_GameObject.m_SkinnedMeshRenderer = m_SkinnedMeshRenderer;
-                                        break;
+                                            break;
                                     case Animator m_Animator:
                                         m_GameObject.m_Animator = m_Animator;
-                                        break;
+                                            break;
                                     case Animation m_Animation:
                                         m_GameObject.m_Animation = m_Animation;
-                                        break;
+                                            break;
+                                    }
                                 }
                             }
-                        }
                     }
                     else if (obj is SpriteAtlas m_SpriteAtlas)
                     {
-                        if (m_SpriteAtlas.m_RenderDataMap.Count > 0)
-                        {
-                            foreach (var m_PackedSprite in m_SpriteAtlas.m_PackedSprites)
+                            if (m_SpriteAtlas.m_RenderDataMap.Count > 0)
                             {
-                                if (m_PackedSprite.TryGet(out var m_Sprite))
+                                foreach (var m_PackedSprite in m_SpriteAtlas.m_PackedSprites)
                                 {
-                                    if (m_Sprite.m_SpriteAtlas.IsNull)
+                                if (m_PackedSprite.TryGet(out var m_Sprite))
                                     {
-                                        m_Sprite.m_SpriteAtlas.Set(m_SpriteAtlas);
-                                    }
-                                    else
-                                    {
-                                        m_Sprite.m_SpriteAtlas.TryGet(out var m_SpriteAtlaOld);
-                                        if (m_SpriteAtlaOld.m_IsVariant)
+                                        if (m_Sprite.m_SpriteAtlas.IsNull)
                                         {
                                             m_Sprite.m_SpriteAtlas.Set(m_SpriteAtlas);
+                                        }
+                                        else
+                                        {
+                                        m_Sprite.m_SpriteAtlas.TryGet(out var m_SpriteAtlaOld);
+                                            if (m_SpriteAtlaOld.m_IsVariant)
+                                            {
+                                                m_Sprite.m_SpriteAtlas.Set(m_SpriteAtlas);
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
                     }
                 }
             }

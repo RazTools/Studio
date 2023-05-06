@@ -19,6 +19,8 @@ namespace AssetStudio
 
     public abstract class Renderer : Component
     {
+        public static bool Parsable;
+
         public PPtr<Material>[] m_Materials;
         public StaticBatchInfo m_StaticBatchInfo;
         public uint[] m_SubsetIndices;
@@ -218,7 +220,7 @@ namespace AssetStudio
                     var m_UseHighestMip = reader.ReadBoolean();
                     reader.AlignStream();
                 }
-                if (reader.Game.Type.IsSRCB3())
+                if (reader.Game.Type.IsSR())
                 {
                     var RenderFlag = reader.ReadUInt32();
                     reader.AlignStream();

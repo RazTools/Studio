@@ -62,11 +62,13 @@ namespace AssetStudioCLI.Properties {
         public bool exportUV0UV1 => AppSettings.Get("exportUV0UV1", false);
         public bool encrypted => AppSettings.Get("encrypted", true);
         public byte key => AppSettings.Get("key", (byte)0x93);
-        public bool skipRenderer => AppSettings.Get("skipRenderer", false);
         public int selectedGame => AppSettings.Get("selectedGame", 0);
         public bool enableResolveDependencies => AppSettings.Get("enableResolveDependencies", true);
         public int selectedCNUnityKey => AppSettings.Get("selectedCNUnityKey", 0);
         public int selectedAssetMapType => AppSettings.Get("selectedAssetMapType", 0);
         public bool exportMiHoYoBinData => AppSettings.Get("exportMiHoYoBinData", true);
+        public bool disableShader => AppSettings.Get("disableShader", false);
+        public bool disableRenderer => AppSettings.Get("disableRenderer", false);
+
     }
 }

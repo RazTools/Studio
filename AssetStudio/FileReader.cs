@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Linq;
 using static AssetStudio.ImportHelper;
 
@@ -172,7 +173,20 @@ namespace AssetStudio
             }
             if (reader.FileType == FileType.BundleFile && game.Type.IsBlockFile())
             {
-                reader.FileType = FileType.BlockFile;
+                try
+                {
+                    var signature = reader.ReadStringToNull();
+                    reader.ReadInt32();
+                    reader.ReadStringToNull();
+                    reader.ReadStringToNull();
+                    var size = reader.ReadInt64();
+                    if (!(signature == "UnityFS" && size == reader.BaseStream.Length))
+                    {
+                        reader.FileType = FileType.BlockFile;
+                    }
+                }
+                catch (Exception) { }
+                reader.Position = 0;
             }
 
             return reader;
