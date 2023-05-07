@@ -406,5 +406,17 @@ namespace AssetStudioGUI.Properties {
                 this["disableRenderer"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool minimalAssetMap {
+            get {
+                return ((bool)(this["minimalAssetMap"]));
+            }
+            set {
+                this["minimalAssetMap"] = value;
+            }
+        }
     }
 }

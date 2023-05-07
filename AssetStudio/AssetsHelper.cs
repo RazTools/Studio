@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Text;
+using MessagePack;
 
 namespace AssetStudio
 {
@@ -16,6 +17,7 @@ namespace AssetStudio
     {
         public const string MapName = "Maps";
 
+        public static bool Minimal = true;
         public static CancellationTokenSource tokenSource = new CancellationTokenSource();
 
         private static string BaseFolder = "";
@@ -34,7 +36,7 @@ namespace AssetStudio
         {
             Directory.CreateDirectory(MapName);
             var files = Directory.GetFiles(MapName, "*.bin", SearchOption.TopDirectoryOnly);
-            return files.Select(x => Path.GetFileNameWithoutExtension(x)).ToArray();
+            return files.Select(Path.GetFileNameWithoutExtension).ToArray();
         }
 
         public static void Clear()
@@ -132,12 +134,11 @@ namespace AssetStudio
                     Logger.Info("Building CABMap has been cancelled !!");
                     return;
                 }
-                var dependencies = assetsFile.m_Externals.Select(x => x.fileName).ToArray();
                 var entry = new Entry()
                 {
                     Path = relativePath,
                     Offset = assetsFile.offset,
-                    Dependencies = dependencies
+                    Dependencies = assetsFile.m_Externals.Select(x => x.fileName).ToArray()
                 };
 
                 if (CABMap.ContainsKey(assetsFile.fileName))
@@ -192,17 +193,16 @@ namespace AssetStudio
                         var path = reader.ReadString();
                         var offset = reader.ReadInt64();
                         var depCount = reader.ReadInt32();
-                        var dependencies = new List<string>();
+                        var dependencies = new string[depCount];
                         for (int j = 0; j < depCount; j++)
                         {
-                            var dependancy = reader.ReadString();
-                            dependencies.Add(dependancy);
+                            dependencies[j] = reader.ReadString();
                         }
                         var entry = new Entry()
                         {
                             Path = path,
                             Offset = offset,
-                            Dependencies = dependencies.ToArray()
+                            Dependencies = dependencies
                         };
                         CABMap.Add(cab, entry);
                     }
@@ -230,7 +230,7 @@ namespace AssetStudio
 
                 UpdateContainers(assets, game);
 
-                ExportAssetsMap(assets.ToArray(), mapName, savePath, exportListType, resetEvent);
+                ExportAssetsMap(assets.ToArray(), game, mapName, savePath, exportListType, resetEvent);
             }
             catch(Exception e)
             {
@@ -283,13 +283,13 @@ namespace AssetStudio
                                 }
                                 obj = null;
                                 asset.Name = assetBundle.m_Name;
-                                exportable = false;
+                                exportable = !Minimal;
                                 break;
                             case ClassIDType.GameObject:
                                 var gameObject = new GameObject(objectReader);
                                 obj = gameObject;
                                 asset.Name = gameObject.m_Name;
-                                exportable = false;
+                                exportable = !Minimal;
                                 break;
                             case ClassIDType.Shader when Shader.Parsable:
                                 asset.Name = objectReader.ReadAlignedString();
@@ -306,7 +306,6 @@ namespace AssetStudio
                             case ClassIDType.MiHoYoBinData:
                                 var MiHoYoBinData = new MiHoYoBinData(objectReader);
                                 obj = MiHoYoBinData;
-                                exportable = true;
                                 break;
                             case ClassIDType.IndexObject:
                                 var indexObject = new IndexObject(objectReader);
@@ -316,6 +315,7 @@ namespace AssetStudio
                                     mihoyoBinDataNames.Add((index.Value.Object, index.Key));
                                 }
                                 asset.Name = "IndexObject";
+                                exportable = !Minimal;
                                 break;
                             case ClassIDType.Font:
                             case ClassIDType.Material:
@@ -329,7 +329,8 @@ namespace AssetStudio
                                 asset.Name = objectReader.ReadAlignedString();
                                 break;
                             default:
-                                exportable = false;
+                                asset.Name = objectReader.type.ToString();
+                                exportable = !Minimal;
                                 break;
                         }
                     }
@@ -428,7 +429,7 @@ namespace AssetStudio
             }
         }
 
-        private static void ExportAssetsMap(AssetEntry[] toExportAssets, string name, string savePath, ExportListType exportListType, ManualResetEvent resetEvent = null)
+        private static void ExportAssetsMap(AssetEntry[] toExportAssets, Game game, string name, string savePath, ExportListType exportListType, ManualResetEvent resetEvent = null)
         {
             ThreadPool.QueueUserWorkItem(state =>
             {
@@ -436,13 +437,12 @@ namespace AssetStudio
 
                 Progress.Reset();
 
-                string filename;
+                string filename = Path.Combine(savePath, $"{name}{exportListType.GetExtension()}");
                 switch (exportListType)
                 {
                     case ExportListType.XML:
-                        filename = Path.Combine(savePath, $"{name}.xml");
-                        var settings = new XmlWriterSettings() { Indent = true };
-                        using (XmlWriter writer = XmlWriter.Create(filename, settings))
+                        var xmlSettings = new XmlWriterSettings() { Indent = true };
+                        using (XmlWriter writer = XmlWriter.Create(filename, xmlSettings))
                         {
                             writer.WriteStartDocument();
                             writer.WriteStartElement("Assets");
@@ -466,7 +466,6 @@ namespace AssetStudio
                         }
                         break;
                     case ExportListType.JSON:
-                        filename = Path.Combine(savePath, $"{name}.json");
                         using (StreamWriter file = File.CreateText(filename))
                         {
                             var serializer = new JsonSerializer() { Formatting = Newtonsoft.Json.Formatting.Indented };
@@ -474,10 +473,20 @@ namespace AssetStudio
                             serializer.Serialize(file, toExportAssets);
                         }
                         break;
+                    case ExportListType.MessagePack:
+                        using (var file = File.Create(filename))
+                        {
+                            var assetMap = new AssetMap
+                            {
+                                GameType = game.Type,
+                                AssetEntries = toExportAssets
+                            };
+                            MessagePackSerializer.Serialize(file, assetMap, MessagePackSerializerOptions.Standard.WithCompression(MessagePackCompression.Lz4BlockArray));
+                        }
+                        break;
                 }
 
-                Logger.Info($"Finished exporting asset list with {toExportAssets.Length} items.");
-                Logger.Info($"AssetMap build successfully !!");
+                Logger.Info($"Finished buidling AssetMap with {toExportAssets.Length} assets.");
 
                 resetEvent?.Set();
             });
@@ -501,7 +510,7 @@ namespace AssetStudio
             DumpCABMap(mapName);
 
             Logger.Info($"Map build successfully !! {collision} collisions found");
-            ExportAssetsMap(assets.ToArray(), mapName, savePath, exportListType, resetEvent);
+            ExportAssetsMap(assets.ToArray(), game, mapName, savePath, exportListType, resetEvent);
         }
     }
 }

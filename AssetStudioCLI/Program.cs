@@ -27,6 +27,7 @@ namespace AssetStudioCLI
 
                 Studio.Game = game;
                 Logger.Default = new ConsoleLogger();
+                AssetsHelper.Minimal = Settings.Default.minimalAssetMap;
                 Shader.Parsable = !Settings.Default.disableShader;
                 Renderer.Parsable = !Settings.Default.disableRenderer;
                 assetsManager.Silent = o.Silent;

@@ -711,6 +711,8 @@ namespace AssetStudio
                         dest = 2;
                     else if (texEnv.Key.Contains("Normal"))
                         dest = 1;
+                    else if (Game.Type.IsSRGroup() && texEnv.Key.Contains("Pack"))
+                        dest = 0;
 
                     texture.Dest = dest;
 

@@ -110,6 +110,7 @@ namespace AssetStudioGUI
             assetsManager.ResolveDependencies = Properties.Settings.Default.enableResolveDependencies;
             MiHoYoBinData.Encrypted = Properties.Settings.Default.encrypted;
             MiHoYoBinData.Key = Properties.Settings.Default.key;
+            AssetsHelper.Minimal = Properties.Settings.Default.minimalAssetMap;
             Renderer.Parsable = !Properties.Settings.Default.disableRenderer;
             Shader.Parsable = !Properties.Settings.Default.disableShader;
         }
@@ -164,6 +165,12 @@ namespace AssetStudioGUI
             var paths = (string[])e.Data.GetData(DataFormats.FileDrop);
             if (paths.Length > 0)
             {
+                LoadPaths(paths);
+            }
+        }
+
+        public async void LoadPaths(params string[] paths)
+        {
                 ResetForm();
                 assetsManager.SpecifyUnityVersion = specifyUnityVersion.Text;
                 assetsManager.Game = Studio.Game;
@@ -181,7 +188,6 @@ namespace AssetStudioGUI
                 }
                 BuildAssetStructures();
             }
-        }
 
         private async void loadFile_Click(object sender, EventArgs e)
         {
@@ -1233,84 +1239,16 @@ namespace AssetStudioGUI
         private void PreviewGameObject(GameObject m_GameObject)
         {
             var model = new ModelConverter(m_GameObject, Properties.Settings.Default.convertType, Studio.Game, false, Array.Empty<AnimationClip>());
-            if (model.MeshList.Count > 0)
-            {
-                viewMatrixData = Matrix4.CreateRotationY(-(float)Math.PI / 4) * Matrix4.CreateRotationX(-(float)Math.PI / 6);
-                #region Vertices
-                vertexData = model.MeshList.SelectMany(x => x.VertexList).Select(x => new Vector3(x.Vertex.X, x.Vertex.Y, x.Vertex.Z)).ToArray();
-                // Calculate Bounding
-                Vector3 min = vertexData.Aggregate(Vector3.ComponentMin);
-                Vector3 max = vertexData.Aggregate(Vector3.ComponentMax);
-
-                // Calculate modelMatrix
-                Vector3 dist = max - min;
-                Vector3 offset = (max - min) / 2;
-                float d = Math.Max(1e-5f, dist.Length);
-                modelMatrixData = Matrix4.CreateTranslation(-offset) * Matrix4.CreateScale(2f / d);
-                #endregion
-                #region Indicies
-                int meshOffset = 0;
-                var indices = new List<int>();
-                foreach (var mesh in model.MeshList)
-                {
-                    foreach (var submesh in mesh.SubmeshList)
-                    {
-                        foreach (var face in submesh.FaceList)
-                        {
-                            foreach (var index in face.VertexIndices)
-                            {
-                                indices.Add(submesh.BaseVertex + index + meshOffset);
+            PreviewModel(model);
                             }
-                        }
-                    }
-                    meshOffset += mesh.VertexList.Count;
-                }
-                indiceData = indices.ToArray();
-                #endregion
-                #region Normals
-                normalData = model.MeshList.SelectMany(x => x.VertexList).Select(x => new Vector3(x.Normal.X, x.Normal.Y, x.Normal.Z)).ToArray();
-                // calculate normal by ourself
-                normal2Data = new Vector3[vertexData.Length];
-                int[] normalCalculatedCount = new int[vertexData.Length];
-                Array.Fill(normal2Data, Vector3.Zero);
-                Array.Fill(normalCalculatedCount, 0);
-                for (int j = 0; j < indiceData.Length; j += 3)
-                {
-                    Vector3 dir1 = vertexData[indiceData[j + 1]] - vertexData[indiceData[j]];
-                    Vector3 dir2 = vertexData[indiceData[j + 2]] - vertexData[indiceData[j]];
-                    Vector3 normal = Vector3.Cross(dir1, dir2);
-                    normal.Normalize();
-                    for (int k = 0; k < 3; k++)
-                    {
-                        normal2Data[indiceData[j + k]] += normal;
-                        normalCalculatedCount[indiceData[j + k]]++;
-                    }
-                }
-                for (int j = 0; j < vertexData.Length; j++)
-                {
-                    if (normalCalculatedCount[j] == 0)
-                        normal2Data[j] = new Vector3(0, 1, 0);
-                    else
-                        normal2Data[j] /= normalCalculatedCount[j];
-                }
-                #endregion
-                #region Colors
-                colorData = model.MeshList.SelectMany(x => x.VertexList).Select(x => new Vector4(x.Color.R, x.Color.G, x.Color.B, x.Color.A)).ToArray();
-                #endregion
-                glControl.Visible = true;
-                CreateVAO();
-                StatusStripUpdate("Using OpenGL Version: " + GL.GetString(StringName.Version) + "\n"
-                                  + "'Mouse Left'=Rotate | 'Mouse Right'=Move | 'Mouse Wheel'=Zoom \n"
-                                  + "'Ctrl W'=Wireframe | 'Ctrl S'=Shade | 'Ctrl N'=ReNormal ");
-            }
-            else
-            {
-                StatusStripUpdate("Unable to preview this model");
-            }
-        }
         private void PreviewAnimator(Animator m_Animator)
-        {
+                {
             var model = new ModelConverter(m_Animator, Properties.Settings.Default.convertType, Studio.Game, false, Array.Empty<AnimationClip>());
+            PreviewModel(model);
+                    }
+
+        private void PreviewModel(ModelConverter model)
+                {
             if (model.MeshList.Count > 0)
             {
                 viewMatrixData = Matrix4.CreateRotationY(-(float)Math.PI / 4) * Matrix4.CreateRotationX(-(float)Math.PI / 6);
@@ -2265,6 +2203,12 @@ namespace AssetStudioGUI
                 }
             }
             InvokeUpdate(miscToolStripMenuItem, true);
+        }
+
+        private void loadAssetMapToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var assetBrowser = new AssetBrowser(this);
+            assetBrowser.Show();
         }
 
         #region FMOD

@@ -3,7 +3,8 @@
     public enum ExportListType
     {
         XML,
-        JSON
+        JSON,
+        MessagePack
     }
     
     public static class ExportListTypeExtensions
@@ -12,6 +13,7 @@
         {
             ExportListType.XML => ".xml",
             ExportListType.JSON => ".json",
+            ExportListType.MessagePack => ".map",
             _ => throw new System.NotImplementedException(),
         };
     }

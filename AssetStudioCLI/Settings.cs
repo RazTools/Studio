@@ -69,6 +69,7 @@ namespace AssetStudioCLI.Properties {
         public bool exportMiHoYoBinData => AppSettings.Get("exportMiHoYoBinData", true);
         public bool disableShader => AppSettings.Get("disableShader", false);
         public bool disableRenderer => AppSettings.Get("disableRenderer", false);
+        public bool minimalAssetMap => AppSettings.Get("minimalAssetMap", true);
 
     }
 }

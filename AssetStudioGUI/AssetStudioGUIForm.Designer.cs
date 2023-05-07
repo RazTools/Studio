@@ -93,6 +93,7 @@ namespace AssetStudioGUI
             clearConsoleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             miscToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             MapNameComboBox = new System.Windows.Forms.ToolStripComboBox();
+            buildMapToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             buildBothToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             clearMapToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             toolStripSeparator7 = new System.Windows.Forms.ToolStripSeparator();
@@ -101,6 +102,7 @@ namespace AssetStudioGUI
             assetMapTypeComboBox = new System.Windows.Forms.ToolStripComboBox();
             toolStripSeparator8 = new System.Windows.Forms.ToolStripSeparator();
             loadAIToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            assetBrowserToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             assetHelpersToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             MapToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             assetMapToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -155,7 +157,6 @@ namespace AssetStudioGUI
             exportAnimatorwithselectedAnimationClipMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             goToSceneHierarchyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             showOriginalFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            buildMapToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
@@ -600,7 +601,7 @@ namespace AssetStudioGUI
             // 
             // miscToolStripMenuItem
             // 
-            miscToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { MapNameComboBox, buildMapToolStripMenuItem, buildBothToolStripMenuItem, clearMapToolStripMenuItem, toolStripSeparator7, assetMapNameTextBox, buildAssetMapToolStripMenuItem, assetMapTypeComboBox, toolStripSeparator8, loadAIToolStripMenuItem });
+            miscToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { MapNameComboBox, buildMapToolStripMenuItem, buildBothToolStripMenuItem, clearMapToolStripMenuItem, toolStripSeparator7, assetMapNameTextBox, buildAssetMapToolStripMenuItem, assetMapTypeComboBox, toolStripSeparator8, loadAIToolStripMenuItem, assetBrowserToolStripMenuItem });
             miscToolStripMenuItem.Name = "miscToolStripMenuItem";
             miscToolStripMenuItem.Size = new System.Drawing.Size(47, 20);
             miscToolStripMenuItem.Text = "Misc.";
@@ -669,6 +670,13 @@ namespace AssetStudioGUI
             loadAIToolStripMenuItem.Size = new System.Drawing.Size(181, 22);
             loadAIToolStripMenuItem.Text = "Load AI";
             loadAIToolStripMenuItem.Click += loadAIToolStripMenuItem_Click;
+            // 
+            // assetBrowserToolStripMenuItem
+            // 
+            assetBrowserToolStripMenuItem.Name = "assetBrowserToolStripMenuItem";
+            assetBrowserToolStripMenuItem.Size = new System.Drawing.Size(181, 22);
+            assetBrowserToolStripMenuItem.Text = "Asset Browser";
+            assetBrowserToolStripMenuItem.Click += loadAssetMapToolStripMenuItem_Click;
             // 
             // assetHelpersToolStripMenuItem
             // 
@@ -1391,6 +1399,7 @@ namespace AssetStudioGUI
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator7;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator8;
         private System.Windows.Forms.ToolStripMenuItem buildMapToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem assetBrowserToolStripMenuItem;
     }
 }
 

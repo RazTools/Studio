@@ -71,12 +71,13 @@ namespace AssetStudioGUI
             key = new System.Windows.Forms.NumericUpDown();
             keyToolTip = new System.Windows.Forms.ToolTip(components);
             groupBox4 = new System.Windows.Forms.GroupBox();
+            disableShader = new System.Windows.Forms.CheckBox();
+            disableRenderer = new System.Windows.Forms.CheckBox();
             skipContainer = new System.Windows.Forms.CheckBox();
             enableResolveDependencies = new System.Windows.Forms.CheckBox();
             resolveToolTip = new System.Windows.Forms.ToolTip(components);
             skipToolTip = new System.Windows.Forms.ToolTip(components);
-            disableRenderer = new System.Windows.Forms.CheckBox();
-            disableShader = new System.Windows.Forms.CheckBox();
+            minimalAssetMap = new System.Windows.Forms.CheckBox();
             groupBox1.SuspendLayout();
             panel1.SuspendLayout();
             groupBox2.SuspendLayout();
@@ -537,6 +538,7 @@ namespace AssetStudioGUI
             // groupBox4
             // 
             groupBox4.AutoSize = true;
+            groupBox4.Controls.Add(minimalAssetMap);
             groupBox4.Controls.Add(disableShader);
             groupBox4.Controls.Add(disableRenderer);
             groupBox4.Controls.Add(skipContainer);
@@ -547,10 +549,34 @@ namespace AssetStudioGUI
             groupBox4.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             groupBox4.Name = "groupBox4";
             groupBox4.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            groupBox4.Size = new System.Drawing.Size(272, 176);
+            groupBox4.Size = new System.Drawing.Size(272, 187);
             groupBox4.TabIndex = 13;
             groupBox4.TabStop = false;
             groupBox4.Text = "Options";
+            // 
+            // disableShader
+            // 
+            disableShader.AutoSize = true;
+            disableShader.Location = new System.Drawing.Point(8, 121);
+            disableShader.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            disableShader.Name = "disableShader";
+            disableShader.Size = new System.Drawing.Size(103, 19);
+            disableShader.TabIndex = 16;
+            disableShader.Text = "Disable Shader";
+            skipToolTip.SetToolTip(disableShader, "Skips the container recovery step.\nImproves loading when dealing with a large number of files.");
+            disableShader.UseVisualStyleBackColor = true;
+            // 
+            // disableRenderer
+            // 
+            disableRenderer.AutoSize = true;
+            disableRenderer.Location = new System.Drawing.Point(8, 96);
+            disableRenderer.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            disableRenderer.Name = "disableRenderer";
+            disableRenderer.Size = new System.Drawing.Size(114, 19);
+            disableRenderer.TabIndex = 15;
+            disableRenderer.Text = "Disable Renderer";
+            skipToolTip.SetToolTip(disableRenderer, "Skips the container recovery step.\nImproves loading when dealing with a large number of files.");
+            disableRenderer.UseVisualStyleBackColor = true;
             // 
             // skipContainer
             // 
@@ -580,29 +606,15 @@ namespace AssetStudioGUI
             resolveToolTip.SetToolTip(enableResolveDependencies, "Toggle the behaviour of loading assets.\r\nDisable to load file(s) without its dependencies.");
             enableResolveDependencies.UseVisualStyleBackColor = true;
             // 
-            // disableRenderer
+            // minimalAssetMap
             // 
-            disableRenderer.AutoSize = true;
-            disableRenderer.Location = new System.Drawing.Point(8, 96);
-            disableRenderer.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            disableRenderer.Name = "disableRenderer";
-            disableRenderer.Size = new System.Drawing.Size(114, 19);
-            disableRenderer.TabIndex = 15;
-            disableRenderer.Text = "Disable Renderer";
-            skipToolTip.SetToolTip(disableRenderer, "Skips the container recovery step.\nImproves loading when dealing with a large number of files.");
-            disableRenderer.UseVisualStyleBackColor = true;
-            // 
-            // disableShader
-            // 
-            disableShader.AutoSize = true;
-            disableShader.Location = new System.Drawing.Point(8, 121);
-            disableShader.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            disableShader.Name = "disableShader";
-            disableShader.Size = new System.Drawing.Size(103, 19);
-            disableShader.TabIndex = 16;
-            disableShader.Text = "Disable Shader";
-            skipToolTip.SetToolTip(disableShader, "Skips the container recovery step.\nImproves loading when dealing with a large number of files.");
-            disableShader.UseVisualStyleBackColor = true;
+            minimalAssetMap.AutoSize = true;
+            minimalAssetMap.Location = new System.Drawing.Point(8, 146);
+            minimalAssetMap.Name = "minimalAssetMap";
+            minimalAssetMap.Size = new System.Drawing.Size(125, 19);
+            minimalAssetMap.TabIndex = 17;
+            minimalAssetMap.Text = "Minimal AssetMap";
+            minimalAssetMap.UseVisualStyleBackColor = true;
             // 
             // ExportOptions
             // 
@@ -687,5 +699,6 @@ namespace AssetStudioGUI
         private System.Windows.Forms.ToolTip skipToolTip;
         private System.Windows.Forms.CheckBox disableShader;
         private System.Windows.Forms.CheckBox disableRenderer;
+        private System.Windows.Forms.CheckBox minimalAssetMap;
     }
 }
