@@ -1,4 +1,6 @@
-﻿namespace AssetStudioGUI
+﻿using System.Windows.Forms;
+
+namespace AssetStudioGUI
 {
     partial class AssetBrowser
     {
@@ -28,90 +30,132 @@
         /// </summary>
         private void InitializeComponent()
         {
-            assetListView = new System.Windows.Forms.DataGridView();
-            fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            loadAssetMapToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            clearToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            searchTextBox = new System.Windows.Forms.ToolStripTextBox();
-            menuStrip1 = new System.Windows.Forms.MenuStrip();
+            assetListView = new DataGridView();
+            tableLayoutPanel1 = new TableLayoutPanel();
+            tableLayoutPanel2 = new TableLayoutPanel();
+            loadAssetMap = new Button();
+            searchTextBox = new TextBox();
+            loadSelected = new Button();
+            clear = new Button();
             ((System.ComponentModel.ISupportInitialize)assetListView).BeginInit();
-            menuStrip1.SuspendLayout();
+            tableLayoutPanel1.SuspendLayout();
+            tableLayoutPanel2.SuspendLayout();
             SuspendLayout();
             // 
             // assetListView
             // 
             assetListView.AllowUserToAddRows = false;
             assetListView.AllowUserToDeleteRows = false;
-            assetListView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            assetListView.Location = new System.Drawing.Point(12, 27);
+            assetListView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            assetListView.Dock = DockStyle.Fill;
+            assetListView.Location = new System.Drawing.Point(3, 38);
             assetListView.Name = "assetListView";
             assetListView.ReadOnly = true;
             assetListView.RowTemplate.Height = 25;
-            assetListView.Size = new System.Drawing.Size(524, 268);
+            assetListView.Size = new System.Drawing.Size(518, 250);
+            assetListView.RowHeadersVisible = false;
             assetListView.TabIndex = 2;
-            assetListView.RowHeaderMouseDoubleClick += assetListView_RowHeaderMouseDoubleClick;
             // 
-            // fileToolStripMenuItem
+            // tableLayoutPanel1
             // 
-            fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { loadAssetMapToolStripMenuItem, clearToolStripMenuItem });
-            fileToolStripMenuItem.Name = "fileToolStripMenuItem";
-            fileToolStripMenuItem.Size = new System.Drawing.Size(37, 23);
-            fileToolStripMenuItem.Text = "File";
+            tableLayoutPanel1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            tableLayoutPanel1.ColumnCount = 1;
+            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tableLayoutPanel1.Controls.Add(assetListView, 0, 1);
+            tableLayoutPanel1.Controls.Add(tableLayoutPanel2, 0, 0);
+            tableLayoutPanel1.Location = new System.Drawing.Point(12, 12);
+            tableLayoutPanel1.Name = "tableLayoutPanel1";
+            tableLayoutPanel1.RowCount = 2;
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 35F));
+            tableLayoutPanel1.RowStyles.Add(new RowStyle());
+            tableLayoutPanel1.Size = new System.Drawing.Size(524, 283);
+            tableLayoutPanel1.TabIndex = 3;
             // 
-            // loadAssetMapToolStripMenuItem
+            // tableLayoutPanel2
             // 
-            loadAssetMapToolStripMenuItem.Name = "loadAssetMapToolStripMenuItem";
-            loadAssetMapToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            loadAssetMapToolStripMenuItem.Text = "Load AssetMap";
-            loadAssetMapToolStripMenuItem.Click += loadAssetMapToolStripMenuItem_Click;
+            tableLayoutPanel2.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            tableLayoutPanel2.ColumnCount = 4;
+            tableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120F));
+            tableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 60F));
+            tableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100F));
+            tableLayoutPanel2.ColumnStyles.Add(new ColumnStyle());
+            tableLayoutPanel2.Controls.Add(loadAssetMap, 0, 0);
+            tableLayoutPanel2.Controls.Add(clear, 1, 0);
+            tableLayoutPanel2.Controls.Add(loadSelected, 2, 0);
+            tableLayoutPanel2.Controls.Add(searchTextBox, 3, 0);
+            tableLayoutPanel2.Location = new System.Drawing.Point(3, 3);
+            tableLayoutPanel2.Name = "tableLayoutPanel2";
+            tableLayoutPanel2.RowCount = 1;
+            tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tableLayoutPanel2.Size = new System.Drawing.Size(518, 29);
+            tableLayoutPanel2.TabIndex = 3;
             // 
-            // clearToolStripMenuItem
+            // loadAssetMap
             // 
-            clearToolStripMenuItem.Name = "clearToolStripMenuItem";
-            clearToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            clearToolStripMenuItem.Text = "Clear";
-            clearToolStripMenuItem.Click += clearToolStripMenuItem_Click;
+            loadAssetMap.Location = new System.Drawing.Point(3, 3);
+            loadAssetMap.Name = "loadAssetMap";
+            loadAssetMap.Size = new System.Drawing.Size(94, 23);
+            loadAssetMap.TabIndex = 0;
+            loadAssetMap.Text = "Load AssetMap";
+            loadAssetMap.UseVisualStyleBackColor = true;
+            loadAssetMap.Click += loadAssetMap_Click;
+            loadAssetMap.Dock = DockStyle.Fill;
             // 
             // searchTextBox
             // 
+            searchTextBox.Location = new System.Drawing.Point(103, 3);
             searchTextBox.Name = "searchTextBox";
-            searchTextBox.Size = new System.Drawing.Size(500, 23);
-            searchTextBox.KeyPress += toolStripTextBox1_KeyPress;
+            searchTextBox.Size = new System.Drawing.Size(227, 23);
+            searchTextBox.TabIndex = 3;
+            searchTextBox.KeyPress += searchTextBox_KeyPress;
+            searchTextBox.Dock = DockStyle.Fill;
             // 
-            // menuStrip1
+            // loadSelected
             // 
-            menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { fileToolStripMenuItem, searchTextBox });
-            menuStrip1.Location = new System.Drawing.Point(0, 0);
-            menuStrip1.Name = "menuStrip1";
-            menuStrip1.Size = new System.Drawing.Size(548, 27);
-            menuStrip1.TabIndex = 1;
-            menuStrip1.Text = "menuStrip1";
+            loadSelected.Location = new System.Drawing.Point(336, 3);
+            loadSelected.Name = "loadSelected";
+            loadSelected.Size = new System.Drawing.Size(94, 23);
+            loadSelected.TabIndex = 2;
+            loadSelected.Text = "Load Selected";
+            loadSelected.UseVisualStyleBackColor = true;
+            loadSelected.Click += loadSelected_Click;
+            loadSelected.Dock = DockStyle.Fill;
+            // 
+            // clear
+            // 
+            clear.Location = new System.Drawing.Point(436, 3);
+            clear.Name = "clear";
+            clear.Size = new System.Drawing.Size(73, 23);
+            clear.TabIndex = 1;
+            clear.Text = "Clear";
+            clear.UseVisualStyleBackColor = true;
+            clear.Click += clear_Click;
+            clear.Dock = DockStyle.Fill;
             // 
             // AssetBrowser
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new System.Drawing.Size(548, 307);
-            Controls.Add(assetListView);
-            Controls.Add(menuStrip1);
-            MainMenuStrip = menuStrip1;
+            Controls.Add(tableLayoutPanel1);
             Name = "AssetBrowser";
             ShowIcon = false;
-            StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            StartPosition = FormStartPosition.CenterScreen;
             Text = "Asset Browser";
             ((System.ComponentModel.ISupportInitialize)assetListView).EndInit();
-            menuStrip1.ResumeLayout(false);
-            menuStrip1.PerformLayout();
+            tableLayoutPanel1.ResumeLayout(false);
+            tableLayoutPanel2.ResumeLayout(false);
+            tableLayoutPanel2.PerformLayout();
             ResumeLayout(false);
-            PerformLayout();
         }
 
         #endregion
         private System.Windows.Forms.DataGridView assetListView;
-        private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem loadAssetMapToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem clearToolStripMenuItem;
-        private System.Windows.Forms.ToolStripTextBox searchTextBox;
-        private System.Windows.Forms.MenuStrip menuStrip1;
+        private TableLayoutPanel tableLayoutPanel1;
+        private TableLayoutPanel tableLayoutPanel2;
+        private Button loadAssetMap;
+        private Button clear;
+        private Button loadSelected;
+        private TextBox searchTextBox;
     }
 }

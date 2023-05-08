@@ -6,7 +6,7 @@ namespace AssetStudio
 {
     public static class ResourceMap
     {
-        private static AssetMap Instance;
+        private static AssetMap Instance = new() { GameType = GameType.Normal, AssetEntries = Array.Empty<AssetEntry>() };
         public static AssetEntry[] GetEntries() => Instance.AssetEntries;
         public static void FromFile(string path)
         {
@@ -31,7 +31,7 @@ namespace AssetStudio
         public static void Clear()
         {
             Instance.GameType = GameType.Normal;
-            Instance.AssetEntries = null;
+            Instance.AssetEntries = Array.Empty<AssetEntry>();
         }
     }
 }
