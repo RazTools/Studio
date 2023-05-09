@@ -53,7 +53,6 @@ namespace AssetStudioGUI
             assetListView.ReadOnly = true;
             assetListView.RowTemplate.Height = 25;
             assetListView.Size = new System.Drawing.Size(518, 250);
-            assetListView.RowHeadersVisible = false;
             assetListView.TabIndex = 2;
             // 
             // tableLayoutPanel1
