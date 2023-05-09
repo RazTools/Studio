@@ -57,7 +57,7 @@ namespace AssetStudioGUI
                 var assets = ResourceMap.GetEntries();
                 if (assets.Length != 0 && !string.IsNullOrEmpty(value))
                 {
-                    var regex = new Regex(value);
+                    var regex = new Regex(value, RegexOptions.IgnoreCase);
                     assetListView.DataSource = Array.FindAll(assets, x => x.Matches(regex));
                 }
                 else
