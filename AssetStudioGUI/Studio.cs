@@ -850,6 +850,45 @@ namespace AssetStudioGUI
             });
         }
 
+        public static void ExportNodesWithAnimationClip(string exportPath, List<TreeNode> nodes, List<AssetItem> animationList = null)
+        {
+            ThreadPool.QueueUserWorkItem(state =>
+            {
+                int i = 0;
+                Progress.Reset();
+                foreach (var node in nodes)
+                {
+                    var name = node.Text;
+                    StatusStripUpdate($"Exporting {name}");
+                    var gameObjects = new List<GameObject>();
+                    GetSelectedParentNode(node.Nodes, gameObjects);
+                    if (gameObjects.Count > 0)
+                    {
+                        var subExportPath = exportPath + Path.Combine(node.Text, FixFileName(node.Text) + ".fbx");
+                        try
+                        {
+                            ExportGameObjectMerge(gameObjects, subExportPath, animationList);
+                            Progress.Report(++i, nodes.Count);
+                            StatusStripUpdate($"Finished exporting {name}");
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"Export Model:{name} error\r\n{ex.Message}\r\n{ex.StackTrace}");
+                            StatusStripUpdate("Error in export");
+                        }
+                    }
+                    else
+                    {
+                        StatusStripUpdate("Empty node selected for export.");
+                    }
+                }
+                if (Properties.Settings.Default.openAfterExport)
+                {
+                    OpenFolderInExplorer(exportPath);
+                }
+            });
+        }
+
         public static void GetSelectedParentNode(TreeNodeCollection nodes, List<GameObject> gameObjects)
         {
             foreach (TreeNode i in nodes)
