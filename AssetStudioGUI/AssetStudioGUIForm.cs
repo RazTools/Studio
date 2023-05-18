@@ -108,7 +108,8 @@ namespace AssetStudioGUI
             displayAll.Checked = Properties.Settings.Default.displayAll;
             displayInfo.Checked = Properties.Settings.Default.displayInfo;
             enablePreview.Checked = Properties.Settings.Default.enablePreview;
-            enableModelPreview.Checked = Properties.Settings.Default.modelsOnly;
+            enableModelPreview.Checked = Properties.Settings.Default.enableModelPreview;
+            modelsOnly.Checked = Properties.Settings.Default.modelsOnly;
             assetsManager.ResolveDependencies = Properties.Settings.Default.enableResolveDependencies;
             MiHoYoBinData.Encrypted = Properties.Settings.Default.encrypted;
             MiHoYoBinData.Key = Properties.Settings.Default.key;
@@ -760,7 +761,7 @@ namespace AssetStudioGUI
             {
                 switch (assetItem.Asset)
                 {
-                    case GameObject m_GameObject when Properties.Settings.Default.modelsOnly:
+                    case GameObject m_GameObject when Properties.Settings.Default.enableModelPreview:
                         PreviewGameObject(m_GameObject);
                         break;
                     case Texture2D m_Texture2D:
@@ -791,7 +792,7 @@ namespace AssetStudioGUI
                     case Sprite m_Sprite:
                         PreviewSprite(assetItem, m_Sprite);
                         break;
-                    case Animator m_Animator when Properties.Settings.Default.modelsOnly:
+                    case Animator m_Animator when Properties.Settings.Default.enableModelPreview:
                         //StatusStripUpdate("Can be exported to FBX file.");
                         PreviewAnimator(m_Animator);
                         break;
@@ -1966,15 +1967,20 @@ namespace AssetStudioGUI
             Properties.Settings.Default.selectedAssetMapType = assetMapTypeComboBox.SelectedIndex;
             Properties.Settings.Default.Save();
         }
-        private void enableModelPreview_CheckedChanged(object sender, EventArgs e)
+        private void modelsOnly_CheckedChanged(object sender, EventArgs e)
         {
-            Properties.Settings.Default.modelsOnly = enableModelPreview.Checked;
+            Properties.Settings.Default.modelsOnly = modelsOnly.Checked;
             Properties.Settings.Default.Save();
 
             if (visibleAssets.Count > 0)
             {
                 FilterAssetList();
             }
+        }
+        private void enableModelPreview_CheckedChanged(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.enableModelPreview = enableModelPreview.Checked;
+            Properties.Settings.Default.Save();
         }
 
         private void specifyGame_SelectedIndexChanged(object sender, EventArgs e)

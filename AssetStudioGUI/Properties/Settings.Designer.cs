@@ -430,5 +430,17 @@ namespace AssetStudioGUI.Properties {
                 this["modelsOnly"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool enableModelPreview {
+            get {
+                return ((bool)(this["enableModelPreview"]));
+            }
+            set {
+                this["enableModelPreview"] = value;
+            }
+        }
     }
 }

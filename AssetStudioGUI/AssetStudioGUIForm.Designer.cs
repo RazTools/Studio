@@ -45,7 +45,7 @@ namespace AssetStudioGUI
             optionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             displayAll = new System.Windows.Forms.ToolStripMenuItem();
             enablePreview = new System.Windows.Forms.ToolStripMenuItem();
-            enableModelPreview = new System.Windows.Forms.ToolStripMenuItem();
+            modelsOnly = new System.Windows.Forms.ToolStripMenuItem();
             displayInfo = new System.Windows.Forms.ToolStripMenuItem();
             toolStripMenuItem14 = new System.Windows.Forms.ToolStripMenuItem();
             specifyUnityVersion = new System.Windows.Forms.ToolStripTextBox();
@@ -161,6 +161,7 @@ namespace AssetStudioGUI
             exportAnimatorwithselectedAnimationClipMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             goToSceneHierarchyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             showOriginalFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            enableModelPreview = new System.Windows.Forms.ToolStripMenuItem();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
@@ -252,7 +253,7 @@ namespace AssetStudioGUI
             // 
             // optionsToolStripMenuItem
             // 
-            optionsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { displayAll, enablePreview, enableModelPreview, displayInfo, toolStripMenuItem14, toolStripMenuItem18, toolStripMenuItem19, showExpOpt });
+            optionsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { displayAll, enablePreview, enableModelPreview, modelsOnly, displayInfo, toolStripMenuItem14, toolStripMenuItem18, toolStripMenuItem19, showExpOpt });
             optionsToolStripMenuItem.Name = "optionsToolStripMenuItem";
             optionsToolStripMenuItem.Size = new System.Drawing.Size(61, 20);
             optionsToolStripMenuItem.Text = "Options";
@@ -277,13 +278,13 @@ namespace AssetStudioGUI
             enablePreview.ToolTipText = "Toggle the loading and preview of readable assets, such as images, sounds, text, etc.\r\nDisable preview if you have performance or compatibility issues.";
             enablePreview.CheckedChanged += enablePreview_Check;
             // 
-            // enableModelPreview
+            // modelsOnly
             // 
-            enableModelPreview.CheckOnClick = true;
-            enableModelPreview.Name = "enableModelPreview";
-            enableModelPreview.Size = new System.Drawing.Size(207, 22);
-            enableModelPreview.Text = "Enable model preview";
-            enableModelPreview.CheckedChanged += enableModelPreview_CheckedChanged;
+            modelsOnly.CheckOnClick = true;
+            modelsOnly.Name = "modelsOnly";
+            modelsOnly.Size = new System.Drawing.Size(207, 22);
+            modelsOnly.Text = "Filter models only";
+            modelsOnly.CheckedChanged += modelsOnly_CheckedChanged;
             // 
             // displayInfo
             // 
@@ -1257,6 +1258,14 @@ namespace AssetStudioGUI
             showOriginalFileToolStripMenuItem.Visible = false;
             showOriginalFileToolStripMenuItem.Click += showOriginalFileToolStripMenuItem_Click;
             // 
+            // enableModelPreview
+            // 
+            enableModelPreview.CheckOnClick = true;
+            enableModelPreview.Name = "enableModelPreview";
+            enableModelPreview.Size = new System.Drawing.Size(207, 22);
+            enableModelPreview.Text = "Enable model preview";
+            enableModelPreview.CheckedChanged += enableModelPreview_CheckedChanged;
+            // 
             // AssetStudioGUIForm
             // 
             AllowDrop = true;
@@ -1434,6 +1443,7 @@ namespace AssetStudioGUI
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator9;
         private System.Windows.Forms.ToolStripMenuItem exportSelectedNodessplitToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem exportSelectedNodessplitSelectedAnimationClipsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem modelsOnly;
         private System.Windows.Forms.ToolStripMenuItem enableModelPreview;
     }
 }

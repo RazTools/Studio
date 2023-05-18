@@ -331,6 +331,18 @@ namespace AssetStudioGUI
             return true;
         }
 
+        public static bool ExportGameObject(AssetItem item, string exportPath, List <AssetItem> animationList = null)
+        {
+            var exportFullPath = Path.Combine(exportPath, item.Text, item.Text + ".fbx");
+            if (File.Exists(exportFullPath))
+            {
+                exportFullPath = Path.Combine(exportPath, item.Text + item.UniqueID, item.Text + ".fbx");
+            }
+            var m_GameObject = (GameObject)item.Asset;
+            ExportGameObject(m_GameObject, exportFullPath, animationList);
+            return true;
+        }
+
         public static void ExportGameObject(GameObject gameObject, string exportPath, List<AssetItem> animationList = null)
         {
             var convert = animationList != null
@@ -390,6 +402,8 @@ namespace AssetStudioGUI
         {
             switch (item.Type)
             {
+                case ClassIDType.GameObject:
+                    return ExportGameObject(item, exportPath);
                 case ClassIDType.Texture2D:
                     return ExportTexture2D(item, exportPath);
                 case ClassIDType.AudioClip:
