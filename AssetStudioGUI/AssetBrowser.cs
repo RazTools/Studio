@@ -1,5 +1,5 @@
 ﻿using System;
-using System.IO;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -15,6 +15,7 @@ namespace AssetStudioGUI
         {
             InitializeComponent();
             _parent = form;
+            FormClosing += AssetBrowser_FormClosing;
         }
 
         private async void loadAssetMap_Click(object sender, EventArgs e)
@@ -34,37 +35,66 @@ namespace AssetStudioGUI
         }
         private void clear_Click(object sender, EventArgs e)
         {
-            ResourceMap.Clear();
-            assetListView.DataSource = null;
+            Clear();
             Logger.Info($"Cleared !!");
         }
         private async void loadSelected_Click(object sender, EventArgs e)
         {
             var files = assetListView.SelectedRows.Cast<DataGridViewRow>().Select(x => x.DataBoundItem as AssetEntry).Select(x => x.Source).ToHashSet();
-
-            if (files.Count != 0 && !files.Any(x => string.IsNullOrEmpty(x)))
+            if (files.Count != 0 && !files.Any(string.IsNullOrEmpty))
             {
                 Logger.Info("Loading...");
                 _parent.Invoke(() => _parent.LoadPaths(files.ToArray()));
             }
         }
-
         private void searchTextBox_KeyPress(object sender, KeyPressEventArgs e)
         {
             if (e.KeyChar == (char)Keys.Enter)
             {
+                var filters = new Dictionary<string, Regex>();
+                var names = typeof(AssetEntry).GetProperties().Select(x => x.Name).ToList();
+
                 var value = searchTextBox.Text;
+                var options = value.Split(' ');
+                for (int i = 0; i < options.Length; i++)
+                {
+                    var option = options[i];
+                    var arguments = option.Split('=');
+                    if (arguments.Length != 2)
+                    {
+                        Logger.Error($"Invalid argument at index {i + 1}");
+                        continue;
+                    }
+                    var (name, regex) = (arguments[0], arguments[1]);
+                    if (!names.Contains(name, StringComparer.OrdinalIgnoreCase))
+                    {
+                        Logger.Error($"Unknonw argument {name}");
+                        continue;
+                    }
+                    filters[name] = new Regex(regex, RegexOptions.IgnoreCase);
+                }
+
                 var assets = ResourceMap.GetEntries();
-                if (assets.Length != 0 && !string.IsNullOrEmpty(value))
+                if (assets.Length != 0)
                 {
                     var regex = new Regex(value, RegexOptions.IgnoreCase);
-                    assetListView.DataSource = Array.FindAll(assets, x => x.Matches(regex));
+                    assetListView.DataSource = Array.FindAll(assets, x => x.Matches(filters));
                 }
                 else
                 {
                     assetListView.DataSource = assets;
                 }
             }
+        }
+        private void AssetBrowser_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            Clear();
+            base.OnClosing(e);
+        }
+        public void Clear()
+        {
+            ResourceMap.Clear();
+            assetListView.DataSource = null;
         }
     }
 }

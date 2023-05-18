@@ -437,6 +437,10 @@ namespace AssetStudio
                             {
                                 OPFPUtils.Decrypt(compressedBytesSpan, reader.FullPath);
                             }
+                            if (Game.Type.IsNetEase() && i == 0)
+                            {
+                                NetEaseUtils.Decrypt(compressedBytesSpan);
+                            }
                             var uncompressedSize = (int)blockInfo.uncompressedSize;
                             var uncompressedBytes = BigArrayPool<byte>.Shared.Rent(uncompressedSize);
                             var uncompressedBytesSpan = uncompressedBytes.AsSpan(0, uncompressedSize);

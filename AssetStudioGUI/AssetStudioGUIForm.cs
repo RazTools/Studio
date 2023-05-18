@@ -29,6 +29,7 @@ namespace AssetStudioGUI
     partial class AssetStudioGUIForm : Form
     {
         private AssetItem lastSelectedItem;
+        private AssetBrowser assetBrowser;
         private DirectBitmap imageTexture;
         private string tempClipboard;
 
@@ -107,6 +108,7 @@ namespace AssetStudioGUI
             displayAll.Checked = Properties.Settings.Default.displayAll;
             displayInfo.Checked = Properties.Settings.Default.displayInfo;
             enablePreview.Checked = Properties.Settings.Default.enablePreview;
+            enableModelPreview.Checked = Properties.Settings.Default.modelsOnly;
             assetsManager.ResolveDependencies = Properties.Settings.Default.enableResolveDependencies;
             MiHoYoBinData.Encrypted = Properties.Settings.Default.encrypted;
             MiHoYoBinData.Key = Properties.Settings.Default.key;
@@ -758,7 +760,7 @@ namespace AssetStudioGUI
             {
                 switch (assetItem.Asset)
                 {
-                    case GameObject m_GameObject:
+                    case GameObject m_GameObject when Properties.Settings.Default.modelsOnly:
                         PreviewGameObject(m_GameObject);
                         break;
                     case Texture2D m_Texture2D:
@@ -789,7 +791,7 @@ namespace AssetStudioGUI
                     case Sprite m_Sprite:
                         PreviewSprite(assetItem, m_Sprite);
                         break;
-                    case Animator m_Animator:
+                    case Animator m_Animator when Properties.Settings.Default.modelsOnly:
                         //StatusStripUpdate("Can be exported to FBX file.");
                         PreviewAnimator(m_Animator);
                         break;
@@ -1748,6 +1750,23 @@ namespace AssetStudioGUI
             {
                 visibleAssets = exportableAssets;
             }
+            if (Properties.Settings.Default.modelsOnly)
+            {
+                var models = visibleAssets.FindAll(x => x.Type == ClassIDType.Animator || x.Type == ClassIDType.GameObject);
+                foreach(var model in models)
+                {
+                    var hasModel = model.Asset switch
+                    {
+                        GameObject m_GameObject => m_GameObject.HasModel(),
+                        Animator m_Animator => m_Animator.m_GameObject.TryGet(out var gameObject) && gameObject.HasModel(),
+                        _ => throw new NotImplementedException()
+                    };
+                    if (!hasModel)
+                    {
+                        visibleAssets.Remove(model);
+                    }
+                }
+            }
             if (listSearch.Text != " Filter ")
             {
                 visibleAssets = visibleAssets.FindAll(
@@ -1947,6 +1966,16 @@ namespace AssetStudioGUI
             Properties.Settings.Default.selectedAssetMapType = assetMapTypeComboBox.SelectedIndex;
             Properties.Settings.Default.Save();
         }
+        private void enableModelPreview_CheckedChanged(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.modelsOnly = enableModelPreview.Checked;
+            Properties.Settings.Default.Save();
+
+            if (visibleAssets.Count > 0)
+            {
+                FilterAssetList();
+            }
+        }
 
         private void specifyGame_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -2134,6 +2163,7 @@ namespace AssetStudioGUI
         {
             ResetForm();
             AssetsHelper.Clear();
+            assetBrowser.Clear();
             assetsManager.SpecifyUnityVersion = specifyUnityVersion.Text;
             assetsManager.Game = Studio.Game;
         }
@@ -2242,7 +2272,7 @@ namespace AssetStudioGUI
 
         private void loadAssetMapToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            var assetBrowser = new AssetBrowser(this);
+            assetBrowser = new AssetBrowser(this);
             assetBrowser.Show();
         }
 

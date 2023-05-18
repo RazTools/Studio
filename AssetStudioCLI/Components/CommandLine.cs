@@ -139,7 +139,7 @@ namespace AssetStudioCLI
             GameName.FromAmong(GameManager.GetGameNames());
 
             GroupAssetsType.SetDefaultValue(AssetGroupOption.ByType);
-            MapOp.SetDefaultValue(MapOpType.Load);
+            MapOp.SetDefaultValue(MapOpType.None);
             MapType.SetDefaultValue(ExportListType.XML);
         }
 

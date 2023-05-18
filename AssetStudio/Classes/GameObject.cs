@@ -1,5 +1,7 @@
-﻿using System;
+﻿using AssetStudio;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Text;
 
@@ -34,6 +36,54 @@ namespace AssetStudio
             m_Name = reader.ReadAlignedString();
         }
 
-        public bool HasModel() => m_Transform != null && m_Transform.m_Father.IsNull && m_Transform.m_Children.Length > 0;
+        public bool HasModel() => HasMesh(m_Transform, new List<bool>());
+        private static bool HasMesh(Transform m_Transform, List<bool> meshes)
+        {
+            m_Transform.m_GameObject.TryGet(out var m_GameObject);
+
+            if (m_GameObject.m_MeshRenderer != null)
+            {
+                var mesh = GetMesh(m_GameObject.m_MeshRenderer);
+                meshes.Add(mesh != null);
+            }
+
+            if (m_GameObject.m_SkinnedMeshRenderer != null)
+            {
+                var mesh = GetMesh(m_GameObject.m_SkinnedMeshRenderer);
+                meshes.Add(mesh != null);
+            }
+
+            foreach (var pptr in m_Transform.m_Children)
+            {
+                if (pptr.TryGet(out var child))
+                    meshes.Add(HasMesh(child, meshes));
+            }
+
+            return meshes.Any(x => x == true);
+        }
+
+        private static Mesh GetMesh(Renderer meshR)
+        {
+            if (meshR is SkinnedMeshRenderer sMesh)
+            {
+                if (sMesh.m_Mesh.TryGet(out var m_Mesh))
+                {
+                    return m_Mesh;
+                }
+            }
+            else
+            {
+                meshR.m_GameObject.TryGet(out var m_GameObject);
+                if (m_GameObject.m_MeshFilter != null)
+                {
+                    if (m_GameObject.m_MeshFilter.m_Mesh.TryGet(out var m_Mesh))
+                    {
+                        return m_Mesh;
+                    }
+                }
+            }
+
+            return null;
+        }
     }
 }

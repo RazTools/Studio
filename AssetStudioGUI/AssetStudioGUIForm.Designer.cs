@@ -45,6 +45,7 @@ namespace AssetStudioGUI
             optionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             displayAll = new System.Windows.Forms.ToolStripMenuItem();
             enablePreview = new System.Windows.Forms.ToolStripMenuItem();
+            enableModelPreview = new System.Windows.Forms.ToolStripMenuItem();
             displayInfo = new System.Windows.Forms.ToolStripMenuItem();
             toolStripMenuItem14 = new System.Windows.Forms.ToolStripMenuItem();
             specifyUnityVersion = new System.Windows.Forms.ToolStripTextBox();
@@ -60,6 +61,9 @@ namespace AssetStudioGUI
             toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             exportSelectedObjectsmergeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             exportSelectedObjectsmergeWithAnimationClipToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            toolStripSeparator9 = new System.Windows.Forms.ToolStripSeparator();
+            exportSelectedNodessplitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            exportSelectedNodessplitSelectedAnimationClipsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             exportToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             exportAllAssetsMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             exportSelectedAssetsMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -157,9 +161,6 @@ namespace AssetStudioGUI
             exportAnimatorwithselectedAnimationClipMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             goToSceneHierarchyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             showOriginalFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            toolStripSeparator9 = new System.Windows.Forms.ToolStripSeparator();
-            exportSelectedNodessplitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            exportSelectedNodessplitSelectedAnimationClipsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
@@ -251,7 +252,7 @@ namespace AssetStudioGUI
             // 
             // optionsToolStripMenuItem
             // 
-            optionsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { displayAll, enablePreview, displayInfo, toolStripMenuItem14, toolStripMenuItem18, toolStripMenuItem19, showExpOpt });
+            optionsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { displayAll, enablePreview, enableModelPreview, displayInfo, toolStripMenuItem14, toolStripMenuItem18, toolStripMenuItem19, showExpOpt });
             optionsToolStripMenuItem.Name = "optionsToolStripMenuItem";
             optionsToolStripMenuItem.Size = new System.Drawing.Size(61, 20);
             optionsToolStripMenuItem.Text = "Options";
@@ -275,6 +276,14 @@ namespace AssetStudioGUI
             enablePreview.Text = "Enable preview";
             enablePreview.ToolTipText = "Toggle the loading and preview of readable assets, such as images, sounds, text, etc.\r\nDisable preview if you have performance or compatibility issues.";
             enablePreview.CheckedChanged += enablePreview_Check;
+            // 
+            // enableModelPreview
+            // 
+            enableModelPreview.CheckOnClick = true;
+            enableModelPreview.Name = "enableModelPreview";
+            enableModelPreview.Size = new System.Drawing.Size(207, 22);
+            enableModelPreview.Text = "Enable model preview";
+            enableModelPreview.CheckedChanged += enableModelPreview_CheckedChanged;
             // 
             // displayInfo
             // 
@@ -381,6 +390,25 @@ namespace AssetStudioGUI
             exportSelectedObjectsmergeWithAnimationClipToolStripMenuItem.Size = new System.Drawing.Size(382, 22);
             exportSelectedObjectsmergeWithAnimationClipToolStripMenuItem.Text = "Export selected objects (merge) + selected AnimationClips";
             exportSelectedObjectsmergeWithAnimationClipToolStripMenuItem.Click += exportSelectedObjectsmergeWithAnimationClipToolStripMenuItem_Click;
+            // 
+            // toolStripSeparator9
+            // 
+            toolStripSeparator9.Name = "toolStripSeparator9";
+            toolStripSeparator9.Size = new System.Drawing.Size(379, 6);
+            // 
+            // exportSelectedNodessplitToolStripMenuItem
+            // 
+            exportSelectedNodessplitToolStripMenuItem.Name = "exportSelectedNodessplitToolStripMenuItem";
+            exportSelectedNodessplitToolStripMenuItem.Size = new System.Drawing.Size(382, 22);
+            exportSelectedNodessplitToolStripMenuItem.Text = "Export selected nodes (split)";
+            exportSelectedNodessplitToolStripMenuItem.Click += exportSelectedNodessplitToolStripMenuItem_Click;
+            // 
+            // exportSelectedNodessplitSelectedAnimationClipsToolStripMenuItem
+            // 
+            exportSelectedNodessplitSelectedAnimationClipsToolStripMenuItem.Name = "exportSelectedNodessplitSelectedAnimationClipsToolStripMenuItem";
+            exportSelectedNodessplitSelectedAnimationClipsToolStripMenuItem.Size = new System.Drawing.Size(382, 22);
+            exportSelectedNodessplitSelectedAnimationClipsToolStripMenuItem.Text = "Export selected nodes (split) + selected AnimationClips";
+            exportSelectedNodessplitSelectedAnimationClipsToolStripMenuItem.Click += exportSelectedNodessplitSelectedAnimationClipsToolStripMenuItem_Click;
             // 
             // exportToolStripMenuItem
             // 
@@ -1229,25 +1257,6 @@ namespace AssetStudioGUI
             showOriginalFileToolStripMenuItem.Visible = false;
             showOriginalFileToolStripMenuItem.Click += showOriginalFileToolStripMenuItem_Click;
             // 
-            // toolStripSeparator9
-            // 
-            toolStripSeparator9.Name = "toolStripSeparator9";
-            toolStripSeparator9.Size = new System.Drawing.Size(379, 6);
-            // 
-            // exportSelectedNodessplitToolStripMenuItem
-            // 
-            exportSelectedNodessplitToolStripMenuItem.Name = "exportSelectedNodessplitToolStripMenuItem";
-            exportSelectedNodessplitToolStripMenuItem.Size = new System.Drawing.Size(382, 22);
-            exportSelectedNodessplitToolStripMenuItem.Text = "Export selected nodes (split)";
-            exportSelectedNodessplitToolStripMenuItem.Click += exportSelectedNodessplitToolStripMenuItem_Click;
-            // 
-            // exportSelectedNodessplitSelectedAnimationClipsToolStripMenuItem
-            // 
-            exportSelectedNodessplitSelectedAnimationClipsToolStripMenuItem.Name = "exportSelectedNodessplitSelectedAnimationClipsToolStripMenuItem";
-            exportSelectedNodessplitSelectedAnimationClipsToolStripMenuItem.Size = new System.Drawing.Size(382, 22);
-            exportSelectedNodessplitSelectedAnimationClipsToolStripMenuItem.Text = "Export selected nodes (split) + selected AnimationClips";
-            exportSelectedNodessplitSelectedAnimationClipsToolStripMenuItem.Click += exportSelectedNodessplitSelectedAnimationClipsToolStripMenuItem_Click;
-            // 
             // AssetStudioGUIForm
             // 
             AllowDrop = true;
@@ -1425,6 +1434,7 @@ namespace AssetStudioGUI
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator9;
         private System.Windows.Forms.ToolStripMenuItem exportSelectedNodessplitToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem exportSelectedNodessplitSelectedAnimationClipsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem enableModelPreview;
     }
 }
 

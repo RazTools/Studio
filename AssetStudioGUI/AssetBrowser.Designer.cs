@@ -34,9 +34,9 @@ namespace AssetStudioGUI
             tableLayoutPanel1 = new TableLayoutPanel();
             tableLayoutPanel2 = new TableLayoutPanel();
             loadAssetMap = new Button();
-            searchTextBox = new TextBox();
-            loadSelected = new Button();
             clear = new Button();
+            loadSelected = new Button();
+            searchTextBox = new TextBox();
             ((System.ComponentModel.ISupportInitialize)assetListView).BeginInit();
             tableLayoutPanel1.SuspendLayout();
             tableLayoutPanel2.SuspendLayout();
@@ -91,45 +91,46 @@ namespace AssetStudioGUI
             // 
             // loadAssetMap
             // 
+            loadAssetMap.Dock = DockStyle.Fill;
             loadAssetMap.Location = new System.Drawing.Point(3, 3);
             loadAssetMap.Name = "loadAssetMap";
-            loadAssetMap.Size = new System.Drawing.Size(94, 23);
+            loadAssetMap.Size = new System.Drawing.Size(114, 23);
             loadAssetMap.TabIndex = 0;
             loadAssetMap.Text = "Load AssetMap";
             loadAssetMap.UseVisualStyleBackColor = true;
             loadAssetMap.Click += loadAssetMap_Click;
-            loadAssetMap.Dock = DockStyle.Fill;
             // 
-            // searchTextBox
+            // clear
             // 
-            searchTextBox.Location = new System.Drawing.Point(103, 3);
-            searchTextBox.Name = "searchTextBox";
-            searchTextBox.Size = new System.Drawing.Size(227, 23);
-            searchTextBox.TabIndex = 3;
-            searchTextBox.KeyPress += searchTextBox_KeyPress;
-            searchTextBox.Dock = DockStyle.Fill;
+            clear.Dock = DockStyle.Fill;
+            clear.Location = new System.Drawing.Point(123, 3);
+            clear.Name = "clear";
+            clear.Size = new System.Drawing.Size(54, 23);
+            clear.TabIndex = 1;
+            clear.Text = "Clear";
+            clear.UseVisualStyleBackColor = true;
+            clear.Click += clear_Click;
             // 
             // loadSelected
             // 
-            loadSelected.Location = new System.Drawing.Point(336, 3);
+            loadSelected.Dock = DockStyle.Fill;
+            loadSelected.Location = new System.Drawing.Point(183, 3);
             loadSelected.Name = "loadSelected";
             loadSelected.Size = new System.Drawing.Size(94, 23);
             loadSelected.TabIndex = 2;
             loadSelected.Text = "Load Selected";
             loadSelected.UseVisualStyleBackColor = true;
             loadSelected.Click += loadSelected_Click;
-            loadSelected.Dock = DockStyle.Fill;
             // 
-            // clear
+            // searchTextBox
             // 
-            clear.Location = new System.Drawing.Point(436, 3);
-            clear.Name = "clear";
-            clear.Size = new System.Drawing.Size(73, 23);
-            clear.TabIndex = 1;
-            clear.Text = "Clear";
-            clear.UseVisualStyleBackColor = true;
-            clear.Click += clear_Click;
-            clear.Dock = DockStyle.Fill;
+            searchTextBox.Dock = DockStyle.Fill;
+            searchTextBox.Location = new System.Drawing.Point(283, 3);
+            searchTextBox.Name = "searchTextBox";
+            searchTextBox.PlaceholderText = "Column Name=Regex{space}....";
+            searchTextBox.Size = new System.Drawing.Size(232, 23);
+            searchTextBox.TabIndex = 3;
+            searchTextBox.KeyPress += searchTextBox_KeyPress;
             // 
             // AssetBrowser
             // 
@@ -147,6 +148,8 @@ namespace AssetStudioGUI
             tableLayoutPanel2.PerformLayout();
             ResumeLayout(false);
         }
+
+
 
         #endregion
         private System.Windows.Forms.DataGridView assetListView;

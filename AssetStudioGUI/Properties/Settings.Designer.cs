@@ -418,5 +418,17 @@ namespace AssetStudioGUI.Properties {
                 this["minimalAssetMap"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool modelsOnly {
+            get {
+                return ((bool)(this["modelsOnly"]));
+            }
+            set {
+                this["modelsOnly"] = value;
+            }
+        }
     }
 }

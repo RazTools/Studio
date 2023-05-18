@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
 
 namespace AssetStudio
 {
@@ -17,8 +18,8 @@ namespace AssetStudio
             }
             return buffer;
         }
-        public static int Search(this byte[] src, string value, int offset = 0) => Search(src, Encoding.UTF8.GetBytes(value), offset);
-        public static int Search(this byte[] src, byte[] pattern, int offset)
+        public static int Search(this byte[] src, string value, int offset = 0) => Search(src.AsSpan(), Encoding.UTF8.GetBytes(value), offset);
+        public static int Search(this Span<byte> src, byte[] pattern, int offset)
         {
             int maxFirstCharSlot = src.Length - pattern.Length + 1;
             for (int i = offset; i < maxFirstCharSlot; i++)
