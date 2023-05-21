@@ -326,6 +326,7 @@ namespace AssetStudio
                             case ClassIDType.Texture2D:
                             case ClassIDType.VideoClip:
                             case ClassIDType.AudioClip:
+                            case ClassIDType.AnimationClip:
                                 asset.Name = objectReader.ReadAlignedString();
                                 break;
                             default:
