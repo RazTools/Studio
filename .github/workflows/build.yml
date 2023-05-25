@@ -7,7 +7,7 @@ on:
     paths-ignore:
       - '**/LICENSE'
       - '**/README.md'
-      - '**/build.yml'
+      - '**/.github'
       - '**/.gitignore'
       - '**/.gitattributes'
   workflow_dispatch:
