@@ -169,6 +169,9 @@ namespace AssetStudio
                     case GameType.HelixWaltz2:
                         reader = ParseHelixWaltz2(reader);
                         break;
+                    case GameType.AnchorPanic:
+                        reader = DecryptAnchorPanic(reader);
+                        break;
                 }
             }
             if (reader.FileType == FileType.BundleFile && game.Type.IsBlockFile())

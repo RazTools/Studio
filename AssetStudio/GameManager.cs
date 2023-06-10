@@ -32,6 +32,7 @@ namespace AssetStudio
             Games.Add(index++, new Game(GameType.ShiningNikki));
             Games.Add(index++, new Game(GameType.HelixWaltz2));
             Games.Add(index++, new Game(GameType.NetEase));
+            Games.Add(index++, new Game(GameType.AnchorPanic));
         }
         public static Game GetGame(GameType gameType) => GetGame((int)gameType);
         public static Game GetGame(int index)
@@ -134,7 +135,8 @@ namespace AssetStudio
         FantasyOfWind,
         ShiningNikki,
         HelixWaltz2,
-        NetEase
+        NetEase,
+        AnchorPanic
     }
 
     public static class GameTypes

@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using static AssetStudio.BundleFile;
 using static AssetStudio.Crypto;
@@ -420,6 +421,114 @@ namespace AssetStudio
             ms.Position = 0;
 
             return new FileReader(reader.FullPath, ms);
+        }
+        public static FileReader DecryptAnchorPanic(FileReader reader)
+        {
+            const int BlockSize = 0x800;
+
+            var data = reader.ReadBytes(0x1000);
+            reader.Position = 0;
+
+            var idx = data.Search("UnityFS");
+            if (idx != -1)
+            {
+                return ParseAlchemyStars(reader);
+            }
+
+            var key = GetKey(Path.GetFileNameWithoutExtension(reader.FileName));
+
+            var chunkIndex = 0;
+            MemoryStream ms = new();
+            while (reader.Remaining > 0)
+            {
+                var chunkSize = Math.Min((int)reader.Remaining, BlockSize);
+                var chunk = reader.ReadBytes(chunkSize);
+                if (IsEncrypt((int)reader.Length, chunkIndex++))
+                    RC4(chunk, key);
+
+                ms.Write(chunk);
+            }
+
+            ms.Position = 0;
+
+            return new FileReader(reader.FullPath, ms);
+
+            bool IsEncrypt(int fileSize, int chunkIndex)
+            {
+                const int MaxEncryptChunkIndex = 4;
+
+                if (chunkIndex == 0)
+                    return true;
+
+                if (fileSize / BlockSize == chunkIndex)
+                    return true;
+
+                if (MaxEncryptChunkIndex < chunkIndex)
+                    return false;
+
+                return fileSize % 2 == chunkIndex % 2;
+            }
+            
+            byte[] GetKey(string fileName)
+            {
+                const string Key = "KxZKZolAT3QXvsUU";
+
+                string keyHash = CalculateMD5(Key);
+                string nameHash = CalculateMD5(fileName);
+                var key = $"{keyHash[..5]}leiyan{nameHash[Math.Max(0, nameHash.Length - 5)..]}";
+                return Encoding.UTF8.GetBytes(key);
+
+                string CalculateMD5(string str)
+                {
+                    var bytes = Encoding.UTF8.GetBytes(str);
+                    bytes = MD5.HashData(bytes);
+                    return Convert.ToHexString(bytes).ToLowerInvariant();
+                }
+            }
+
+            void RC4(Span<byte> data, byte[] key)
+            {
+                int[] S = new int[0x100];
+                for (int _ = 0; _ < 0x100; _++)
+                {
+                    S[_] = _;
+                }
+
+                int[] T = new int[0x100];
+
+                if (key.Length == 0x100)
+                {
+                    Buffer.BlockCopy(key, 0, T, 0, key.Length);
+                }
+                else
+                {
+                    for (int _ = 0; _ < 0x100; _++)
+                    {
+                        T[_] = key[_ % key.Length];
+                    }
+                }
+
+                int i = 0;
+                int j = 0;
+                for (i = 0; i < 0x100; i++)
+                {
+                    j = (j + S[i] + T[i]) % 0x100;
+
+                    (S[j], S[i]) = (S[i], S[j]);
+                }
+
+                i = j = 0;
+                for (int iteration = 0; iteration < data.Length; iteration++)
+                {
+                    i = (i + 1) % 0x100;
+                    j = (j + S[i]) % 0x100;
+
+                    (S[j], S[i]) = (S[i], S[j]);
+                    var K = (uint)S[(S[j] + S[i]) % 0x100];
+
+                    data[iteration] ^= Convert.ToByte(K);
+                }
+            }
         }
     }
 }
