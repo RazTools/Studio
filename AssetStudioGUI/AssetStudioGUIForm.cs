@@ -110,7 +110,10 @@ namespace AssetStudioGUI
             enablePreview.Checked = Properties.Settings.Default.enablePreview;
             enableModelPreview.Checked = Properties.Settings.Default.enableModelPreview;
             modelsOnly.Checked = Properties.Settings.Default.modelsOnly;
-            assetsManager.ResolveDependencies = Properties.Settings.Default.enableResolveDependencies;
+            enableResolveDependencies.Checked = Properties.Settings.Default.enableResolveDependencies;
+            skipContainer.Checked = Properties.Settings.Default.skipContainer;
+            assetsManager.ResolveDependencies = enableResolveDependencies.Checked;
+            SkipContainer = Properties.Settings.Default.skipContainer;
             MiHoYoBinData.Encrypted = Properties.Settings.Default.encrypted;
             MiHoYoBinData.Key = Properties.Settings.Default.key;
             AssetsHelper.Minimal = Properties.Settings.Default.minimalAssetMap;
@@ -174,23 +177,23 @@ namespace AssetStudioGUI
 
         public async void LoadPaths(params string[] paths)
         {
-                ResetForm();
-                assetsManager.SpecifyUnityVersion = specifyUnityVersion.Text;
-                assetsManager.Game = Studio.Game;
-                if (paths.Length == 1 && Directory.Exists(paths[0]))
-                {
-                    await Task.Run(() => assetsManager.LoadFolder(paths[0]));
-                }
-                else
-                {
-                    if (paths.Length == 1 && File.Exists(paths[0]) && Path.GetExtension(paths[0]) == ".txt")
-                    {
-                        paths = File.ReadAllLines(paths[0]);
-                    }
-                    await Task.Run(() => assetsManager.LoadFiles(paths));
-                }
-                BuildAssetStructures();
+            ResetForm();
+            assetsManager.SpecifyUnityVersion = specifyUnityVersion.Text;
+            assetsManager.Game = Studio.Game;
+            if (paths.Length == 1 && Directory.Exists(paths[0]))
+            {
+                await Task.Run(() => assetsManager.LoadFolder(paths[0]));
             }
+            else
+            {
+                if (paths.Length == 1 && File.Exists(paths[0]) && Path.GetExtension(paths[0]) == ".txt")
+                {
+                    paths = File.ReadAllLines(paths[0]);
+                }
+                await Task.Run(() => assetsManager.LoadFiles(paths));
+            }
+            BuildAssetStructures();
+        }
 
         private async void loadFile_Click(object sender, EventArgs e)
         {
@@ -1243,15 +1246,15 @@ namespace AssetStudioGUI
         {
             var model = new ModelConverter(m_GameObject, Properties.Settings.Default.convertType, Studio.Game, false, Array.Empty<AnimationClip>());
             PreviewModel(model);
-                            }
+        }
         private void PreviewAnimator(Animator m_Animator)
-                {
+        {
             var model = new ModelConverter(m_Animator, Properties.Settings.Default.convertType, Studio.Game, false, Array.Empty<AnimationClip>());
             PreviewModel(model);
-                    }
+        }
 
         private void PreviewModel(ModelConverter model)
-                {
+        {
             if (model.MeshList.Count > 0)
             {
                 viewMatrixData = Matrix4.CreateRotationY(-(float)Math.PI / 4) * Matrix4.CreateRotationX(-(float)Math.PI / 6);
@@ -1754,7 +1757,7 @@ namespace AssetStudioGUI
             if (Properties.Settings.Default.modelsOnly)
             {
                 var models = visibleAssets.FindAll(x => x.Type == ClassIDType.Animator || x.Type == ClassIDType.GameObject);
-                foreach(var model in models)
+                foreach (var model in models)
                 {
                     var hasModel = model.Asset switch
                     {
@@ -1872,7 +1875,7 @@ namespace AssetStudioGUI
             {
                 return;
             }
-            if (Properties.Settings.Default.skipContainer)
+            if (skipContainer.Checked)
             {
                 Logger.Info("Skip container is enabled, aborting...");
                 return;
@@ -1961,6 +1964,21 @@ namespace AssetStudioGUI
             {
                 dumpTextBox.Text = DumpAsset(lastSelectedItem.Asset);
             }
+        }
+        private void enableResolveDependencies_CheckedChanged(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.enableResolveDependencies = enableResolveDependencies.Checked;
+            Properties.Settings.Default.Save();
+
+            assetsManager.ResolveDependencies = enableResolveDependencies.Checked;
+        }
+        private void skipContainer_CheckedChanged(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.skipContainer = skipContainer.Checked;
+            Properties.Settings.Default.Save();
+
+            SkipContainer = skipContainer.Checked;
+
         }
         private void assetMapTypeComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -2169,7 +2187,7 @@ namespace AssetStudioGUI
         {
             ResetForm();
             AssetsHelper.Clear();
-            assetBrowser.Clear();
+            assetBrowser?.Clear();
             assetsManager.SpecifyUnityVersion = specifyUnityVersion.Text;
             assetsManager.Game = Studio.Game;
         }
@@ -2201,7 +2219,7 @@ namespace AssetStudioGUI
 
         private async void loadAIToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (Properties.Settings.Default.skipContainer)
+            if (skipContainer.Checked)
             {
                 Logger.Info("Skip container is enabled, aborting...");
                 return;

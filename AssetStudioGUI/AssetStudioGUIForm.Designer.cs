@@ -45,7 +45,10 @@ namespace AssetStudioGUI
             optionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             displayAll = new System.Windows.Forms.ToolStripMenuItem();
             enablePreview = new System.Windows.Forms.ToolStripMenuItem();
+            enableModelPreview = new System.Windows.Forms.ToolStripMenuItem();
             modelsOnly = new System.Windows.Forms.ToolStripMenuItem();
+            enableResolveDependencies = new System.Windows.Forms.ToolStripMenuItem();
+            skipContainer = new System.Windows.Forms.ToolStripMenuItem();
             displayInfo = new System.Windows.Forms.ToolStripMenuItem();
             toolStripMenuItem14 = new System.Windows.Forms.ToolStripMenuItem();
             specifyUnityVersion = new System.Windows.Forms.ToolStripTextBox();
@@ -161,7 +164,9 @@ namespace AssetStudioGUI
             exportAnimatorwithselectedAnimationClipMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             goToSceneHierarchyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             showOriginalFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            enableModelPreview = new System.Windows.Forms.ToolStripMenuItem();
+            toolStripSeparator10 = new System.Windows.Forms.ToolStripSeparator();
+            toolStripSeparator11 = new System.Windows.Forms.ToolStripSeparator();
+            toolStripSeparator12 = new System.Windows.Forms.ToolStripSeparator();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
@@ -253,7 +258,7 @@ namespace AssetStudioGUI
             // 
             // optionsToolStripMenuItem
             // 
-            optionsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { displayAll, enablePreview, enableModelPreview, modelsOnly, displayInfo, toolStripMenuItem14, toolStripMenuItem18, toolStripMenuItem19, showExpOpt });
+            optionsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { displayAll, toolStripSeparator10, enablePreview, enableModelPreview, modelsOnly, toolStripSeparator11, displayInfo, enableResolveDependencies, skipContainer, toolStripSeparator12, toolStripMenuItem14, toolStripMenuItem18, toolStripMenuItem19, showExpOpt });
             optionsToolStripMenuItem.Name = "optionsToolStripMenuItem";
             optionsToolStripMenuItem.Size = new System.Drawing.Size(61, 20);
             optionsToolStripMenuItem.Text = "Options";
@@ -262,7 +267,7 @@ namespace AssetStudioGUI
             // 
             displayAll.CheckOnClick = true;
             displayAll.Name = "displayAll";
-            displayAll.Size = new System.Drawing.Size(207, 22);
+            displayAll.Size = new System.Drawing.Size(225, 22);
             displayAll.Text = "Display all assets";
             displayAll.ToolTipText = "Check this option will display all types assets. Not extractable assets can export the RAW file.";
             displayAll.CheckedChanged += displayAll_CheckedChanged;
@@ -273,18 +278,47 @@ namespace AssetStudioGUI
             enablePreview.CheckOnClick = true;
             enablePreview.CheckState = System.Windows.Forms.CheckState.Checked;
             enablePreview.Name = "enablePreview";
-            enablePreview.Size = new System.Drawing.Size(207, 22);
+            enablePreview.Size = new System.Drawing.Size(225, 22);
             enablePreview.Text = "Enable preview";
             enablePreview.ToolTipText = "Toggle the loading and preview of readable assets, such as images, sounds, text, etc.\r\nDisable preview if you have performance or compatibility issues.";
             enablePreview.CheckedChanged += enablePreview_Check;
+            // 
+            // enableModelPreview
+            // 
+            enableModelPreview.CheckOnClick = true;
+            enableModelPreview.Name = "enableModelPreview";
+            enableModelPreview.Size = new System.Drawing.Size(225, 22);
+            enableModelPreview.Text = "Enable model preview";
+            enableModelPreview.CheckedChanged += enableModelPreview_CheckedChanged;
             // 
             // modelsOnly
             // 
             modelsOnly.CheckOnClick = true;
             modelsOnly.Name = "modelsOnly";
-            modelsOnly.Size = new System.Drawing.Size(207, 22);
+            modelsOnly.Size = new System.Drawing.Size(225, 22);
             modelsOnly.Text = "Filter models only";
             modelsOnly.CheckedChanged += modelsOnly_CheckedChanged;
+            // 
+            // enableResolveDependencies
+            // 
+            enableResolveDependencies.Checked = true;
+            enableResolveDependencies.CheckOnClick = true;
+            enableResolveDependencies.CheckState = System.Windows.Forms.CheckState.Checked;
+            enableResolveDependencies.Name = "enableResolveDependencies";
+            enableResolveDependencies.Size = new System.Drawing.Size(225, 22);
+            enableResolveDependencies.Text = "Enable resolve dependencies";
+            enableResolveDependencies.ToolTipText = "Toggle the behaviour of loading assets.\r\nDisable to load file(s) without its dependencies.";
+            enableResolveDependencies.CheckedChanged += enableResolveDependencies_CheckedChanged;
+            // 
+            // skipContainer
+            // 
+            skipContainer.CheckOnClick = true;
+            skipContainer.Name = "skipContainer";
+            skipContainer.Size = new System.Drawing.Size(225, 22);
+            skipContainer.Text = "Skip container recovery";
+            skipContainer.ToolTipText = "Skips the container recovery step.\nImproves loading when dealing with a large num" +
+    "ber of files.";
+            skipContainer.CheckedChanged += skipContainer_CheckedChanged;
             // 
             // displayInfo
             // 
@@ -292,7 +326,7 @@ namespace AssetStudioGUI
             displayInfo.CheckOnClick = true;
             displayInfo.CheckState = System.Windows.Forms.CheckState.Checked;
             displayInfo.Name = "displayInfo";
-            displayInfo.Size = new System.Drawing.Size(207, 22);
+            displayInfo.Size = new System.Drawing.Size(225, 22);
             displayInfo.Text = "Display asset information";
             displayInfo.ToolTipText = "Toggle the overlay that shows information about each asset, eg. image size, format, audio bitrate, etc.";
             displayInfo.CheckedChanged += displayAssetInfo_Check;
@@ -301,7 +335,7 @@ namespace AssetStudioGUI
             // 
             toolStripMenuItem14.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { specifyUnityVersion });
             toolStripMenuItem14.Name = "toolStripMenuItem14";
-            toolStripMenuItem14.Size = new System.Drawing.Size(207, 22);
+            toolStripMenuItem14.Size = new System.Drawing.Size(225, 22);
             toolStripMenuItem14.Text = "Specify Unity version";
             // 
             // specifyUnityVersion
@@ -314,7 +348,7 @@ namespace AssetStudioGUI
             // 
             toolStripMenuItem18.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { specifyGame });
             toolStripMenuItem18.Name = "toolStripMenuItem18";
-            toolStripMenuItem18.Size = new System.Drawing.Size(207, 22);
+            toolStripMenuItem18.Size = new System.Drawing.Size(225, 22);
             toolStripMenuItem18.Text = "Specify Game";
             // 
             // specifyGame
@@ -327,7 +361,7 @@ namespace AssetStudioGUI
             // 
             toolStripMenuItem19.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { specifyAIVersion });
             toolStripMenuItem19.Name = "toolStripMenuItem19";
-            toolStripMenuItem19.Size = new System.Drawing.Size(207, 22);
+            toolStripMenuItem19.Size = new System.Drawing.Size(225, 22);
             toolStripMenuItem19.Text = "Specify AI version";
             toolStripMenuItem19.DropDownOpening += toolStripMenuItem19_DropDownOpening;
             // 
@@ -341,7 +375,7 @@ namespace AssetStudioGUI
             // showExpOpt
             // 
             showExpOpt.Name = "showExpOpt";
-            showExpOpt.Size = new System.Drawing.Size(207, 22);
+            showExpOpt.Size = new System.Drawing.Size(225, 22);
             showExpOpt.Text = "Export options";
             showExpOpt.Click += showExpOpt_Click;
             // 
@@ -1258,13 +1292,20 @@ namespace AssetStudioGUI
             showOriginalFileToolStripMenuItem.Visible = false;
             showOriginalFileToolStripMenuItem.Click += showOriginalFileToolStripMenuItem_Click;
             // 
-            // enableModelPreview
+            // toolStripSeparator10
             // 
-            enableModelPreview.CheckOnClick = true;
-            enableModelPreview.Name = "enableModelPreview";
-            enableModelPreview.Size = new System.Drawing.Size(207, 22);
-            enableModelPreview.Text = "Enable model preview";
-            enableModelPreview.CheckedChanged += enableModelPreview_CheckedChanged;
+            toolStripSeparator10.Name = "toolStripSeparator10";
+            toolStripSeparator10.Size = new System.Drawing.Size(222, 6);
+            // 
+            // toolStripSeparator11
+            // 
+            toolStripSeparator11.Name = "toolStripSeparator11";
+            toolStripSeparator11.Size = new System.Drawing.Size(222, 6);
+            // 
+            // toolStripSeparator12
+            // 
+            toolStripSeparator12.Name = "toolStripSeparator12";
+            toolStripSeparator12.Size = new System.Drawing.Size(222, 6);
             // 
             // AssetStudioGUIForm
             // 
@@ -1445,6 +1486,11 @@ namespace AssetStudioGUI
         private System.Windows.Forms.ToolStripMenuItem exportSelectedNodessplitSelectedAnimationClipsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem modelsOnly;
         private System.Windows.Forms.ToolStripMenuItem enableModelPreview;
+        private System.Windows.Forms.ToolStripMenuItem enableResolveDependencies;
+        private System.Windows.Forms.ToolStripMenuItem skipContainer;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator10;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator11;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator12;
     }
 }
 
