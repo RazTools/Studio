@@ -10,9 +10,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-	<PackageReference Include="K4os.Compression.LZ4" Version="1.3.4-beta" />
-	<PackageReference Include="MessagePack" Version="2.5.108" />
-	<PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
+	<PackageReference Include="K4os.Compression.LZ4" Version="1.3.5" />
+	<PackageReference Include="MessagePack" Version="2.6.100-alpha" />
+	<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 	
 </Project>

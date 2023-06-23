@@ -1,4 +1,5 @@
 ﻿using K4os.Compression.LZ4;
+using ZstdSharp;
 using System;
 using System.Data;
 using System.IO;
@@ -31,7 +32,8 @@ namespace AssetStudio
         Lz4,
         Lz4HC,
         Lzham,
-        Lz4Mr0k
+        Lz4Mr0k,
+        Zstd = 5
     }
 
     public class BundleFile
@@ -423,7 +425,7 @@ namespace AssetStudio
                         }
                     case CompressionType.Lz4: //LZ4
                     case CompressionType.Lz4HC: //LZ4HC
-                    case CompressionType.Lz4Mr0k: //Lz4Mr0k
+                    case CompressionType.Lz4Mr0k when Game.Type.IsMhyGroup(): //Lz4Mr0k
                         {
                             var compressedSize = (int)blockInfo.compressedSize;
                             var compressedBytes = BigArrayPool<byte>.Shared.Rent(compressedSize);
@@ -450,6 +452,34 @@ namespace AssetStudio
                                 throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
                             }
                             blocksStream.Write(uncompressedBytes, 0, uncompressedSize);
+                            BigArrayPool<byte>.Shared.Return(compressedBytes);
+                            BigArrayPool<byte>.Shared.Return(uncompressedBytes);
+                            break;
+                        }
+                    case CompressionType.Zstd when !Game.Type.IsMhyGroup(): //Zstd
+                        {
+                            var compressedSize = (int)blockInfo.compressedSize;
+                            var compressedBytes = BigArrayPool<byte>.Shared.Rent(compressedSize);
+                            reader.Read(compressedBytes, 0, compressedSize);
+
+                            var uncompressedSize = (int)blockInfo.uncompressedSize;
+                            var uncompressedBytes = BigArrayPool<byte>.Shared.Rent(uncompressedSize);
+
+                            try
+                            {
+                                using var decompressor = new Decompressor();
+                                var numWrite = decompressor.Unwrap(compressedBytes, 0, compressedSize, uncompressedBytes, 0, uncompressedSize);
+                                if (numWrite != uncompressedSize)
+                                {
+                                    throw new IOException($"Zstd decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
+                                }
+                            }
+                            catch(Exception ex)
+                            {
+                                Console.WriteLine($"Zstd decompression error:\n{ex}");
+                            }
+                            
+                            blocksStream.Write(uncompressedBytes.ToArray(), 0, uncompressedSize);
                             BigArrayPool<byte>.Shared.Return(compressedBytes);
                             BigArrayPool<byte>.Shared.Return(uncompressedBytes);
                             break;
