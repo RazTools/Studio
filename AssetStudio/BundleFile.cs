@@ -73,6 +73,9 @@ namespace AssetStudio
 
         public StreamFile[] fileList;
 
+
+        private bool HasUncompressedDataHash = true;
+
         public BundleFile(FileReader reader, Game game)
         {
             Game = game;
@@ -141,6 +144,7 @@ namespace AssetStudio
                     header.version = 6; // is 7 but does not have uncompressedDataHash
                     header.unityVersion = "5.x.x";
                     header.unityRevision = "2019.4.32f1";
+                    HasUncompressedDataHash = false;
                     break;
                 default:
                     if (Game.Type.IsNaraka())
@@ -370,7 +374,7 @@ namespace AssetStudio
             }
             using (var blocksInfoReader = new EndianBinaryReader(blocksInfoUncompresseddStream))
             {
-                if (m_Header.version >= 7 || !Game.Type.IsSRGroup())
+                if (m_Header.version >= 7 || (Game.Type.IsSRGroup() && HasUncompressedDataHash))
                 {
                     var uncompressedDataHash = blocksInfoReader.ReadBytes(16);
                 }
