@@ -101,7 +101,7 @@ namespace AssetStudioGUI
         public void Clear()
         {
             ResourceMap.Clear();
-            assetListView.DataSource = null;
+            assetListView.DataSource = Array.Empty<AssetEntry>();
         }
     }
 }

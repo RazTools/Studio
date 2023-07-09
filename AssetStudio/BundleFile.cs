@@ -374,7 +374,7 @@ namespace AssetStudio
             }
             using (var blocksInfoReader = new EndianBinaryReader(blocksInfoUncompresseddStream))
             {
-                if (m_Header.version >= 7 || (Game.Type.IsSRGroup() && HasUncompressedDataHash))
+                if (HasUncompressedDataHash)
                 {
                     var uncompressedDataHash = blocksInfoReader.ReadBytes(16);
                 }
