@@ -16,6 +16,7 @@ namespace AssetStudio
         BlocksInfoAtTheEnd = 0x80,
         OldWebPluginCompatibility = 0x100,
         BlockInfoNeedPaddingAtStart = 0x200,
+        UnityCNEncryption = 0x400
     }
 
     [Flags]
@@ -66,6 +67,7 @@ namespace AssetStudio
         }
 
         private Game Game;
+        private UnityCN UnityCN;
 
         public Header m_Header;
         private Node[] m_DirectoryInfo;
@@ -75,6 +77,7 @@ namespace AssetStudio
 
 
         private bool HasUncompressedDataHash = true;
+        private bool HasBlockInfoNeedPaddingAtStart = true;
 
         public BundleFile(FileReader reader, Game game)
         {
@@ -100,6 +103,10 @@ namespace AssetStudio
                 case "UnityFS":
                 case "ENCR":
                     ReadHeader(reader);
+                    if (game.Type.IsUnityCN())
+                    {
+                        ReadUnityCN(reader);
+                    }
                     ReadBlocksInfoAndDirectory(reader);
                     using (var blocksStream = CreateBlocksStream(reader.FullPath))
                     {
@@ -312,6 +319,32 @@ namespace AssetStudio
             }
         }
 
+        private void ReadUnityCN(EndianBinaryReader reader)
+        {
+            ArchiveFlags mask;
+
+            var version = ParseVersion();
+            //Flag changed it in these versions
+            if (version[0] < 2020 || //2020 and earlier
+                (version[0] == 2020 && version[1] == 3 && version[2] <= 34) || //2020.3.34 and earlier
+                (version[0] == 2021 && version[1] == 3 && version[2] <= 2) || //2021.3.2 and earlier
+                (version[0] == 2022 && version[1] == 3 && version[2] <= 1)) //2022.3.1 and earlier
+            {
+                mask = ArchiveFlags.BlockInfoNeedPaddingAtStart;
+                HasBlockInfoNeedPaddingAtStart = false;
+            }
+            else
+            {
+                mask = ArchiveFlags.UnityCNEncryption;
+                HasBlockInfoNeedPaddingAtStart = true;
+            }
+
+            if ((m_Header.flags & mask) != 0)
+            {
+                UnityCN = new UnityCN(reader);
+            }
+        }
+
         private void ReadBlocksInfoAndDirectory(FileReader reader)
         {
             byte[] blocksInfoBytes;
@@ -403,7 +436,7 @@ namespace AssetStudio
                     };
                 }
             }
-            if ((m_Header.flags & ArchiveFlags.BlockInfoNeedPaddingAtStart) != 0)
+            if (HasBlockInfoNeedPaddingAtStart && (m_Header.flags & ArchiveFlags.BlockInfoNeedPaddingAtStart) != 0)
             {
                 reader.AlignStream(16);
             }
@@ -439,13 +472,17 @@ namespace AssetStudio
                             {
                                 compressedBytesSpan = Mr0kUtils.Decrypt(compressedBytesSpan, (Mr0k)Game);
                             }
-                            if (Game.Type.IsOPFP())
+                            if (Game.Type.IsUnityCN() && ((int)blockInfo.flags & 0x100) != 0)
                             {
-                                OPFPUtils.Decrypt(compressedBytesSpan, reader.FullPath);
+                                UnityCN.DecryptBlock(compressedBytes, compressedSize, i);
                             }
                             if (Game.Type.IsNetEase() && i == 0)
                             {
                                 NetEaseUtils.Decrypt(compressedBytesSpan);
+                            }
+                            if (Game.Type.IsOPFP())
+                            {
+                                OPFPUtils.Decrypt(compressedBytesSpan, reader.FullPath);
                             }
                             var uncompressedSize = (int)blockInfo.uncompressedSize;
                             var uncompressedBytes = BigArrayPool<byte>.Shared.Rent(uncompressedSize);

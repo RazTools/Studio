@@ -12,6 +12,7 @@ namespace AssetStudio
         {
             int index = 0;
             Games.Add(index++, new(GameType.Normal));
+            Games.Add(index++, new(GameType.UnityCN));
             Games.Add(index++, new Mhy0(GameType.GI, GIMhy0ShiftRow, GIMhy0Key, GIMhy0Mul, GIExpansionKey, GISBox, GIInitVector, GIInitSeed));
             Games.Add(index++, new Mr0k(GameType.GI_Pack, PackExpansionKey, blockKey: PackBlockKey));
             Games.Add(index++, new Mr0k(GameType.GI_CB1));
@@ -116,6 +117,7 @@ namespace AssetStudio
     public enum GameType
     {
         Normal,
+        UnityCN,
         GI,
         GI_Pack,
         GI_CB1,
@@ -142,6 +144,7 @@ namespace AssetStudio
     public static class GameTypes
     {
         public static bool IsNormal(this GameType type) => type == GameType.Normal;
+        public static bool IsUnityCN(this GameType type) => type == GameType.UnityCN;
         public static bool IsGI(this GameType type) => type == GameType.GI;
         public static bool IsGIPack(this GameType type) => type == GameType.GI_Pack;
         public static bool IsGICB1(this GameType type) => type == GameType.GI_CB1;

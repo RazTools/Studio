@@ -15,5 +15,11 @@
 	<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 	<PackageReference Include="ZstdSharp.Port" Version="0.7.2" />
   </ItemGroup>
+
+  <ItemGroup>
+  	<None Update="Keys.json">
+  		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+  	</None>
+  </ItemGroup>
 	
 </Project>

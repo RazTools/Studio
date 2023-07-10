@@ -25,6 +25,19 @@ namespace AssetStudioCLI
                     return;
                 }
 
+                if (game.Type.IsUnityCN())
+                {
+                    if (!UnityCNManager.TryGetEntry(o.KeyIndex, out var unityCN))
+                    {
+                        Console.WriteLine("Invalid key index !!");
+                        Console.WriteLine($"Available Options: \n{UnityCNManager.ToString()}");
+                        return;
+                    }
+
+                    UnityCN.SetKey(unityCN);
+                    Logger.Info($"[UnityCN] Selected Key is {unityCN}");
+                }
+
                 Studio.Game = game;
                 Logger.Default = new ConsoleLogger();
                 AssetsHelper.Minimal = Settings.Default.minimalAssetMap;

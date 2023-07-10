@@ -44,12 +44,15 @@ namespace AssetStudioGUI
             abortStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             optionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             displayAll = new System.Windows.Forms.ToolStripMenuItem();
+            toolStripSeparator10 = new System.Windows.Forms.ToolStripSeparator();
             enablePreview = new System.Windows.Forms.ToolStripMenuItem();
             enableModelPreview = new System.Windows.Forms.ToolStripMenuItem();
             modelsOnly = new System.Windows.Forms.ToolStripMenuItem();
+            toolStripSeparator11 = new System.Windows.Forms.ToolStripSeparator();
+            displayInfo = new System.Windows.Forms.ToolStripMenuItem();
             enableResolveDependencies = new System.Windows.Forms.ToolStripMenuItem();
             skipContainer = new System.Windows.Forms.ToolStripMenuItem();
-            displayInfo = new System.Windows.Forms.ToolStripMenuItem();
+            toolStripSeparator12 = new System.Windows.Forms.ToolStripSeparator();
             toolStripMenuItem14 = new System.Windows.Forms.ToolStripMenuItem();
             specifyUnityVersion = new System.Windows.Forms.ToolStripTextBox();
             toolStripMenuItem18 = new System.Windows.Forms.ToolStripMenuItem();
@@ -164,9 +167,8 @@ namespace AssetStudioGUI
             exportAnimatorwithselectedAnimationClipMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             goToSceneHierarchyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             showOriginalFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            toolStripSeparator10 = new System.Windows.Forms.ToolStripSeparator();
-            toolStripSeparator11 = new System.Windows.Forms.ToolStripSeparator();
-            toolStripSeparator12 = new System.Windows.Forms.ToolStripSeparator();
+            specifyUnityCNKey = new System.Windows.Forms.ToolStripMenuItem();
+            toolStripSeparator13 = new System.Windows.Forms.ToolStripSeparator();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
@@ -258,7 +260,7 @@ namespace AssetStudioGUI
             // 
             // optionsToolStripMenuItem
             // 
-            optionsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { displayAll, toolStripSeparator10, enablePreview, enableModelPreview, modelsOnly, toolStripSeparator11, displayInfo, enableResolveDependencies, skipContainer, toolStripSeparator12, toolStripMenuItem14, toolStripMenuItem18, toolStripMenuItem19, showExpOpt });
+            optionsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { displayAll, toolStripSeparator10, enablePreview, enableModelPreview, modelsOnly, toolStripSeparator11, displayInfo, enableResolveDependencies, skipContainer, toolStripSeparator12, toolStripMenuItem14, specifyUnityCNKey, toolStripSeparator13, toolStripMenuItem18, toolStripMenuItem19, showExpOpt });
             optionsToolStripMenuItem.Name = "optionsToolStripMenuItem";
             optionsToolStripMenuItem.Size = new System.Drawing.Size(61, 20);
             optionsToolStripMenuItem.Text = "Options";
@@ -271,6 +273,11 @@ namespace AssetStudioGUI
             displayAll.Text = "Display all assets";
             displayAll.ToolTipText = "Check this option will display all types assets. Not extractable assets can export the RAW file.";
             displayAll.CheckedChanged += displayAll_CheckedChanged;
+            // 
+            // toolStripSeparator10
+            // 
+            toolStripSeparator10.Name = "toolStripSeparator10";
+            toolStripSeparator10.Size = new System.Drawing.Size(222, 6);
             // 
             // enablePreview
             // 
@@ -299,6 +306,22 @@ namespace AssetStudioGUI
             modelsOnly.Text = "Filter models only";
             modelsOnly.CheckedChanged += modelsOnly_CheckedChanged;
             // 
+            // toolStripSeparator11
+            // 
+            toolStripSeparator11.Name = "toolStripSeparator11";
+            toolStripSeparator11.Size = new System.Drawing.Size(222, 6);
+            // 
+            // displayInfo
+            // 
+            displayInfo.Checked = true;
+            displayInfo.CheckOnClick = true;
+            displayInfo.CheckState = System.Windows.Forms.CheckState.Checked;
+            displayInfo.Name = "displayInfo";
+            displayInfo.Size = new System.Drawing.Size(225, 22);
+            displayInfo.Text = "Display asset information";
+            displayInfo.ToolTipText = "Toggle the overlay that shows information about each asset, eg. image size, format, audio bitrate, etc.";
+            displayInfo.CheckedChanged += displayAssetInfo_Check;
+            // 
             // enableResolveDependencies
             // 
             enableResolveDependencies.Checked = true;
@@ -316,20 +339,13 @@ namespace AssetStudioGUI
             skipContainer.Name = "skipContainer";
             skipContainer.Size = new System.Drawing.Size(225, 22);
             skipContainer.Text = "Skip container recovery";
-            skipContainer.ToolTipText = "Skips the container recovery step.\nImproves loading when dealing with a large num" +
-    "ber of files.";
+            skipContainer.ToolTipText = "Skips the container recovery step.\nImproves loading when dealing with a large number of files.";
             skipContainer.CheckedChanged += skipContainer_CheckedChanged;
             // 
-            // displayInfo
+            // toolStripSeparator12
             // 
-            displayInfo.Checked = true;
-            displayInfo.CheckOnClick = true;
-            displayInfo.CheckState = System.Windows.Forms.CheckState.Checked;
-            displayInfo.Name = "displayInfo";
-            displayInfo.Size = new System.Drawing.Size(225, 22);
-            displayInfo.Text = "Display asset information";
-            displayInfo.ToolTipText = "Toggle the overlay that shows information about each asset, eg. image size, format, audio bitrate, etc.";
-            displayInfo.CheckedChanged += displayAssetInfo_Check;
+            toolStripSeparator12.Name = "toolStripSeparator12";
+            toolStripSeparator12.Size = new System.Drawing.Size(222, 6);
             // 
             // toolStripMenuItem14
             // 
@@ -1292,20 +1308,17 @@ namespace AssetStudioGUI
             showOriginalFileToolStripMenuItem.Visible = false;
             showOriginalFileToolStripMenuItem.Click += showOriginalFileToolStripMenuItem_Click;
             // 
-            // toolStripSeparator10
+            // specifyUnityCNKey
             // 
-            toolStripSeparator10.Name = "toolStripSeparator10";
-            toolStripSeparator10.Size = new System.Drawing.Size(222, 6);
+            specifyUnityCNKey.Name = "specifyUnityCNKey";
+            specifyUnityCNKey.Size = new System.Drawing.Size(225, 22);
+            specifyUnityCNKey.Text = "Specify UnityCN Key";
+            specifyUnityCNKey.Click += specifyUnityCNKey_Click;
             // 
-            // toolStripSeparator11
+            // toolStripSeparator13
             // 
-            toolStripSeparator11.Name = "toolStripSeparator11";
-            toolStripSeparator11.Size = new System.Drawing.Size(222, 6);
-            // 
-            // toolStripSeparator12
-            // 
-            toolStripSeparator12.Name = "toolStripSeparator12";
-            toolStripSeparator12.Size = new System.Drawing.Size(222, 6);
+            toolStripSeparator13.Name = "toolStripSeparator13";
+            toolStripSeparator13.Size = new System.Drawing.Size(222, 6);
             // 
             // AssetStudioGUIForm
             // 
@@ -1491,6 +1504,8 @@ namespace AssetStudioGUI
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator10;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator11;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator12;
+        private System.Windows.Forms.ToolStripMenuItem specifyUnityCNKey;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator13;
     }
 }
 

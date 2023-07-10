@@ -157,6 +157,7 @@ namespace AssetStudioGUI
             Logger.Info($"Target Game type is {Studio.Game.Type}");
 
             MapNameComboBox.SelectedIndexChanged += new EventHandler(specifyNameComboBox_SelectedIndexChanged);
+            UnityCNManager.SetKey(Properties.Settings.Default.selectedUnityCNKey);
         }
         private void AssetStudioGUIForm_DragEnter(object sender, DragEventArgs e)
         {
@@ -273,6 +274,10 @@ namespace AssetStudioGUI
                 if (!Studio.Game.Type.IsNormal())
                 {
                     productName = Studio.Game.Name;
+                }
+                else if (Studio.Game.Type.IsUnityCN() && UnityCNManager.TryGetEntry(Properties.Settings.Default.selectedUnityCNKey, out var unityCN))
+                {
+                    productName = unityCN.Name;
                 }
                 else
                 {
@@ -2298,6 +2303,12 @@ namespace AssetStudioGUI
         {
             assetBrowser = new AssetBrowser(this);
             assetBrowser.Show();
+        }
+
+        private void specifyUnityCNKey_Click(object sender, EventArgs e)
+        {
+            var unitycn = new UnityCNForm();
+            unitycn.Show();
         }
 
         #region FMOD

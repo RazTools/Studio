@@ -26,6 +26,7 @@ namespace AssetStudioCLI
                 optionsBinder.NameFilter,
                 optionsBinder.ContainerFilter,
                 optionsBinder.GameName,
+                optionsBinder.KeyIndex,
                 optionsBinder.MapOp,
                 optionsBinder.MapType,
                 optionsBinder.MapName,
@@ -50,6 +51,7 @@ namespace AssetStudioCLI
         public Regex[] NameFilter { get; set; }
         public Regex[] ContainerFilter { get; set; }
         public string GameName { get; set; }
+        public int KeyIndex { get; set; }
         public MapOpType MapOp { get; set; }
         public ExportListType MapType { get; set; }
         public string MapName { get; set; }
@@ -69,6 +71,7 @@ namespace AssetStudioCLI
         public readonly Option<Regex[]> NameFilter;
         public readonly Option<Regex[]> ContainerFilter;
         public readonly Option<string> GameName;
+        public readonly Option<int> KeyIndex;
         public readonly Option<MapOpType> MapOp;
         public readonly Option<ExportListType> MapType;
         public readonly Option<string> MapName;
@@ -88,6 +91,7 @@ namespace AssetStudioCLI
             NameFilter = new Option<Regex[]>("--names", result => result.Tokens.Select(x => new Regex(x.Value, RegexOptions.IgnoreCase)).ToArray(), false, "Specify name regex filter(s).") { AllowMultipleArgumentsPerToken = true };
             ContainerFilter = new Option<Regex[]>("--containers", result => result.Tokens.Select(x => new Regex(x.Value, RegexOptions.IgnoreCase)).ToArray(), false, "Specify container regex filter(s).") { AllowMultipleArgumentsPerToken = true };
             GameName = new Option<string>("--game", $"Specify Game.") { IsRequired = true };
+            KeyIndex = new Option<int>("--key_index", "Specify key index.") { ArgumentHelpName = UnityCNManager.ToString() };
             MapOp = new Option<MapOpType>("--map_op", "Specify which map to build.");
             MapType = new Option<ExportListType>("--map_type", "AssetMap output type.");
             MapName = new Option<string>("--map_name", () => "assets_map", "Specify AssetMap file name.");
@@ -141,6 +145,7 @@ namespace AssetStudioCLI
             GroupAssetsType.SetDefaultValue(AssetGroupOption.ByType);
             MapOp.SetDefaultValue(MapOpType.None);
             MapType.SetDefaultValue(ExportListType.XML);
+            KeyIndex.SetDefaultValue(0);
         }
 
         public void FilterValidator(OptionResult result)
@@ -174,6 +179,7 @@ namespace AssetStudioCLI
             NameFilter = bindingContext.ParseResult.GetValueForOption(NameFilter),
             ContainerFilter = bindingContext.ParseResult.GetValueForOption(ContainerFilter),
             GameName = bindingContext.ParseResult.GetValueForOption(GameName),
+            KeyIndex = bindingContext.ParseResult.GetValueForOption(KeyIndex),
             MapOp = bindingContext.ParseResult.GetValueForOption(MapOp),
             MapType = bindingContext.ParseResult.GetValueForOption(MapType),
             MapName = bindingContext.ParseResult.GetValueForOption(MapName),
