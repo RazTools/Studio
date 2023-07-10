@@ -46,23 +46,23 @@ jobs:
       - name: Upload .Net6 Artifact
         uses: actions/upload-artifact@v2
         with:
-          name: net6.0-windows
+          name: net6.0-${{ github.sha }}
           path: AssetStudioGUI/bin/Release/net6.0-windows/publish
 
       - name: Upload .Net7 Artifact
         uses: actions/upload-artifact@v2
         with:
-          name: net7.0-windows
+          name: net7.0-${{ github.sha }}
           path: AssetStudioGUI/bin/Release/net7.0-windows/publish
 
       - name: Upload .Net6 CLI Artifact
         uses: actions/upload-artifact@v2
         with:
-          name: net6.0-windows
+          name: net6.0-${{ github.sha }}
           path: AssetStudioGUI/bin/Release/net6.0-windows/publish
 
       - name: Upload .Net7 CLI Artifact
         uses: actions/upload-artifact@v2
         with:
-          name: net7.0-windows
+          name: net7.0-${{ github.sha }}
           path: AssetStudioGUI/bin/Release/net7.0-windows/publish
