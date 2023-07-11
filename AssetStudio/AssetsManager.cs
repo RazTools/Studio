@@ -29,13 +29,20 @@ namespace AssetStudio
             Load(files);
         }
 
+        public void LoadFiles(ClassIDType[] typeFilters, params string[] files)
+        {
+            if (ResolveDependancies)
+                files = CABManager.ProcessDependencies(files);
+            Load(files, typeFilters);
+        }
+
         public void LoadFolder(string path)
         {
             var files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories).ToArray();
             Load(files);
         }
 
-        private void Load(string[] files)
+        private void Load(string[] files, ClassIDType[] typeFilters = default)
         {
             foreach (var file in files)
             {
@@ -56,7 +63,7 @@ namespace AssetStudio
             assetsFileListHash.Clear();
             CABManager.offsets.Clear();
 
-            ReadAssets();
+            ReadAssets(typeFilters);
             ProcessAssets();
         }
 
@@ -384,7 +391,7 @@ namespace AssetStudio
             assetsFileIndexCache.Clear();
         }
 
-        private void ReadAssets()
+        private void ReadAssets(ClassIDType[] typeFilters = default)
         {
             Logger.Info("Read assets...");
 
@@ -396,6 +403,12 @@ namespace AssetStudio
                 foreach (var objectInfo in assetsFile.m_Objects)
                 {
                     var objectReader = new ObjectReader(assetsFile.reader, assetsFile, objectInfo);
+
+                    if (typeFilters is not null && (!typeFilters.Contains(objectReader.type)))
+                    {
+                        continue;
+                    }
+
                     try
                     {
                         Object obj;

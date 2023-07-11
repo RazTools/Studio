@@ -512,7 +512,7 @@ namespace AssetStudioCLI
                         break;
                 }
                 exportPath += Path.DirectorySeparatorChar;
-                Logger.Info($"[{exportedCount}/{toExportCount}] Exporting {asset.TypeString}: {asset.Text}");
+                Logger.Info($"[{exportedCount + 1}/{toExportCount}] Exporting {asset.TypeString}: {asset.Text}");
                 try
                 {
                     if (ExportConvertFile(asset, exportPath))
