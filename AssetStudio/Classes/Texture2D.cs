@@ -126,9 +126,17 @@ namespace AssetStudio
                 var m_PlatformBlob = reader.ReadUInt8Array();
                 reader.AlignStream();
             }
+            if (reader.Game.Name == "GI")
+            {
+                reader.ReadInt32();
+            }
             var image_data_size = reader.ReadInt32();
             if (image_data_size == 0 && ((version[0] == 5 && version[1] >= 3) || version[0] > 5))//5.3.0 and up
             {
+                if (reader.Game.Name == "GI")
+                {
+                    reader.ReadInt32();
+                }
                 m_StreamData = new StreamingInfo(reader);
             }
 
