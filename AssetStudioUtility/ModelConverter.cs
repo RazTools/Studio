@@ -92,10 +92,13 @@ namespace AssetStudio
             }
             else
             {
+                if (animationList != null)
+                {
                 foreach (var animationClip in animationList)
                 {
                     animationClipHashSet.Add(animationClip);
                 }
+            }
             }
             ConvertAnimations();
         }
