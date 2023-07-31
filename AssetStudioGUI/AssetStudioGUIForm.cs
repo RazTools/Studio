@@ -2084,7 +2084,6 @@ namespace AssetStudioGUI
             {
                 Logger.Info("Scanning for files...");
                 var files = Directory.GetFiles(openFolderDialog.Folder, "*.*", SearchOption.AllDirectories).ToArray();
-                files = files.Where(x => FileReader.IsReadable(x, Studio.Game)).ToArray();
                 Logger.Info($"Found {files.Length} files");
                 await Task.Run(() => AssetsHelper.BuildCABMap(files, name, openFolderDialog.Folder, Studio.Game));
             }
@@ -2137,6 +2136,10 @@ namespace AssetStudioGUI
             openFolderDialog.Title = "Select Game Folder";
             if (openFolderDialog.ShowDialog(this) == DialogResult.OK)
             {
+                Logger.Info("Scanning for files...");
+                var files = Directory.GetFiles(openFolderDialog.Folder, "*.*", SearchOption.AllDirectories).ToArray();
+                Logger.Info($"Found {files.Length} files");
+
                 var saveFolderDialog = new OpenFolderDialog();
                 saveFolderDialog.InitialFolder = saveDirectoryBackup;
                 saveFolderDialog.Title = "Select Output Folder";
@@ -2152,10 +2155,6 @@ namespace AssetStudioGUI
                         }
                     }
                     saveDirectoryBackup = saveFolderDialog.Folder;
-                    Logger.Info("Scanning for files...");
-                    var files = Directory.GetFiles(openFolderDialog.Folder, "*.*", SearchOption.AllDirectories).ToArray();
-                    files = files.Where(x => FileReader.IsReadable(x, Studio.Game)).ToArray();
-                    Logger.Info($"Found {files.Length} files");
                     await Task.Run(() => AssetsHelper.BuildBoth(files, name, openFolderDialog.Folder, Studio.Game, saveFolderDialog.Folder, exportListType));
                 }
             }
@@ -2275,7 +2274,6 @@ namespace AssetStudioGUI
             {
                 Logger.Info("Scanning for files...");
                 var files = Directory.GetFiles(openFolderDialog.Folder, "*.*", SearchOption.AllDirectories).ToArray();
-                files = files.Where(x => FileReader.IsReadable(x, Studio.Game)).ToArray();
                 Logger.Info($"Found {files.Length} files");
 
                 var saveFolderDialog = new OpenFolderDialog();

@@ -110,16 +110,29 @@ namespace AssetStudio
 
         private static IEnumerable<string> LoadFiles(string[] files)
         {
-            for (int i = 0; i < files.Length; i++)
+            string msg;
+            
+            var path = Path.GetDirectoryName(Path.GetFullPath(files[0]));
+            ImportHelper.MergeSplitAssets(path);
+            var toReadFile = ImportHelper.ProcessingSplitFiles(files.ToList());
+
+            var filesList = new List<string>(toReadFile);
+            for (int i = 0; i < filesList.Count; i++)
             {
-                var file = files[i];
+                var file = filesList[i];
                 assetsManager.LoadFiles(file);
                 if (assetsManager.assetsFileList.Count > 0)
                 {
                     yield return file;
-                    Logger.Info($"[{i + 1}/{files.Length}] Processed {Path.GetFileName(file)}");
-                    Progress.Report(i + 1, files.Length);
+                    msg = $"Processed {Path.GetFileName(file)}";
                 }
+                else
+                {
+                    filesList.Remove(file);
+                    msg = $"Removed {Path.GetFileName(file)}, no assets found";
+                }
+                Logger.Info($"[{i + 1}/{filesList.Count}] {msg}");
+                Progress.Report(i + 1, filesList.Count);
                 assetsManager.Clear();
             }
         }

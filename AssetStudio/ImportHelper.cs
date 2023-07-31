@@ -530,5 +530,66 @@ namespace AssetStudio
                 }
             }
         }
+
+        public static FileReader DecryptDreamscapeAlbireo(FileReader reader)
+        {
+            var key = new byte[] { 0x1E, 0x1E, 0x01, 0x01, 0xFC };
+
+            var signature = reader.ReadStringToNull(4);
+            if (signature != "MJJ")
+            {
+                reader.Position = 0;
+                return reader;
+            }
+
+            reader.Endian = EndianType.BigEndian;
+
+            var u1 = reader.ReadUInt32();
+            var u2 = reader.ReadUInt32();
+            var u3 = reader.ReadUInt32();
+            var u4 = reader.ReadUInt32();
+            var u5 = reader.ReadUInt32();
+            var u6 = reader.ReadUInt32();
+
+            var flag = Scrample(u4) ^ 0x70020017;
+            var compressedBlocksInfoSize = Scrample(u1) ^ u4;
+            var uncompressedBlocksInfoSize = Scrample(u6) ^ u1;
+
+            var sizeHigh = (u5 & 0xFFFFFF00 | u2 >> 24) ^ u4;
+            var sizeLow = (u5 >> 24 | (u2 << 8)) ^ u1;
+            var size = (long)(sizeHigh << 32 | sizeLow);
+
+            var blocksInfo = reader.ReadBytes((int)compressedBlocksInfoSize);
+            for(int i = 0; i < blocksInfo.Length; i++)
+            {
+                blocksInfo[i] ^= key[i % key.Length];
+            }
+
+            var data = reader.ReadBytes((int)reader.Remaining);
+
+            var buffer = (stackalloc byte[8]);
+            MemoryStream ms = new();
+            ms.Write(Encoding.UTF8.GetBytes("UnityFS\x00"));
+            BinaryPrimitives.WriteUInt32BigEndian(buffer, 6);
+            ms.Write(buffer[..4]);
+            ms.Write(Encoding.UTF8.GetBytes("5.x.x\x00"));
+            ms.Write(Encoding.UTF8.GetBytes("2018.4.2f1\x00"));
+            BinaryPrimitives.WriteInt64BigEndian(buffer, size);
+            ms.Write(buffer);
+            BinaryPrimitives.WriteUInt32BigEndian(buffer, compressedBlocksInfoSize);
+            ms.Write(buffer[..4]);
+            BinaryPrimitives.WriteUInt32BigEndian(buffer, uncompressedBlocksInfoSize);
+            ms.Write(buffer[..4]);
+            BinaryPrimitives.WriteUInt32BigEndian(buffer, flag);
+            ms.Write(buffer[..4]);
+            ms.Write(blocksInfo);
+            ms.Write(data);
+            reader.BaseStream.CopyTo(ms);
+            ms.Position = 0;
+
+            return new FileReader(reader.FullPath, ms);
+
+            static uint Scrample(uint value) => (value >> 5) & 0xFFE000 | (value >> 29) | (value << 14) & 0xFF000000 | (8 * value) & 0x1FF8;
+        }
     }
 }

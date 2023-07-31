@@ -14,7 +14,7 @@ namespace AssetStudio
 
         static UnityCNManager()
         {
-            var str = File.ReadAllText(KeysFileName);
+            var str = File.ReadAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, KeysFileName));
             Entries = JsonConvert.DeserializeObject<List<UnityCN.Entry>>(str);
         }
 
@@ -24,7 +24,7 @@ namespace AssetStudio
             Entries.AddRange(entries);
 
             var str = JsonConvert.SerializeObject(Entries);
-            File.WriteAllText(KeysFileName, str);
+            File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, KeysFileName), str);
         }
 
         public static void SetKey(int index)

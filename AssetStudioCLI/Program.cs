@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -65,7 +66,6 @@ namespace AssetStudioCLI
 
                 Logger.Info("Scanning for files...");
                 var files = o.Input.Attributes.HasFlag(FileAttributes.Directory) ? Directory.GetFiles(o.Input.FullName, "*.*", SearchOption.AllDirectories).OrderBy(x => x.Length).ToArray() : new string[] { o.Input.FullName };
-                files = files.Where(x => FileReader.IsReadable(x, game)).ToArray();
                 Logger.Info($"Found {files.Length} files");
 
                 if (o.MapOp.HasFlag(MapOpType.CABMap))
@@ -100,7 +100,13 @@ namespace AssetStudioCLI
                 if (o.MapOp.Equals(MapOpType.None) || o.MapOp.HasFlag(MapOpType.Load))
                 {
                     var i = 0;
-                    foreach (var file in files)
+
+                    var path = Path.GetDirectoryName(Path.GetFullPath(files[0]));
+                    ImportHelper.MergeSplitAssets(path);
+                    var toReadFile = ImportHelper.ProcessingSplitFiles(files.ToList());
+
+                    var fileList = new List<string>(toReadFile);
+                    foreach (var file in fileList)
                     {
                         assetsManager.LoadFiles(file);
                         if (assetsManager.assetsFileList.Count > 0)
