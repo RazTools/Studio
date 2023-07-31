@@ -127,14 +127,6 @@ namespace AssetStudio
             }
             return true;
         }
-
-        public static bool IsReadable(string path, Game game)
-        {
-            var reader = new FileReader(path);
-            reader = reader.PreProcessing(game);
-            reader.Dispose();
-            return reader.FileType != FileType.ResourceFile;
-        }
     }
 
     public static class FileReaderExtensions
@@ -171,6 +163,9 @@ namespace AssetStudio
                         break;
                     case GameType.AnchorPanic:
                         reader = DecryptAnchorPanic(reader);
+                        break;
+                    case GameType.DreamscapeAlbireo:
+                        reader = DecryptDreamscapeAlbireo(reader);
                         break;
                 }
             }
