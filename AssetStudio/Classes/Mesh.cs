@@ -716,10 +716,10 @@ namespace AssetStudio
                 m_StreamData = new StreamingInfo(reader);
             }
 
-            ProcessData();
+            ProcessData(reader.Endian);
         }
 
-        private void ProcessData()
+        private void ProcessData(EndianType endianType)
         {
             if (!string.IsNullOrEmpty(m_StreamData?.path))
             {
@@ -731,7 +731,7 @@ namespace AssetStudio
             }
             if (version[0] > 3 || (version[0] == 3 && version[1] >= 5)) //3.5 and up
             {
-                ReadVertexData();
+                ReadVertexData(endianType);
             }
 
             if (version[0] > 2 || (version[0] == 2 && version[1] >= 6)) //2.6.0 and later
@@ -742,7 +742,7 @@ namespace AssetStudio
             GetTriangles();
         }
 
-        private void ReadVertexData()
+        private void ReadVertexData(EndianType endianType)
         {
             m_VertexCount = (int)m_VertexData.m_VertexCount;
 
@@ -773,7 +773,7 @@ namespace AssetStudio
                             }
                         }
 
-                        if (reader.Endian == EndianType.BigEndian && componentByteSize > 1) //swap bytes
+                        if (endianType == EndianType.BigEndian && componentByteSize > 1) //swap bytes
                         {
                             for (var i = 0; i < componentBytes.Length / componentByteSize; i++)
                             {

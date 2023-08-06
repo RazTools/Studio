@@ -63,7 +63,8 @@ namespace AssetStudio
         public ResourceReader image_data;
         public StreamingInfo m_StreamData;
 
-        private static bool HasGNFTexture(ObjectReader reader) => reader.serializedType.Match("1D52BB98AA5F54C67C22C39E8B2E400F");
+        private static bool HasGNFTexture(ObjectReader reader) => reader.objInfo.serializedType.Match("1D52BB98AA5F54C67C22C39E8B2E400F");
+
         public Texture2D(ObjectReader reader) : base(reader)
         {
             m_Width = reader.ReadInt32();

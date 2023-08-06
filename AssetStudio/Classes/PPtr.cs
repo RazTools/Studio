@@ -56,12 +56,43 @@ namespace AssetStudio
             return false;
         }
 
+        public bool TryGetInfo(out ObjectInfo result)
+        {
+            if (TryGetAssetsFile(out var sourceFile))
+            {
+                if (sourceFile.m_ObjectsDic.TryGetValue(m_PathID, out var objInfo))
+                {
+                    result = objInfo;
+                    return true;
+                }
+            }
+
+            result = null;
+            return false;
+        }
+
+        public bool TryGetName(out string result)
+        {
+            if (TryGetAssetsFile(out var sourceFile))
+            {
+                if (sourceFile.m_ObjectsDic.TryGetValue(m_PathID, out var objInfo))
+                {
+                    result = sourceFile.ReadObjectName(objInfo);
+                    return true;
+                }
+            }
+
+            result = string.Empty;
+            return false;
+        }
+
         public bool TryGet(out T result)
         {
             if (TryGetAssetsFile(out var sourceFile))
             {
-                if (sourceFile.ObjectsDic.TryGetValue(m_PathID, out var obj))
+                if (sourceFile.m_ObjectsDic.TryGetValue(m_PathID, out var objInfo))
                 {
+                    var obj = sourceFile.ReadObject(objInfo);
                     if (obj is T variable)
                     {
                         result = variable;
@@ -78,8 +109,9 @@ namespace AssetStudio
         {
             if (TryGetAssetsFile(out var sourceFile))
             {
-                if (sourceFile.ObjectsDic.TryGetValue(m_PathID, out var obj))
+                if (sourceFile.m_ObjectsDic.TryGetValue(m_PathID, out var objInfo))
                 {
+                    var obj = sourceFile.ReadObject(objInfo);
                     if (obj is T2 variable)
                     {
                         result = variable;
@@ -126,7 +158,7 @@ namespace AssetStudio
                 assetsFileIndexCache.Add(name, index);
             }
 
-            m_PathID = m_Object.m_PathID;
+            m_PathID = m_Object.objInfo.m_PathID;
         }
 
         public bool IsNull => m_PathID == 0 || m_FileID < 0;

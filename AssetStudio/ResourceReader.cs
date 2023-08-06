@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
 namespace AssetStudio
 {
@@ -43,11 +45,24 @@ namespace AssetStudio
                 var resourceFilePath = Path.Combine(assetsFileDirectory, resourceFileName);
                 if (!File.Exists(resourceFilePath))
                 {
-                    var findFiles = Directory.GetFiles(assetsFileDirectory, resourceFileName, SearchOption.AllDirectories);
-                    if (findFiles.Length > 0)
+                    if (Directory.Exists(assetsFileDirectory))
                     {
-                        resourceFilePath = findFiles[0];
+                        var findFiles = Directory.GetFiles(assetsFileDirectory, resourceFileName, SearchOption.AllDirectories);
+                        if (findFiles.Length > 0)
+                        {
+                            resourceFilePath = findFiles[0];
+                        }
                     }
+                    else
+                    {
+                        var path = Path.GetRelativePath(assetsFile.originalPath, resourceFilePath);
+                        var paths = new Stack<string>(path.Split(Path.DirectorySeparatorChar).Reverse());
+                        reader = assetsFile.assetsManager.GetReader(assetsFile.originalPath, paths, assetsFile.game, assetsFile.offset);
+                        assetsFile.assetsManager.resourceFileReaders.Add(resourceFileName, reader);
+                        needSearch = false;
+                        return reader;
+                    }
+                    
                 }
                 if (File.Exists(resourceFilePath))
                 {

@@ -16,6 +16,7 @@ namespace AssetStudio
         private static readonly byte[] zipMagic = { 0x50, 0x4B, 0x03, 0x04 };
         private static readonly byte[] zipSpannedMagic = { 0x50, 0x4B, 0x07, 0x08 };
         private static readonly byte[] mhy0Magic = { 0x6D, 0x68, 0x79, 0x30 };
+        private static readonly byte[] blbMagic = { 0x42, 0x6C, 0x62, 0x02 };
         private static readonly byte[] narakaMagic = { 0x15, 0x1E, 0x1C, 0x0D, 0x0D, 0x23, 0x21 };
         private static readonly byte[] gunfireMagic = { 0x7C, 0x6D, 0x79, 0x72, 0x27, 0x7A, 0x73, 0x78, 0x3F };
 
@@ -74,6 +75,10 @@ namespace AssetStudio
                         {
                             return FileType.Mhy0File;
                         }
+                        if (blbMagic.SequenceEqual(magic))
+                        {
+                            return FileType.BlbFile;
+                        }
                         magic = ReadBytes(7);
                         Position = 0;
                         if (narakaMagic.SequenceEqual(magic))
@@ -131,45 +136,26 @@ namespace AssetStudio
 
     public static class FileReaderExtensions
     {
-        public static FileReader PreProcessing(this FileReader reader, Game game)
+        public static FileReader PreProcessing(this FileReader reader, Game game, bool blockFile = true)
         {
             if (reader.FileType == FileType.ResourceFile || !game.Type.IsNormal())
             {
-                switch (game.Type)
+                reader = game.Type switch
                 {
-                    case GameType.GI_Pack:
-                        reader = DecryptPack(reader, game);
-                        break;
-                    case GameType.GI_CB1:
-                        reader = DecryptMark(reader);
-                        break;
-                    case GameType.EnsembleStars:
-                        reader = DecryptEnsembleStar(reader);
-                        break;
-                    case GameType.OPFP:
-                        reader = ParseOPFP(reader);
-                        break;
-                    case GameType.AlchemyStars:
-                        reader = ParseAlchemyStars(reader);
-                        break;
-                    case GameType.FantasyOfWind:
-                        reader = DecryptFantasyOfWind(reader);
-                        break;
-                    case GameType.ShiningNikki:
-                        reader = ParseShiningNikki(reader);
-                        break;
-                    case GameType.HelixWaltz2:
-                        reader = ParseHelixWaltz2(reader);
-                        break;
-                    case GameType.AnchorPanic:
-                        reader = DecryptAnchorPanic(reader);
-                        break;
-                    case GameType.DreamscapeAlbireo:
-                        reader = DecryptDreamscapeAlbireo(reader);
-                        break;
-                }
+                    GameType.GI_Pack => DecryptPack(reader, game),
+                    GameType.GI_CB1 => DecryptMark(reader),
+                    GameType.EnsembleStars => DecryptEnsembleStar(reader),
+                    GameType.OPFP => ParseOPFP(reader),
+                    GameType.AlchemyStars => ParseAlchemyStars(reader),
+                    GameType.FantasyOfWind => DecryptFantasyOfWind(reader),
+                    GameType.ShiningNikki => ParseShiningNikki(reader),
+                    GameType.HelixWaltz2 => ParseHelixWaltz2(reader),
+                    GameType.AnchorPanic => DecryptAnchorPanic(reader),
+                    GameType.DreamscapeAlbireo => DecryptDreamscapeAlbireo(reader),
+                    _ => reader
+                };
             }
-            if (reader.FileType == FileType.BundleFile && game.Type.IsBlockFile())
+            if (reader.FileType == FileType.BundleFile && game.Type.IsBlockFile() && blockFile || reader.FileType == FileType.BlbFile)
             {
                 try
                 {
@@ -186,7 +172,15 @@ namespace AssetStudio
                 catch (Exception) { }
                 reader.Position = 0;
             }
-
+            switch (reader.FileType)
+            {
+                case FileType.GZipFile:
+                    reader = PreProcessing(DecompressGZip(reader), game);
+                    break;
+                case FileType.BrotliFile:
+                    reader = PreProcessing(DecompressBrotli(reader), game);
+                    break;
+            }
             return reader;
         }
     } 

@@ -1,13 +1,13 @@
 ﻿using AssetStudio;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace AssetStudioCLI
 {
     public class AssetItem
     {
         public string Text;
-        public Object Asset;
+        public ObjectInfo ObjInfo;
         public SerializedFile SourceFile;
-        public string Container = string.Empty;
         public string TypeString;
         public long m_PathID;
         public long FullSize;
@@ -15,15 +15,23 @@ namespace AssetStudioCLI
         public string InfoText;
         public string UniqueID;
 
-        public AssetItem(Object asset)
+        public Object Asset => SourceFile.ReadObject(Type, m_PathID, false);
+
+        public string Container
+        {
+            get => ObjInfo.container;
+            set => ObjInfo.container = value;
+        }
+
+        public AssetItem(ObjectInfo objInfo, SerializedFile assetsFile)
         {
             Text = "";
-            Asset = asset;
-            SourceFile = asset.assetsFile;
-            Type = asset.type;
+            ObjInfo = objInfo;
+            SourceFile = assetsFile;
+            Type = objInfo.type;
             TypeString = Type.ToString();
-            m_PathID = asset.m_PathID;
-            FullSize = asset.byteSize;
+            m_PathID = objInfo.m_PathID;
+            FullSize = objInfo.byteSize;
         }
     }
 }

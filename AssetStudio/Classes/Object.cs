@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Specialized;
 
 namespace AssetStudio
@@ -8,34 +9,33 @@ namespace AssetStudio
         [JsonIgnore]
         public SerializedFile assetsFile;
         [JsonIgnore]
-        public ObjectReader reader;
-        [JsonIgnore]
-        public long m_PathID;
+        public ObjectInfo objInfo;
         [JsonIgnore]
         public int[] version;
         [JsonIgnore]
         protected BuildType buildType;
         [JsonIgnore]
         public BuildTarget platform;
+
         [JsonIgnore]
-        public ClassIDType type;
+        public ObjectReader Reader => new ObjectReader(assetsFile.Reader, assetsFile, objInfo, assetsFile.game);
         [JsonIgnore]
-        public SerializedType serializedType;
+        public long m_PathID => objInfo.m_PathID;
         [JsonIgnore]
-        public uint byteSize;
+        public ClassIDType type => objInfo.type;
+        [JsonIgnore]
+        public SerializedType serializedType => objInfo.serializedType;
+        [JsonIgnore]
+        public uint byteSize => objInfo.byteSize;
 
         public Object(ObjectReader reader)
         {
-            this.reader = reader;
             reader.Reset();
+            objInfo = reader.objInfo;
             assetsFile = reader.assetsFile;
-            type = reader.type;
-            m_PathID = reader.m_PathID;
             version = reader.version;
             buildType = reader.buildType;
             platform = reader.platform;
-            serializedType = reader.serializedType;
-            byteSize = reader.byteSize;
 
             if (platform == BuildTarget.NoTarget)
             {
@@ -47,7 +47,7 @@ namespace AssetStudio
         {
             if (serializedType?.m_Type != null)
             {
-                return TypeTreeHelper.ReadTypeString(serializedType.m_Type, reader);
+                return TypeTreeHelper.ReadTypeString(serializedType.m_Type, Reader);
             }
             return null;
         }
@@ -56,7 +56,7 @@ namespace AssetStudio
         {
             if (m_Type != null)
             {
-                return TypeTreeHelper.ReadTypeString(m_Type, reader);
+                return TypeTreeHelper.ReadTypeString(m_Type, Reader);
             }
             return null;
         }
@@ -65,7 +65,7 @@ namespace AssetStudio
         {
             if (serializedType?.m_Type != null)
             {
-                return TypeTreeHelper.ReadType(serializedType.m_Type, reader);
+                return TypeTreeHelper.ReadType(serializedType.m_Type, Reader);
             }
             return null;
         }
@@ -74,13 +74,14 @@ namespace AssetStudio
         {
             if (m_Type != null)
             {
-                return TypeTreeHelper.ReadType(m_Type, reader);
+                return TypeTreeHelper.ReadType(m_Type, Reader);
             }
             return null;
         }
 
         public byte[] GetRawData()
         {
+            var reader = Reader;
             reader.Reset();
             return reader.ReadBytes((int)byteSize);
         }

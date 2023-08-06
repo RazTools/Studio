@@ -99,21 +99,30 @@ namespace AssetStudioCLI
                 }
                 if (o.MapOp.Equals(MapOpType.None) || o.MapOp.HasFlag(MapOpType.Load))
                 {
-                    var i = 0;
+                    int idx = 0;
+                    var msg = string.Empty;
 
                     var path = Path.GetDirectoryName(Path.GetFullPath(files[0]));
                     ImportHelper.MergeSplitAssets(path);
                     var toReadFile = ImportHelper.ProcessingSplitFiles(files.ToList());
 
                     var fileList = new List<string>(toReadFile);
-                    foreach (var file in fileList)
+                    for (int i = 0; i < fileList.Count; i++)
                     {
+                        var file = fileList[i];
                         assetsManager.LoadFiles(file);
                         if (assetsManager.assetsFileList.Count > 0)
                         {
-                            BuildAssetData(o.TypeFilter, o.NameFilter, o.ContainerFilter, ref i);
+                            BuildAssetData(o.TypeFilter, o.NameFilter, o.ContainerFilter, ref idx);
                             ExportAssets(o.Output.FullName, exportableAssets, o.GroupAssetsType);
+                            msg = $"Processed {Path.GetFileName(file)}";
                         }
+                        else
+                        {
+                            msg = $"Removed {Path.GetFileName(file)}, no assets found";
+                            fileList.Remove(file);
+                        }
+                        Logger.Info($"[{i + 1}/{fileList.Count}] {msg}");
                         exportableAssets.Clear();
                         assetsManager.Clear();
                     }

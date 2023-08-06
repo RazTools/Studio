@@ -5,12 +5,22 @@ namespace AssetStudioGUI
 {
     public class GameObjectTreeNode : TreeNode
     {
-        public GameObject gameObject;
-
-        public GameObjectTreeNode(GameObject gameObject)
+        private SerializedFile assetsFile;
+        private ObjectInfo objInfo;
+        public GameObject gameObject
         {
-            this.gameObject = gameObject;
-            Text = gameObject.m_Name;
+            get
+            {
+                var gameObject = assetsFile.ReadObject(objInfo) as GameObject;
+                return gameObject;
+            }
+        }
+
+        public GameObjectTreeNode(ObjectInfo objInfo, SerializedFile assetsFile)
+        {
+            this.objInfo = objInfo;
+            this.assetsFile = assetsFile;
+            Text = this.assetsFile.ReadObjectName(this.objInfo);
         }
     }
 }

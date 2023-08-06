@@ -23,7 +23,7 @@ namespace AssetStudio
         private static string BaseFolder = "";
         private static Dictionary<string, Entry> CABMap = new Dictionary<string, Entry>(StringComparer.OrdinalIgnoreCase);
         private static Dictionary<string, HashSet<long>> Offsets = new Dictionary<string, HashSet<long>>();
-        private static AssetsManager assetsManager = new AssetsManager() { Silent = true, SkipProcess = true, ResolveDependencies = false };
+        private static AssetsManager assetsManager = new AssetsManager() { SkipProcess = true, ResolveDependencies = false };
 
         public record Entry
         {
@@ -93,13 +93,9 @@ namespace AssetStudio
                 var collision = 0;
                 BaseFolder = baseFolder;
                 assetsManager.Game = game;
-                foreach (var file in LoadFiles(files))
-                {
-                    BuildCABMap(file, ref collision);
-                }
-
+                assetsManager.LoadFiles(files);
+                BuildCABMap(ref collision);
                 DumpCABMap(mapName);
-
                 Logger.Info($"CABMap build successfully !! {collision} collisions found");
             }
             catch (Exception e)
@@ -108,40 +104,12 @@ namespace AssetStudio
             }
         }
 
-        private static IEnumerable<string> LoadFiles(string[] files)
+        private static void BuildCABMap(ref int collision)
         {
-            string msg;
-            
-            var path = Path.GetDirectoryName(Path.GetFullPath(files[0]));
-            ImportHelper.MergeSplitAssets(path);
-            var toReadFile = ImportHelper.ProcessingSplitFiles(files.ToList());
-
-            var filesList = new List<string>(toReadFile);
-            for (int i = 0; i < filesList.Count; i++)
-            {
-                var file = filesList[i];
-                assetsManager.LoadFiles(file);
-                if (assetsManager.assetsFileList.Count > 0)
-                {
-                    yield return file;
-                    msg = $"Processed {Path.GetFileName(file)}";
-                }
-                else
-                {
-                    filesList.Remove(file);
-                    msg = $"Removed {Path.GetFileName(file)}, no assets found";
-                }
-                Logger.Info($"[{i + 1}/{filesList.Count}] {msg}");
-                Progress.Report(i + 1, filesList.Count);
-                assetsManager.Clear();
-            }
-        }
-
-        private static void BuildCABMap(string file, ref int collision)
-        {
-            var relativePath = Path.GetRelativePath(BaseFolder, file);
+            Logger.Info("Building CABMap...");
             foreach (var assetsFile in assetsManager.assetsFileList)
             {
+                var relativePath = Path.GetRelativePath(BaseFolder, assetsFile.originalPath);
                 if (tokenSource.IsCancellationRequested)
                 {
                     Logger.Info("Building CABMap has been cancelled !!");
@@ -236,11 +204,8 @@ namespace AssetStudio
                 Progress.Reset();
                 assetsManager.Game = game;
                 var assets = new List<AssetEntry>();
-                foreach (var file in LoadFiles(files))
-                {
-                    BuildAssetMap(file, assets, typeFilters, nameFilters, containerFilters);
-                }
-
+                assetsManager.LoadFiles(files);
+                BuildAssetMap(assets, typeFilters, nameFilters, containerFilters);
                 UpdateContainers(assets, game);
 
                 ExportAssetsMap(assets.ToArray(), game, mapName, savePath, exportListType, resetEvent);
@@ -252,12 +217,9 @@ namespace AssetStudio
             
         }
 
-        private static void BuildAssetMap(string file, List<AssetEntry> assets, ClassIDType[] typeFilters = null, Regex[] nameFilters = null, Regex[] containerFilters = null)
+        private static void BuildAssetMap(List<AssetEntry> assets, ClassIDType[] typeFilters = null, Regex[] nameFilters = null, Regex[] containerFilters = null)
         {
-            var containers = new List<(PPtr<Object>, string)>();
-            var mihoyoBinDataNames = new List<(PPtr<Object>, string)>();
-            var objectAssetItemDic = new Dictionary<Object, AssetEntry>();
-            var animators = new List<(PPtr<Object>, AssetEntry)>();
+            Logger.Info("Building AssetMap...");
             foreach (var assetsFile in assetsManager.assetsFileList)
             {
                 foreach (var objInfo in assetsFile.m_Objects)
@@ -267,69 +229,19 @@ namespace AssetStudio
                         Logger.Info("Building AssetMap has been cancelled !!");
                         return;
                     }
-                    var objectReader = new ObjectReader(assetsFile.reader, assetsFile, objInfo, assetsManager.Game);
-                    var obj = new Object(objectReader);
                     var asset = new AssetEntry()
                     {
-                        Source = file,
-                        PathID = objectReader.m_PathID,
-                        Type = objectReader.type,
-                        Container = ""
+                        ObjInfo = objInfo,
+                        Source = assetsFile.originalPath,
+                        PathID = objInfo.m_PathID,
+                        Type = objInfo.type,
                     };
 
-                    var exportable = true;
+                    var exportable = false;
                     try
                     {
-                        switch (objectReader.type)
+                        switch (objInfo.type)
                         {
-                            case ClassIDType.AssetBundle:
-                                var assetBundle = new AssetBundle(objectReader);
-                                foreach (var m_Container in assetBundle.m_Container)
-                                {
-                                    var preloadIndex = m_Container.Value.preloadIndex;
-                                    var preloadSize = m_Container.Value.preloadSize;
-                                    var preloadEnd = preloadIndex + preloadSize;
-                                    for (int k = preloadIndex; k < preloadEnd; k++)
-                                    {
-                                        containers.Add((assetBundle.m_PreloadTable[k], m_Container.Key));
-                                    }
-                                }
-                                obj = null;
-                                asset.Name = assetBundle.m_Name;
-                                exportable = !Minimal;
-                                break;
-                            case ClassIDType.GameObject:
-                                var gameObject = new GameObject(objectReader);
-                                obj = gameObject;
-                                asset.Name = gameObject.m_Name;
-                                exportable = !Minimal;
-                                break;
-                            case ClassIDType.Shader when Shader.Parsable:
-                                asset.Name = objectReader.ReadAlignedString();
-                                if (string.IsNullOrEmpty(asset.Name))
-                                {
-                                    var m_parsedForm = new SerializedShader(objectReader);
-                                    asset.Name = m_parsedForm.m_Name;
-                                }
-                                break;
-                            case ClassIDType.Animator:
-                                var component = new PPtr<Object>(objectReader);
-                                animators.Add((component, asset));
-                                break;
-                            case ClassIDType.MiHoYoBinData:
-                                var MiHoYoBinData = new MiHoYoBinData(objectReader);
-                                obj = MiHoYoBinData;
-                                break;
-                            case ClassIDType.IndexObject:
-                                var indexObject = new IndexObject(objectReader);
-                                obj = null;
-                                foreach (var index in indexObject.AssetMap)
-                                {
-                                    mihoyoBinDataNames.Add((index.Value.Object, index.Key));
-                                }
-                                asset.Name = "IndexObject";
-                                exportable = !Minimal;
-                                break;
                             case ClassIDType.Font:
                             case ClassIDType.Material:
                             case ClassIDType.Texture:
@@ -339,11 +251,15 @@ namespace AssetStudio
                             case ClassIDType.Texture2D:
                             case ClassIDType.VideoClip:
                             case ClassIDType.AudioClip:
+                            case ClassIDType.Animator:
                             case ClassIDType.AnimationClip:
-                                asset.Name = objectReader.ReadAlignedString();
+                            case ClassIDType.MiHoYoBinData:
+                            case ClassIDType.Shader when Shader.Parsable:
+                                asset.Name = assetsFile.ReadObjectName(objInfo);
+                                exportable = true;
                                 break;
                             default:
-                                asset.Name = objectReader.type.ToString();
+                                asset.Name = assetsFile.ReadObjectName(objInfo);
                                 exportable = !Minimal;
                                 break;
                         }
@@ -354,63 +270,21 @@ namespace AssetStudio
                         sb.AppendLine("Unable to load object")
                             .AppendLine($"Assets {assetsFile.fileName}")
                             .AppendLine($"Path {assetsFile.originalPath}")
-                            .AppendLine($"Type {objectReader.type}")
-                            .AppendLine($"PathID {objectReader.m_PathID}")
+                            .AppendLine($"Type {objInfo.type}")
+                            .AppendLine($"PathID {objInfo.m_PathID}")
                             .Append(e);
                         Logger.Error(sb.ToString());
                     }
-                    if (obj != null)
-                    {
-                        objectAssetItemDic.Add(obj, asset);
-                        assetsFile.AddObject(obj);
-                    }
-                    var isMatchRegex = nameFilters.IsNullOrEmpty() || nameFilters.Any(x => x.IsMatch(asset.Name) || asset.Type == ClassIDType.Animator);
-                    var isFilteredType = typeFilters.IsNullOrEmpty() || typeFilters.Contains(asset.Type) || asset.Type == ClassIDType.Animator;
-                    if (isMatchRegex && isFilteredType && exportable)
+                    var isNaneMatchRegex = nameFilters.IsNullOrEmpty() || nameFilters.Any(x => x.IsMatch(asset.Name));
+                    var isFilteredType = typeFilters.IsNullOrEmpty() || typeFilters.Contains(asset.Type);
+                    var isContainerMatchRegex = containerFilters.IsNullOrEmpty() || containerFilters.Any(x => x.IsMatch(asset.Container));
+                    if (isNaneMatchRegex && isContainerMatchRegex && isFilteredType && exportable)
                     {
                         assets.Add(asset);
                     }
                 }
-            }
-            foreach ((var pptr, var asset) in animators)
-            {
-                if (pptr.TryGet<GameObject>(out var gameObject) && (nameFilters.IsNullOrEmpty() || nameFilters.Any(x => x.IsMatch(gameObject.m_Name))) && (typeFilters.IsNullOrEmpty() || typeFilters.Contains(asset.Type)))
-                {
-                    asset.Name = gameObject.m_Name;
-                }
-                else
-                {
-                    assets.Remove(asset);
-                }
 
-            }
-            foreach ((var pptr, var name) in mihoyoBinDataNames)
-            {
-                if (pptr.TryGet<MiHoYoBinData>(out var miHoYoBinData))
-                {
-                    var asset = objectAssetItemDic[miHoYoBinData];
-                    if (int.TryParse(name, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var hash))
-                    {
-                        asset.Name = name;
-                        asset.Container = hash.ToString();
-                    }
-                    else asset.Name = $"BinFile #{asset.PathID}";
-                }
-            }
-            foreach ((var pptr, var container) in containers)
-            {
-                if (pptr.TryGet(out var obj))
-                {
-                    var item = objectAssetItemDic[obj];
-                    if (containerFilters.IsNullOrEmpty() || containerFilters.Any(x => x.IsMatch(container)))
-                    {
-                        item.Container = container;
-                    }
-                    else
-                    {
-                        assets.Remove(item);
-                    }
-                }
+                assetsManager.RemoveReader(assetsFile.fileName);
             }
         }
 
@@ -514,11 +388,9 @@ namespace AssetStudio
             BaseFolder = baseFolder;
             assetsManager.Game = game;
             var assets = new List<AssetEntry>();
-            foreach(var file in LoadFiles(files))
-            {
-                BuildCABMap(file, ref collision);
-                BuildAssetMap(file, assets, typeFilters, nameFilters, containerFilters);
-            }
+            assetsManager.LoadFiles(files);
+            BuildCABMap(ref collision);
+            BuildAssetMap(assets, typeFilters, nameFilters, containerFilters);
 
             UpdateContainers(assets, game);
             DumpCABMap(mapName);

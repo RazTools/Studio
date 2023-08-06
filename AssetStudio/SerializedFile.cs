@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace AssetStudio
@@ -10,7 +12,6 @@ namespace AssetStudio
     public class SerializedFile
     {
         public AssetsManager assetsManager;
-        public FileReader reader;
         public Game game;
         public long offset = 0;
         public string fullName;
@@ -18,7 +19,6 @@ namespace AssetStudio
         public string fileName;
         public int[] version = { 0, 0, 0, 0 };
         public BuildType buildType;
-        public List<Object> Objects;
         public Dictionary<long, Object> ObjectsDic;
 
         public SerializedFileHeader header;
@@ -29,15 +29,29 @@ namespace AssetStudio
         public List<SerializedType> m_Types;
         public int bigIDEnabled = 0;
         public List<ObjectInfo> m_Objects;
+        public Dictionary<long, ObjectInfo> m_ObjectsDic;
         private List<LocalSerializedObjectIdentifier> m_ScriptTypes;
         public List<FileIdentifier> m_Externals;
         public List<SerializedType> m_RefTypes;
         public string userInformation;
 
+        public FileReader Reader 
+        {
+            get
+            {
+                FileReader reader;
+                if (!assetsManager.serializedFileReaders.TryGetValue(fileName, out reader))
+                {
+                    reader = GetReader();
+                    assetsManager.serializedFileReaders[fileName] = reader;
+                }
+                return reader;
+            }
+        }
+
         public SerializedFile(FileReader reader, AssetsManager assetsManager)
         {
             this.assetsManager = assetsManager;
-            this.reader = reader;
             game = assetsManager.Game;
             fullName = reader.FullPath;
             fileName = reader.FileName;
@@ -101,7 +115,7 @@ namespace AssetStudio
             m_Types = new List<SerializedType>(typeCount);
             for (int i = 0; i < typeCount; i++)
             {
-                m_Types.Add(ReadSerializedType(false));
+                m_Types.Add(ReadSerializedType(reader, false));
             }
 
             if (header.m_Version >= SerializedFileFormatVersion.Unknown_7 && header.m_Version < SerializedFileFormatVersion.Unknown_14)
@@ -112,7 +126,7 @@ namespace AssetStudio
             // Read Objects
             int objectCount = reader.ReadInt32();
             m_Objects = new List<ObjectInfo>(objectCount);
-            Objects = new List<Object>(objectCount);
+            m_ObjectsDic = new Dictionary<long, ObjectInfo>(objectCount);
             ObjectsDic = new Dictionary<long, Object>(objectCount);
             for (int i = 0; i < objectCount; i++)
             {
@@ -165,6 +179,7 @@ namespace AssetStudio
                     objectInfo.stripped = reader.ReadByte();
                 }
                 m_Objects.Add(objectInfo);
+                m_ObjectsDic.Add(objectInfo.m_PathID, objectInfo);
             }
 
             if (header.m_Version >= SerializedFileFormatVersion.HasScriptTypeIndex)
@@ -213,7 +228,7 @@ namespace AssetStudio
                 m_RefTypes = new List<SerializedType>(refTypesCount);
                 for (int i = 0; i < refTypesCount; i++)
                 {
-                    m_RefTypes.Add(ReadSerializedType(true));
+                    m_RefTypes.Add(ReadSerializedType(reader, true));
                 }
             }
 
@@ -237,7 +252,7 @@ namespace AssetStudio
             }
         }
 
-        private SerializedType ReadSerializedType(bool isRefType)
+        private SerializedType ReadSerializedType(FileReader reader, bool isRefType)
         {
             var type = new SerializedType();
 
@@ -277,11 +292,11 @@ namespace AssetStudio
                 type.m_Type.m_Nodes = new List<TypeTreeNode>();
                 if (header.m_Version >= SerializedFileFormatVersion.Unknown_12 || header.m_Version == SerializedFileFormatVersion.Unknown_10)
                 {
-                    TypeTreeBlobRead(type.m_Type);
+                    TypeTreeBlobRead(reader, type.m_Type);
                 }
                 else
                 {
-                    ReadTypeTree(type.m_Type);
+                    ReadTypeTree(reader, type.m_Type);
                 }
                 if (header.m_Version >= SerializedFileFormatVersion.StoresTypeDependencies)
                 {
@@ -301,7 +316,7 @@ namespace AssetStudio
             return type;
         }
 
-        private void ReadTypeTree(TypeTree m_Type, int level = 0)
+        private void ReadTypeTree(FileReader reader, TypeTree m_Type, int level = 0)
         {
             var typeTreeNode = new TypeTreeNode();
             m_Type.m_Nodes.Add(typeTreeNode);
@@ -327,11 +342,11 @@ namespace AssetStudio
             int childrenCount = reader.ReadInt32();
             for (int i = 0; i < childrenCount; i++)
             {
-                ReadTypeTree(m_Type, level + 1);
+                ReadTypeTree(reader, m_Type, level + 1);
             }
         }
 
-        private void TypeTreeBlobRead(TypeTree m_Type)
+        private void TypeTreeBlobRead(FileReader reader, TypeTree m_Type)
         {
             int numberOfNodes = reader.ReadInt32();
             int stringBufferSize = reader.ReadInt32();
@@ -381,10 +396,232 @@ namespace AssetStudio
             }
         }
 
-        public void AddObject(Object obj)
+        public string ReadObjectName(ObjectInfo objInfo, bool cacheObject = false, bool skipContainer = false)
         {
-            Objects.Add(obj);
-            ObjectsDic.Add(obj.m_PathID, obj);
+            if (objInfo.name == null)
+            {
+                var objectReader = new ObjectReader(Reader, this, objInfo, game);
+                objectReader.Reset();
+                switch (objInfo.type)
+                {
+                    case ClassIDType.AssetBundle:
+                        var assetBundle = ReadObject(objInfo, cacheObject) as AssetBundle;
+                        if (!skipContainer)
+                        {
+                            foreach (var m_Container in assetBundle.m_Container)
+                            {
+                                var preloadIndex = m_Container.Value.preloadIndex;
+                                var preloadSize = m_Container.Value.preloadSize;
+                                var preloadEnd = preloadIndex + preloadSize;
+                                for (int k = preloadIndex; k < preloadEnd; k++)
+                                {
+                                    if (assetBundle.m_PreloadTable[k].TryGetInfo(out var info))
+                                    {
+                                        info.container = m_Container.Key;
+                                    }
+                                }
+                            }
+                        }
+                        objInfo.name = assetBundle.m_Name;
+                        break;
+                    case ClassIDType.ResourceManager:
+                        var resourceManager = ReadObject(objInfo, cacheObject) as ResourceManager;
+                        if (!skipContainer)
+                        {
+                            foreach (var m_Container in resourceManager.m_Container)
+                            {
+                                if (m_Container.Value.TryGetInfo(out var info))
+                                {
+                                    info.container = m_Container.Key;
+                                }
+                            }
+                        }
+                        objInfo.name = objInfo.type.ToString();
+                        break;
+                    case ClassIDType.GameObject:
+                        var gameObject = ReadObject(objInfo, cacheObject) as GameObject;
+                        objInfo.name = gameObject.m_Name;
+                        break;
+                    case ClassIDType.Shader when Shader.Parsable:
+                        objInfo.name = objectReader.ReadAlignedString();
+                        if (string.IsNullOrEmpty(objInfo.name))
+                        {
+                            var m_parsedForm = new SerializedShader(objectReader);
+                            objInfo.name = m_parsedForm.m_Name;
+                        }
+                        break;
+                    case ClassIDType.IndexObject:
+                        var indexObject = ReadObject(ClassIDType.IndexObject, cacheObject: false) as IndexObject;
+                        foreach(var index in indexObject.AssetMap)
+                        {
+                            if (index.Value.Object.TryGetInfo(out var mihoyoBinDataInfo))
+                            {
+                                if (int.TryParse(index.Key, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var hash))
+                                {
+                                    mihoyoBinDataInfo.name = index.Key;
+                                    mihoyoBinDataInfo.container = hash.ToString();
+                                }
+                                else mihoyoBinDataInfo.name = $"BinFile #{index.Value.Object.m_PathID}";
+                            }
+                        }
+                        objInfo.name = objInfo.type.ToString();
+                        break;
+                    case ClassIDType.PlayerSettings:
+                        var playerSettings = ReadObject(objInfo, cacheObject) as PlayerSettings;
+                        objInfo.name = playerSettings.productName;
+                        break;
+                    case ClassIDType.MonoScript:
+                        var monoScript = ReadObject(objInfo, cacheObject) as MonoScript;
+                        objInfo.name = monoScript.m_ClassName;
+                        break;
+                    case ClassIDType.MonoBehaviour:
+                        var monoBehaviour = ReadObject(objInfo, cacheObject) as MonoBehaviour;
+                        if (monoBehaviour.m_Name == "" && monoBehaviour.m_Script.TryGetName(out var scriptName))
+                        {
+                            objInfo.name = scriptName;
+                        }
+                        else
+                        {
+                            objInfo.name = monoBehaviour.m_Name;
+                        }
+                        break;
+                    case ClassIDType.Animator:
+                        var animatorGameObject = new PPtr<Object>(objectReader);
+                        if (animatorGameObject.TryGetName(out var gameObjectName))
+                        {
+                            objInfo.name = gameObjectName;
+                        }
+                        break;
+                    case ClassIDType.Font:
+                    case ClassIDType.Material:
+                    case ClassIDType.Texture:
+                    case ClassIDType.Mesh:
+                    case ClassIDType.Sprite:
+                    case ClassIDType.TextAsset:
+                    case ClassIDType.Texture2D:
+                    case ClassIDType.VideoClip:
+                    case ClassIDType.AudioClip:
+                    case ClassIDType.AnimationClip:
+                        objInfo.name = objectReader.ReadAlignedString();
+                        break;
+                }
+            }
+        
+            return objInfo.name;
+        }
+
+        public Object[] ReadObjects(ClassIDType type = ClassIDType.UnknownType)
+        {
+            var objects = new List<Object>();
+            var objInfos = type != ClassIDType.UnknownType ? m_Objects.Where(x => x.type == type) : m_Objects;
+
+            foreach (var objInfo in objInfos)
+            {
+                objects.Add(ReadObject(objInfo));
+            }
+        
+            return objects.ToArray();
+        }
+
+        public Object ReadObject(ClassIDType type, long pathId = 0, bool cacheObject = true)
+        {
+            var objInfo = m_Objects.FirstOrDefault(x =>
+            {
+                var match = x.type == type;
+                if (pathId != 0)
+                {
+                    match &= x.m_PathID == pathId;
+                }
+                return match;
+            });
+            return ReadObject(objInfo, cacheObject);
+        }
+
+        public Object ReadObject(ObjectInfo objInfo, bool cacheObject = true)
+        {
+            Object obj;
+
+            if (assetsManager.CacheObjects && cacheObject)
+            {
+                if (!ObjectsDic.TryGetValue(objInfo.m_PathID, out obj))
+                {
+                    obj = ReadObjectInner(objInfo);
+                    ObjectsDic[objInfo.m_PathID] = obj;
+                }
+            }
+            else
+            {
+                obj = ReadObjectInner(objInfo);
+            }
+            
+            
+            return obj;
+        }
+
+        private Object ReadObjectInner(ObjectInfo objInfo)
+        {
+            Object obj = null;
+
+            var objectReader = new ObjectReader(Reader, this, objInfo, game);
+            try
+            {
+                obj = objectReader.type switch
+                {
+                    ClassIDType.Animation => new Animation(objectReader),
+                    ClassIDType.AnimationClip => new AnimationClip(objectReader),
+                    ClassIDType.Animator => new Animator(objectReader),
+                    ClassIDType.AnimatorController => new AnimatorController(objectReader),
+                    ClassIDType.AnimatorOverrideController => new AnimatorOverrideController(objectReader),
+                    ClassIDType.AssetBundle => new AssetBundle(objectReader),
+                    ClassIDType.AudioClip => new AudioClip(objectReader),
+                    ClassIDType.Avatar => new Avatar(objectReader),
+                    ClassIDType.Font => new Font(objectReader),
+                    ClassIDType.GameObject => new GameObject(objectReader),
+                    ClassIDType.IndexObject => new IndexObject(objectReader),
+                    ClassIDType.Material => new Material(objectReader),
+                    ClassIDType.Mesh => new Mesh(objectReader),
+                    ClassIDType.MeshFilter => new MeshFilter(objectReader),
+                    ClassIDType.MeshRenderer when Renderer.Parsable => new MeshRenderer(objectReader),
+                    ClassIDType.MiHoYoBinData => new MiHoYoBinData(objectReader),
+                    ClassIDType.MonoBehaviour => new MonoBehaviour(objectReader),
+                    ClassIDType.MonoScript => new MonoScript(objectReader),
+                    ClassIDType.MovieTexture => new MovieTexture(objectReader),
+                    ClassIDType.PlayerSettings => new PlayerSettings(objectReader),
+                    ClassIDType.RectTransform => new RectTransform(objectReader),
+                    ClassIDType.Shader when Shader.Parsable => new Shader(objectReader),
+                    ClassIDType.SkinnedMeshRenderer when Renderer.Parsable => new SkinnedMeshRenderer(objectReader),
+                    ClassIDType.Sprite => new Sprite(objectReader),
+                    ClassIDType.SpriteAtlas => new SpriteAtlas(objectReader),
+                    ClassIDType.TextAsset => new TextAsset(objectReader),
+                    ClassIDType.Texture2D => new Texture2D(objectReader),
+                    ClassIDType.Transform => new Transform(objectReader),
+                    ClassIDType.VideoClip => new VideoClip(objectReader),
+                    ClassIDType.ResourceManager => new ResourceManager(objectReader),
+                    _ => new Object(objectReader),
+                };
+            }
+            catch (Exception e)
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine("Unable to load object")
+                    .AppendLine($"Assets {fileName}")
+                    .AppendLine($"Path {originalPath}")
+                    .AppendLine($"Type {objectReader.type}")
+                    .AppendLine($"PathID {objInfo.m_PathID}")
+                    .Append(e);
+                Logger.Error(sb.ToString());
+            }
+
+            return obj;
+        }
+
+        private FileReader GetReader()
+        {
+            var path = Path.GetRelativePath(originalPath, fullName);
+            var paths = new Stack<string>(path.Split(Path.DirectorySeparatorChar).Reverse());
+            var reader = assetsManager.GetReader(originalPath, paths, game, offset);
+            reader.Endian = m_FileEndianess == 0 ? EndianType.LittleEndian : EndianType.BigEndian;
+            return reader;
         }
 
         private static int DecodeClassID(int value)

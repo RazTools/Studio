@@ -1,4 +1,5 @@
 ﻿using MessagePack;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,10 +18,19 @@ namespace AssetStudio
     [MessagePackObject]
     public record AssetEntry
     {
+        private string container;
+
+        [JsonIgnore]
+        [IgnoreMember]
+        public ObjectInfo ObjInfo;
         [Key(0)]
         public string Name { get; set; }
         [Key(1)]
-        public string Container { get; set; }
+        public string Container
+        {
+            get => container ??= ObjInfo.container;
+            set => container = value;
+        }
         [Key(2)]
         public string Source { get; set; }
         [Key(3)]
