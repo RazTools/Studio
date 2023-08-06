@@ -3,7 +3,7 @@ name: Build
 on:
   push:
     branches:
-      - 'dev'
+      - 'test'
     paths-ignore:
       - '**/LICENSE'
       - '**/README.md'
