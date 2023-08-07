@@ -43,6 +43,7 @@ namespace AssetStudio
         {
             CABMap.Clear();
             Offsets.Clear();
+            assetsManager.Clear();
             BaseFolder = string.Empty;
 
             tokenSource.Dispose();
@@ -97,6 +98,7 @@ namespace AssetStudio
                 BuildCABMap(ref collision);
                 DumpCABMap(mapName);
                 Logger.Info($"CABMap build successfully !! {collision} collisions found");
+                assetsManager.Clear();
             }
             catch (Exception e)
             {
@@ -209,6 +211,7 @@ namespace AssetStudio
                 UpdateContainers(assets, game);
 
                 ExportAssetsMap(assets.ToArray(), game, mapName, savePath, exportListType, resetEvent);
+                assetsManager.Clear();
             }
             catch(Exception e)
             {
@@ -397,6 +400,7 @@ namespace AssetStudio
 
             Logger.Info($"Map build successfully !! {collision} collisions found");
             ExportAssetsMap(assets.ToArray(), game, mapName, savePath, exportListType, resetEvent);
+            assetsManager.Clear();
         }
     }
 }
