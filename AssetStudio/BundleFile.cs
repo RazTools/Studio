@@ -133,19 +133,13 @@ namespace AssetStudio
                             header.version = 6;
                             header.unityVersion = "5.x.x";
                             header.unityRevision = "2017.4.18f1";
+                            break;
                         }
-                        else
-                        {
-                            reader.Position -= 4;
-                            goto default;
-                        }
+                        reader.Position -= 4;
                     }
-                    else
-                    {
-                        header.version = reader.ReadUInt32();
-                        header.unityVersion = reader.ReadStringToNull();
-                        header.unityRevision = reader.ReadStringToNull();
-                    }
+                    header.version = reader.ReadUInt32();
+                    header.unityVersion = reader.ReadStringToNull();
+                    header.unityRevision = reader.ReadStringToNull();
                     break;
                 case "ENCR":
                     header.version = 6; // is 7 but does not have uncompressedDataHash
