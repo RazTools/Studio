@@ -28,13 +28,14 @@ namespace AssetStudio
             Games.Add(index++, new Game(GameType.Naraka));
             Games.Add(index++, new Game(GameType.EnsembleStars));
             Games.Add(index++, new Game(GameType.OPFP));
-            Games.Add(index++, new Game(GameType.AlchemyStars));
+            Games.Add(index++, new Game(GameType.FakeHeader));
             Games.Add(index++, new Game(GameType.FantasyOfWind));
             Games.Add(index++, new Game(GameType.ShiningNikki));
             Games.Add(index++, new Game(GameType.HelixWaltz2));
             Games.Add(index++, new Game(GameType.NetEase));
             Games.Add(index++, new Game(GameType.AnchorPanic));
             Games.Add(index++, new Game(GameType.DreamscapeAlbireo));
+            Games.Add(index++, new Game(GameType.ImaginaryFest));
         }
         public static Game GetGame(GameType gameType) => GetGame((int)gameType);
         public static Game GetGame(int index)
@@ -134,13 +135,14 @@ namespace AssetStudio
         Naraka,
         EnsembleStars,
         OPFP,
-        AlchemyStars,
+        FakeHeader,
         FantasyOfWind,
         ShiningNikki,
         HelixWaltz2,
         NetEase,
         AnchorPanic,
-        DreamscapeAlbireo
+        DreamscapeAlbireo,
+        ImaginaryFest,
     }
 
     public static class GameTypes

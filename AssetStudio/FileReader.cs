@@ -149,8 +149,8 @@ namespace AssetStudio
                     case GameType.OPFP:
                         reader = ParseOPFP(reader);
                         break;
-                    case GameType.AlchemyStars:
-                        reader = ParseAlchemyStars(reader);
+                    case GameType.FakeHeader:
+                        reader = ParseFakeHeader(reader);
                         break;
                     case GameType.FantasyOfWind:
                         reader = DecryptFantasyOfWind(reader);
@@ -166,6 +166,9 @@ namespace AssetStudio
                         break;
                     case GameType.DreamscapeAlbireo:
                         reader = DecryptDreamscapeAlbireo(reader);
+                        break;
+                    case GameType.ImaginaryFest:
+                        reader = DecryptImaginaryFest(reader);
                         break;
                 }
             }

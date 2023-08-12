@@ -286,7 +286,7 @@ namespace AssetStudio
             return new FileReader(reader.FullPath, stream);
         }
 
-        public static FileReader ParseAlchemyStars(FileReader reader)
+        public static FileReader ParseFakeHeader(FileReader reader)
         {
             var stream = reader.BaseStream;
             var data = reader.ReadBytes(0x1000);
@@ -432,7 +432,7 @@ namespace AssetStudio
             var idx = data.Search("UnityFS");
             if (idx != -1)
             {
-                return ParseAlchemyStars(reader);
+                return ParseFakeHeader(reader);
             }
 
             var key = GetKey(Path.GetFileNameWithoutExtension(reader.FileName));
@@ -590,6 +590,126 @@ namespace AssetStudio
             return new FileReader(reader.FullPath, ms);
 
             static uint Scrample(uint value) => (value >> 5) & 0xFFE000 | (value >> 29) | (value << 14) & 0xFF000000 | (8 * value) & 0x1FF8;
+        }
+
+        public static FileReader DecryptImaginaryFest(FileReader reader)
+        {
+            const string dataRoot = "data";
+            var key = new byte[] { 0xBD, 0x65, 0xF2, 0x4F, 0xBE, 0xD1, 0x36, 0xD4, 0x95, 0xFE, 0x64, 0x94, 0xCB, 0xD3, 0x7E, 0x91, 0x57, 0xB7, 0x94, 0xB7, 0x9F, 0x70, 0xB2, 0xA9, 0xA0, 0xD5, 0x4E, 0x36, 0xC6, 0x40, 0xE0, 0x2F, 0x4E, 0x6E, 0x76, 0x6D, 0xCD, 0xAE, 0xEA, 0x05, 0x13, 0x6B, 0xA7, 0x84, 0xFF, 0xED, 0x90, 0x91, 0x15, 0x7E, 0xF1, 0xF8, 0xA5, 0x9C, 0xB6, 0xDE, 0xF9, 0x56, 0x57, 0x18, 0xBF, 0x94, 0x63, 0x6F, 0x1B, 0xE2, 0x92, 0xD2, 0x7E, 0x25, 0x95, 0x23, 0x24, 0xCB, 0x93, 0xD3, 0x36, 0xD9, 0x18, 0x11, 0xF5, 0x50, 0x18, 0xE4, 0x22, 0x28, 0xD8, 0xE2, 0x1A, 0x57, 0x1E, 0x04, 0x88, 0xA5, 0x84, 0xC0, 0x6C, 0x3B, 0x46, 0x62, 0xCE, 0x85, 0x10, 0x2E, 0xA0, 0xDC, 0xD3, 0x09, 0xB2, 0xB6, 0xA4, 0x8D, 0xAF, 0x74, 0x36, 0xF7, 0x9A, 0x3F, 0x98, 0xDA, 0x62, 0x57, 0x71, 0x75, 0x92, 0x05, 0xA3, 0xB2, 0x7C, 0xCA, 0xFB, 0x1E, 0xBE, 0xC9, 0x24, 0xC1, 0xD2, 0xB9, 0xDE, 0xE4, 0x7E, 0xF3, 0x0F, 0xB4, 0xFB, 0xA2, 0xC1, 0xC2, 0x14, 0x5C, 0x78, 0x13, 0x74, 0x41, 0x8D, 0x79, 0xF4, 0x3C, 0x49, 0x92, 0x98, 0xF2, 0xCD, 0x8C, 0x09, 0xA6, 0x40, 0x34, 0x51, 0x1C, 0x11, 0x2B, 0xE0, 0x6B, 0x42, 0x9C, 0x86, 0x41, 0x06, 0xF6, 0xD2, 0x87, 0xF1, 0x10, 0x26, 0x89, 0xC2, 0x7B, 0x2A, 0x5D, 0x1C, 0xDA, 0x92, 0xC8, 0x93, 0x59, 0xF9, 0x60, 0xD0, 0xB5, 0x1E, 0xD5, 0x75, 0x56, 0xA0, 0x05, 0x83, 0x90, 0xAC, 0x72, 0xC8, 0x10, 0x09, 0xED, 0x1A, 0x46, 0xD9, 0x39, 0x6B, 0x9E, 0x19, 0x5E, 0x51, 0x44, 0x09, 0x0D, 0x74, 0xAB, 0xA8, 0xF9, 0x32, 0x43, 0xBC, 0xD2, 0xED, 0x7B, 0x6C, 0x75, 0x32, 0x24, 0x14, 0x43, 0x5D, 0x98, 0xB2, 0xFC, 0xFB, 0xF5, 0x9A, 0x19, 0x03, 0xB0, 0xB7, 0xAC, 0xAE, 0x8B };
+
+            var signatureBytes = reader.ReadBytes(8);
+            var signature = Encoding.UTF8.GetString(signatureBytes[..7]);
+            if (signature == "UnityFS")
+            {
+                reader.Position = 0;
+                return reader;
+            }
+
+            if (signatureBytes[7] != 0)
+            {
+                var xorKey = signatureBytes[7];
+                for (int i = 0; i < signatureBytes.Length; i++)
+                {
+                    signatureBytes[i] ^= xorKey;
+                }
+                signature = Encoding.UTF8.GetString(signatureBytes[..7]);
+                if (signature == "UnityFS")
+                {
+                    var remaining = reader.ReadBytes((int)reader.Remaining);
+                    for (int i = 0; i < remaining.Length; i++)
+                    {
+                        remaining[i] ^= xorKey;
+                    }
+
+                    var stream = new MemoryStream();
+                    stream.Write(signatureBytes);
+                    stream.Write(remaining);
+                    stream.Position = 0;
+                    return new FileReader(reader.FullPath, stream);
+                }
+            }
+
+            reader.Position = 0;
+
+            var paths = reader.FullPath.Split(Path.DirectorySeparatorChar);
+            var startIdx = Array.FindIndex(paths, x => x == dataRoot);
+            if (startIdx != -1 && startIdx != paths.Length - 1)
+            {
+                var path = string.Join(Path.AltDirectorySeparatorChar, paths[(startIdx+1)..]);
+                var offset = GetLoadAssetBundleOffset(path);
+                if (offset > 0 && offset < reader.Length)
+                {
+                    reader.Position = offset;
+                    signature = reader.ReadStringToNull(7);
+                    if (signature == "UnityFS")
+                    {
+                        reader.Position = offset;
+                        return new FileReader(reader.FullPath, new MemoryStream(reader.ReadBytes((int)reader.Remaining)));
+                    }
+                }
+                reader.Position = 0;
+                var data = reader.ReadBytes((int)reader.Remaining);
+                var key_value = GetHashCode(path);
+                Decrypt(data, key_value);
+                return new FileReader(reader.FullPath, new MemoryStream(data));
+            }
+
+            reader.Position = 0;
+            return reader;
+
+            int GetLoadAssetBundleOffset(string str)
+            {
+                var hashCode = GetHashCode(str);
+                var offset = 1;
+                var index = -4;
+                do
+                {
+                    var s = hashCode >> (index + 8);
+                    index += 4;
+                    offset += s % 0x80 | 0x80;
+                }
+                while (4 * (hashCode & 3) != index);
+                return offset;
+            }
+
+            int GetHashCode(string str, int pattern = 0)
+            {
+                var table = new int[4];
+
+                var len = str.Length - 1;
+                for (int i = 0; i < table.Length; i++)
+                {
+                    var c = str[len & ~(len >> 0x1F)];
+                    table[i] = GetJammingInt(pattern + c);
+                    pattern += table.Length;
+                    len--;
+                }
+
+                var shift = 0;
+                for (int i = str.Length - 1; i >= 0; i--)
+                {
+                    var c = str[i];
+                    shift = (shift + i) ^ c;
+                    table[i % table.Length] += c << shift;
+                }
+                return table[0] ^ table[1] ^ table[2] ^ table[3];
+            }
+
+            int GetJammingInt(int top_index)
+            {
+                return BinaryPrimitives.TryReadInt32LittleEndian(key.AsSpan(top_index), out var value) ? value : -1;
+            }
+
+            void Decrypt(byte[] bytes, int key_value)
+            {
+                var step = (key_value >> 8) % 3 + 1;
+                for (int i = 0; i < bytes.Length; i++)
+                {
+                    var index = (byte)key_value;
+                    bytes[i] ^= key[index];
+                    key_value += step;
+                }
+            }
         }
     }
 }
