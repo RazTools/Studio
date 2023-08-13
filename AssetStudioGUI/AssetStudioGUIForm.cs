@@ -156,8 +156,20 @@ namespace AssetStudioGUI
             Studio.Game = GameManager.GetGame(Properties.Settings.Default.selectedGame);
             Logger.Info($"Target Game type is {Studio.Game.Type}");
 
-            MapNameComboBox.SelectedIndexChanged += new EventHandler(specifyNameComboBox_SelectedIndexChanged);
+            if (Studio.Game.Type.IsUnityCN())
+            {
             UnityCNManager.SetKey(Properties.Settings.Default.selectedUnityCNKey);
+        }
+
+            MapNameComboBox.SelectedIndexChanged += new EventHandler(specifyNameComboBox_SelectedIndexChanged);
+            if (!string.IsNullOrEmpty(Properties.Settings.Default.selectedCABMapName))
+            {
+                if (!AssetsHelper.LoadCABMap(Properties.Settings.Default.selectedCABMapName))
+                {
+                    Properties.Settings.Default.selectedCABMapName = "";
+                    Properties.Settings.Default.Save();
+                }
+            }
         }
         private void AssetStudioGUIForm_DragEnter(object sender, DragEventArgs e)
         {
@@ -2017,6 +2029,11 @@ namespace AssetStudioGUI
             Studio.Game = GameManager.GetGame(Properties.Settings.Default.selectedGame);
             Logger.Info($"Target Game is {Studio.Game.Name}");
 
+            if (Studio.Game.Type.IsUnityCN())
+            {
+                UnityCNManager.SetKey(Properties.Settings.Default.selectedUnityCNKey);
+            }
+
             assetsManager.SpecifyUnityVersion = specifyUnityVersion.Text;
             assetsManager.Game = Studio.Game;
         }
@@ -2029,7 +2046,14 @@ namespace AssetStudioGUI
             ResetForm();
 
             var name = MapNameComboBox.SelectedItem.ToString();
-            await Task.Run(() => AssetsHelper.LoadCABMap(name));
+            await Task.Run(() =>
+            {
+                if (AssetsHelper.LoadCABMap(name))
+                {
+                    Properties.Settings.Default.selectedCABMapName = name;
+                    Properties.Settings.Default.Save();
+                }
+            });
 
             assetsManager.SpecifyUnityVersion = specifyUnityVersion.Text;
             assetsManager.Game = Studio.Game;

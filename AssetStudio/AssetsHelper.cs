@@ -189,7 +189,7 @@ namespace AssetStudio
             }
         }
 
-        public static void LoadCABMap(string mapName)
+        public static bool LoadCABMap(string mapName)
         {
             Logger.Info($"Loading {mapName}");
             try
@@ -224,8 +224,11 @@ namespace AssetStudio
             }
             catch (Exception e)
             {
-                Logger.Warning($"{mapName} was not loaded, {e}"); 
+                Logger.Warning($"{mapName} was not loaded, {e}");
+                return false;
             }
+
+            return true;
         }
 
         public static void BuildAssetMap(string[] files, string mapName, Game game, string savePath, ExportListType exportListType, ManualResetEvent resetEvent = null, ClassIDType[] typeFilters = null, Regex[] nameFilters = null, Regex[] containerFilters = null)

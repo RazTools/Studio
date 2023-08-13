@@ -65,7 +65,11 @@ namespace AssetStudioGUI
                 }
             }
             UnityCNManager.SaveEntries(keys.Reverse<UnityCN.Entry>().ToList());
-            UnityCNManager.SetKey(specifyUnityCNList.CurrentRow.Index);
+
+            if (Studio.Game.Type.IsUnityCN())
+            {
+                UnityCNManager.SetKey(specifyUnityCNList.CurrentRow.Index);
+            }
 
             Properties.Settings.Default.selectedUnityCNKey = specifyUnityCNList.CurrentRow.Index;
             Properties.Settings.Default.Save();
