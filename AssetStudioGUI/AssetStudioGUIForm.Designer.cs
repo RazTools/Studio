@@ -55,6 +55,8 @@ namespace AssetStudioGUI
             toolStripSeparator12 = new System.Windows.Forms.ToolStripSeparator();
             toolStripMenuItem14 = new System.Windows.Forms.ToolStripMenuItem();
             specifyUnityVersion = new System.Windows.Forms.ToolStripTextBox();
+            specifyUnityCNKey = new System.Windows.Forms.ToolStripMenuItem();
+            toolStripSeparator13 = new System.Windows.Forms.ToolStripSeparator();
             toolStripMenuItem18 = new System.Windows.Forms.ToolStripMenuItem();
             specifyGame = new System.Windows.Forms.ToolStripComboBox();
             toolStripMenuItem19 = new System.Windows.Forms.ToolStripMenuItem();
@@ -101,6 +103,8 @@ namespace AssetStudioGUI
             exportClassStructuresMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             enableConsole = new System.Windows.Forms.ToolStripMenuItem();
             clearConsoleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            enableFileLogging = new System.Windows.Forms.ToolStripMenuItem();
+            enableVerbose = new System.Windows.Forms.ToolStripMenuItem();
             miscToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             MapNameComboBox = new System.Windows.Forms.ToolStripComboBox();
             buildMapToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -167,8 +171,6 @@ namespace AssetStudioGUI
             exportAnimatorwithselectedAnimationClipMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             goToSceneHierarchyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             showOriginalFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            specifyUnityCNKey = new System.Windows.Forms.ToolStripMenuItem();
-            toolStripSeparator13 = new System.Windows.Forms.ToolStripSeparator();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
@@ -359,6 +361,18 @@ namespace AssetStudioGUI
             specifyUnityVersion.Font = new System.Drawing.Font("Microsoft YaHei UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             specifyUnityVersion.Name = "specifyUnityVersion";
             specifyUnityVersion.Size = new System.Drawing.Size(100, 23);
+            // 
+            // specifyUnityCNKey
+            // 
+            specifyUnityCNKey.Name = "specifyUnityCNKey";
+            specifyUnityCNKey.Size = new System.Drawing.Size(225, 22);
+            specifyUnityCNKey.Text = "Specify UnityCN Key";
+            specifyUnityCNKey.Click += specifyUnityCNKey_Click;
+            // 
+            // toolStripSeparator13
+            // 
+            toolStripSeparator13.Name = "toolStripSeparator13";
+            toolStripSeparator13.Size = new System.Drawing.Size(222, 6);
             // 
             // toolStripMenuItem18
             // 
@@ -642,7 +656,7 @@ namespace AssetStudioGUI
             // 
             // debugMenuItem
             // 
-            debugMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { toolStripMenuItem15, exportClassStructuresMenuItem, enableConsole, clearConsoleToolStripMenuItem });
+            debugMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { toolStripMenuItem15, exportClassStructuresMenuItem, enableConsole, clearConsoleToolStripMenuItem, enableFileLogging, enableVerbose });
             debugMenuItem.Name = "debugMenuItem";
             debugMenuItem.Size = new System.Drawing.Size(54, 20);
             debugMenuItem.Text = "Debug";
@@ -680,6 +694,24 @@ namespace AssetStudioGUI
             clearConsoleToolStripMenuItem.Size = new System.Drawing.Size(191, 22);
             clearConsoleToolStripMenuItem.Text = "Clear Console";
             clearConsoleToolStripMenuItem.Click += clearConsoleToolStripMenuItem_Click;
+            // 
+            // enableFileLogging
+            // 
+            enableFileLogging.Checked = true;
+            enableFileLogging.CheckOnClick = true;
+            enableFileLogging.CheckState = System.Windows.Forms.CheckState.Checked;
+            enableFileLogging.Name = "enableFileLogging";
+            enableFileLogging.Size = new System.Drawing.Size(191, 22);
+            enableFileLogging.Text = "Enable File Logging";
+            enableFileLogging.CheckedChanged += enableFileLogging_CheckedChanged;
+            // 
+            // enableVerbose
+            // 
+            enableVerbose.CheckOnClick = true;
+            enableVerbose.Name = "enableVerbose";
+            enableVerbose.Size = new System.Drawing.Size(191, 22);
+            enableVerbose.Text = "Enable Verbose";
+            enableVerbose.CheckedChanged += enableVerbose_Click;
             // 
             // miscToolStripMenuItem
             // 
@@ -843,16 +875,14 @@ namespace AssetStudioGUI
             // treeSearch
             // 
             treeSearch.Dock = System.Windows.Forms.DockStyle.Top;
-            treeSearch.ForeColor = System.Drawing.SystemColors.GrayText;
+            treeSearch.ForeColor = System.Drawing.SystemColors.WindowText;
             treeSearch.Location = new System.Drawing.Point(0, 0);
             treeSearch.Name = "treeSearch";
             treeSearch.Size = new System.Drawing.Size(472, 23);
             treeSearch.TabIndex = 0;
-            treeSearch.Text = " Search ";
+            treeSearch.PlaceholderText = "Search (with Ctrl to check result, with Shift for all)";
             treeSearch.TextChanged += treeSearch_TextChanged;
-            treeSearch.Enter += treeSearch_Enter;
             treeSearch.KeyDown += treeSearch_KeyDown;
-            treeSearch.Leave += treeSearch_Leave;
             // 
             // tabPage2
             // 
@@ -910,15 +940,13 @@ namespace AssetStudioGUI
             // listSearch
             // 
             listSearch.Dock = System.Windows.Forms.DockStyle.Top;
-            listSearch.ForeColor = System.Drawing.SystemColors.GrayText;
+            listSearch.ForeColor = System.Drawing.SystemColors.WindowText;
             listSearch.Location = new System.Drawing.Point(0, 0);
             listSearch.Name = "listSearch";
             listSearch.Size = new System.Drawing.Size(472, 23);
             listSearch.TabIndex = 0;
-            listSearch.Text = " Filter ";
-            listSearch.TextChanged += ListSearchTextChanged;
-            listSearch.Enter += listSearch_Enter;
-            listSearch.Leave += listSearch_Leave;
+            listSearch.PlaceholderText = "Search";
+            listSearch.KeyPress += listSearch_KeyPress;
             // 
             // tabPage3
             // 
@@ -1166,7 +1194,7 @@ namespace AssetStudioGUI
             // glControl
             // 
             glControl.API = OpenTK.Windowing.Common.ContextAPI.OpenGL;
-            glControl.APIVersion = new Version(4, 6, 0, 0);
+            glControl.APIVersion = new Version(4, 5, 0, 0);
             glControl.BackColor = System.Drawing.SystemColors.ControlDarkDark;
             glControl.Dock = System.Windows.Forms.DockStyle.Fill;
             glControl.Flags = OpenTK.Windowing.Common.ContextFlags.Default;
@@ -1307,18 +1335,6 @@ namespace AssetStudioGUI
             showOriginalFileToolStripMenuItem.Text = "Show original file";
             showOriginalFileToolStripMenuItem.Visible = false;
             showOriginalFileToolStripMenuItem.Click += showOriginalFileToolStripMenuItem_Click;
-            // 
-            // specifyUnityCNKey
-            // 
-            specifyUnityCNKey.Name = "specifyUnityCNKey";
-            specifyUnityCNKey.Size = new System.Drawing.Size(225, 22);
-            specifyUnityCNKey.Text = "Specify UnityCN Key";
-            specifyUnityCNKey.Click += specifyUnityCNKey_Click;
-            // 
-            // toolStripSeparator13
-            // 
-            toolStripSeparator13.Name = "toolStripSeparator13";
-            toolStripSeparator13.Size = new System.Drawing.Size(222, 6);
             // 
             // AssetStudioGUIForm
             // 
@@ -1506,6 +1522,8 @@ namespace AssetStudioGUI
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator12;
         private System.Windows.Forms.ToolStripMenuItem specifyUnityCNKey;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator13;
+        private System.Windows.Forms.ToolStripMenuItem enableFileLogging;
+        private System.Windows.Forms.ToolStripMenuItem enableVerbose;
     }
 }
 

@@ -11,6 +11,8 @@ namespace AssetStudio
         private static readonly byte[] Signature = new byte[] { 0xEE, 0xDD };
         public static void Decrypt(Span<byte> bytes)
         {
+            Logger.Verbose($"Attempting to decrypt block with NetEase encryption...");
+
             var (encryptedOffset, encryptedSize) = ReadHeader(bytes);
             var encrypted = bytes.Slice(encryptedOffset, encryptedSize);
             var encryptedInts = MemoryMarshal.Cast<byte, int>(encrypted);
@@ -77,7 +79,7 @@ namespace AssetStudio
         }
         private static (int, int) ReadHeader(Span<byte> bytes)
         {
-            var index = bytes.Search(Signature, 0);
+            var index = bytes.Search(Signature);
             if (index == -1 || index >= 0x40)
             {
                 throw new Exception("Header not found !!");
@@ -127,6 +129,7 @@ namespace AssetStudio
                 throw new Exception("Unsupported version");
             }
             var versionString = version.ToString("X4");
+            Logger.Verbose($"Bundle version: {versionString}");
             Encoding.UTF8.GetBytes(versionString, bytes);
         }
 

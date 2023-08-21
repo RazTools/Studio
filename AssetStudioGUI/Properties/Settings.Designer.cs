@@ -465,5 +465,41 @@ namespace AssetStudioGUI.Properties {
                 this["selectedCABMapName"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool disableAnimationClip {
+            get {
+                return ((bool)(this["disableAnimationClip"]));
+            }
+            set {
+                this["disableAnimationClip"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool enableFileLogging {
+            get {
+                return ((bool)(this["enableFileLogging"]));
+            }
+            set {
+                this["enableFileLogging"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool enableVerbose {
+            get {
+                return ((bool)(this["enableVerbose"]));
+            }
+            set {
+                this["enableVerbose"] = value;
+            }
+        }
     }
 }

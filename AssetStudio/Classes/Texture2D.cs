@@ -105,7 +105,7 @@ namespace AssetStudio
                     var m_ReadAllowed = reader.ReadBoolean();
                 }
             }
-            if (version[0] > 2018 || (version[0] == 2018 && version[1] >= 2) || reader.Game.Type.IsGI()) //2018.2 and up
+            if (version[0] > 2018 || (version[0] == 2018 && version[1] >= 2)) //2018.2 and up
             {
                 var m_StreamingMipmaps = reader.ReadBoolean();
             }

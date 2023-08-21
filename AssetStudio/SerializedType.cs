@@ -19,5 +19,16 @@ namespace AssetStudio
         public string m_AsmName;
 
         public bool Match(string hash) => Convert.ToHexString(m_OldTypeHash) == hash;
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+            sb.Append($"classID: {classID} | ");
+            sb.Append($"IsStrippedType: {m_IsStrippedType} | ");
+            sb.Append($"ScriptTypeIndex: {m_ScriptTypeIndex} | ");
+            sb.Append($"KlassName: {m_KlassName} | ");
+            sb.Append($"NameSpace: {m_NameSpace} | ");
+            sb.Append($"AsmName: {m_AsmName}");
+            return sb.ToString();
+        }
     }
 }

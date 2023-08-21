@@ -244,7 +244,7 @@ namespace AssetStudio
         private static void SetFrame(ImportedFrame frame, Vector3 t, Quaternion q, Vector3 s)
         {
             frame.LocalPosition = new Vector3(-t.X, t.Y, t.Z);
-            frame.LocalRotation = Fbx.QuaternionToEuler(new Quaternion(q.X, -q.Y, -q.Z, q.W));
+            frame.LocalRotation = new Quaternion(q.X, -q.Y, -q.Z, q.W);
             frame.LocalScale = s;
         }
 
@@ -818,8 +818,8 @@ namespace AssetStudio
                         for (int i = 0; i < numKeys; i++)
                         {
                             var quat = quats[i];
-                            var value = Fbx.QuaternionToEuler(new Quaternion(quat.X, -quat.Y, -quat.Z, quat.W));
-                            track.Rotations.Add(new ImportedKeyframe<Vector3>(times[i], value));
+                            var value = new Quaternion(quat.X, -quat.Y, -quat.Z, quat.W);
+                            track.Rotations.Add(new ImportedKeyframe<Quaternion>(times[i], value));
                         }
                     }
                     foreach (var m_RotationCurve in animationClip.m_RotationCurves)
@@ -827,8 +827,8 @@ namespace AssetStudio
                         var track = iAnim.FindTrack(FixBonePath(animationClip, m_RotationCurve.path));
                         foreach (var m_Curve in m_RotationCurve.curve.m_Curve)
                         {
-                            var value = Fbx.QuaternionToEuler(new Quaternion(m_Curve.value.X, -m_Curve.value.Y, -m_Curve.value.Z, m_Curve.value.W));
-                            track.Rotations.Add(new ImportedKeyframe<Vector3>(m_Curve.time, value));
+                            var value = new Quaternion(m_Curve.value.X, -m_Curve.value.Y, -m_Curve.value.Z, m_Curve.value.W);
+                            track.Rotations.Add(new ImportedKeyframe<Quaternion>(m_Curve.time, value));
                         }
                     }
                     foreach (var m_PositionCurve in animationClip.m_PositionCurves)
@@ -854,7 +854,8 @@ namespace AssetStudio
                             var track = iAnim.FindTrack(FixBonePath(animationClip, m_EulerCurve.path));
                             foreach (var m_Curve in m_EulerCurve.curve.m_Curve)
                             {
-                                track.Rotations.Add(new ImportedKeyframe<Vector3>(m_Curve.time, new Vector3(m_Curve.value.X, -m_Curve.value.Y, -m_Curve.value.Z)));
+                                var value = Fbx.EulerToQuaternion(new Vector3(m_Curve.value.X, -m_Curve.value.Y, -m_Curve.value.Z));
+                                track.Rotations.Add(new ImportedKeyframe<Quaternion>(m_Curve.time, value));
                             }
                         }
                     }
@@ -1009,14 +1010,13 @@ namespace AssetStudio
                         )));
                         break;
                     case 2:
-                        var value = Fbx.QuaternionToEuler(new Quaternion
+                        track.Rotations.Add(new ImportedKeyframe<Quaternion>(time, new Quaternion
                         (
                             data[curveIndex++ + offset],
                             -data[curveIndex++ + offset],
                             -data[curveIndex++ + offset],
                             data[curveIndex++ + offset]
-                        ));
-                        track.Rotations.Add(new ImportedKeyframe<Vector3>(time, value));
+                        )));
                         break;
                     case 3:
                         track.Scalings.Add(new ImportedKeyframe<Vector3>(time, new Vector3
@@ -1027,12 +1027,13 @@ namespace AssetStudio
                         )));
                         break;
                     case 4:
-                        track.Rotations.Add(new ImportedKeyframe<Vector3>(time, new Vector3
+                        var value = Fbx.EulerToQuaternion(new Vector3
                         (
                             data[curveIndex++ + offset],
                             -data[curveIndex++ + offset],
                             -data[curveIndex++ + offset]
-                        )));
+                        ));
+                        track.Rotations.Add(new ImportedKeyframe<Quaternion>(time, value));
                         break;
                     default:
                         curveIndex++;

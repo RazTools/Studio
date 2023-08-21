@@ -28,8 +28,11 @@ namespace AssetStudio
             DecryptKey(signatureKey, signatureBytes);
 
             var str = Encoding.UTF8.GetString(signatureBytes);
+            Logger.Verbose($"Decrypted signature is {str}");
             if (str != Signature)
-                throw new Exception("Invalid Signature !!");
+            {
+                throw new Exception($"Invalid Signature, Expected {Signature} but found {str} instead");
+            }
 
             DecryptKey(infoKey, infoBytes);
 
@@ -41,19 +44,20 @@ namespace AssetStudio
                 var idx = (i % 4 * 4) + (i / 4);
                 Sub[idx] = subBytes[i];
             }
+
         }
 
         public static bool SetKey(Entry entry)
         {
+            Logger.Verbose($"Initializing decryptor with key {entry.Key}");
             try
             {
-                using (var aes = Aes.Create())
-                {
-                    aes.Mode = CipherMode.ECB;
-                    aes.Key = Convert.FromHexString(entry.Key);
+                using var aes = Aes.Create();
+                aes.Mode = CipherMode.ECB;
+                aes.Key = Convert.FromHexString(entry.Key);
 
-                    Encryptor = aes.CreateEncryptor();
-                }
+                Encryptor = aes.CreateEncryptor();
+                Logger.Verbose($"Decryptor initialized !!");
             }
             catch (Exception e)
             {

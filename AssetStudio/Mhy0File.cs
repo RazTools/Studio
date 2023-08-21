@@ -15,6 +15,8 @@ namespace AssetStudio
         public long Offset;
         public Mhy0 mhy0;
 
+        public long TotalSize => 8 + m_Header.compressedBlocksInfoSize + m_BlocksInfo.Sum(x => x.compressedSize);
+
         public Mhy0File(FileReader reader, string path, Mhy0 mhy0)
         {
             this.mhy0 = mhy0;
@@ -22,6 +24,10 @@ namespace AssetStudio
             reader.Endian = EndianType.LittleEndian;
 
             var signature = reader.ReadStringToNull(4);
+            Logger.Verbose($"Parsed signature {signature}");
+            if (signature != "mhy0")
+                throw new Exception("not a mhy0");
+
             m_Header = new BundleFile.Header
             {
                 version = 6,
@@ -30,6 +36,7 @@ namespace AssetStudio
                 compressedBlocksInfoSize = reader.ReadUInt32(),
                 flags = (ArchiveFlags)0x43
             };
+            Logger.Verbose($"Header: {m_Header}");
             ReadBlocksInfoAndDirectory(reader);
             using var blocksStream = CreateBlocksStream(path);
             ReadBlocks(reader, blocksStream);
@@ -41,9 +48,11 @@ namespace AssetStudio
             var blocksInfo = reader.ReadBytes((int)m_Header.compressedBlocksInfoSize);
             DescrambleHeader(blocksInfo);
 
+            Logger.Verbose($"Descrambled blocksInfo signature {Convert.ToHexString(blocksInfo, 0 , 4)}");
             using var blocksInfoStream = new MemoryStream(blocksInfo, 0x20, (int)m_Header.compressedBlocksInfoSize - 0x20);
             using var blocksInfoReader = new EndianBinaryReader(blocksInfoStream);
             m_Header.uncompressedBlocksInfoSize = blocksInfoReader.ReadMhy0UInt();
+            Logger.Verbose($"uncompressed blocksInfo size: 0x{m_Header.uncompressedBlocksInfoSize:X8}");
             var compressedBlocksInfo = blocksInfoReader.ReadBytes((int)blocksInfoReader.Remaining);
             var uncompressedBlocksInfo = new byte[(int)m_Header.uncompressedBlocksInfoSize];
             var numWrite = LZ4Codec.Decode(compressedBlocksInfo, uncompressedBlocksInfo);
@@ -52,10 +61,12 @@ namespace AssetStudio
                 throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {m_Header.uncompressedBlocksInfoSize} bytes");
             }
 
+            Logger.Verbose($"Writing block and directory to blocks stream...");
             using var blocksInfoUncompressedStream = new MemoryStream(uncompressedBlocksInfo);
             using var blocksInfoUncompressedReader = new EndianBinaryReader(blocksInfoUncompressedStream);
             var nodesCount = blocksInfoUncompressedReader.ReadMhy0Int();
             m_DirectoryInfo = new BundleFile.Node[nodesCount];
+            Logger.Verbose($"Directory count: {nodesCount}");
             for (int i = 0; i < nodesCount; i++)
             {
                 m_DirectoryInfo[i] = new BundleFile.Node
@@ -65,10 +76,13 @@ namespace AssetStudio
                     offset = blocksInfoUncompressedReader.ReadMhy0Int(),
                     size = blocksInfoUncompressedReader.ReadMhy0UInt()
                 };
+
+                Logger.Verbose($"Directory {i} Info: {m_DirectoryInfo[i]}");
             }
 
             var blocksInfoCount = blocksInfoUncompressedReader.ReadMhy0Int();
             m_BlocksInfo = new BundleFile.StorageBlock[blocksInfoCount];
+            Logger.Verbose($"Blocks count: {blocksInfoCount}");
             for (int i = 0; i < blocksInfoCount; i++)
             {
                 m_BlocksInfo[i] = new BundleFile.StorageBlock
@@ -77,6 +91,8 @@ namespace AssetStudio
                     uncompressedSize = blocksInfoUncompressedReader.ReadMhy0UInt(),
                     flags = (StorageBlockFlags)0x43
                 };
+
+                Logger.Verbose($"Block {i} Info: {m_BlocksInfo[i]}");
             }
         }
 
@@ -84,6 +100,7 @@ namespace AssetStudio
         {
             Stream blocksStream;
             var uncompressedSizeSum = (int)m_BlocksInfo.Sum(x => x.uncompressedSize);
+            Logger.Verbose($"Total size of decompressed blocks: 0x{uncompressedSizeSum:X8}");
             if (uncompressedSizeSum >= int.MaxValue)
                 blocksStream = new FileStream(path + ".temp", FileMode.Create, FileAccess.ReadWrite, FileShare.None, 4096, FileOptions.DeleteOnClose);
             else
@@ -110,6 +127,7 @@ namespace AssetStudio
                 var uncompressedBytesSpan = uncompressedBytes.AsSpan(0, uncompressedSize);
                 DescrambleEntry(compressedBytesSpan);
 
+                Logger.Verbose($"Descrambled block signature {Convert.ToHexString(compressedBytes, 0, 4)}");
                 var numWrite = LZ4Codec.Decode(compressedBytesSpan[0xC..compressedSize], uncompressedBytesSpan);
                 if (numWrite != uncompressedSize)
                 {
@@ -124,6 +142,8 @@ namespace AssetStudio
 
         private void ReadFiles(Stream blocksStream, string path)
         {
+            Logger.Verbose($"Writing files from blocks stream...");
+
             fileList = new StreamFile[m_DirectoryInfo.Length];
             for (int i = 0; i < m_DirectoryInfo.Length; i++)
             {

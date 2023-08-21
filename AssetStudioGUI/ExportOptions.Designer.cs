@@ -35,6 +35,8 @@ namespace AssetStudioGUI
             OKbutton = new System.Windows.Forms.Button();
             Cancel = new System.Windows.Forms.Button();
             groupBox1 = new System.Windows.Forms.GroupBox();
+            assetGroupOptions = new System.Windows.Forms.ComboBox();
+            label7 = new System.Windows.Forms.Label();
             openAfterExport = new System.Windows.Forms.CheckBox();
             restoreExtensionName = new System.Windows.Forms.CheckBox();
             assetGroupOptions = new System.Windows.Forms.ComboBox();
@@ -71,11 +73,10 @@ namespace AssetStudioGUI
             key = new System.Windows.Forms.NumericUpDown();
             keyToolTip = new System.Windows.Forms.ToolTip(components);
             groupBox4 = new System.Windows.Forms.GroupBox();
+            disableAnimationClip = new System.Windows.Forms.CheckBox();
             minimalAssetMap = new System.Windows.Forms.CheckBox();
             disableShader = new System.Windows.Forms.CheckBox();
             disableRenderer = new System.Windows.Forms.CheckBox();
-            resolveToolTip = new System.Windows.Forms.ToolTip(components);
-            skipToolTip = new System.Windows.Forms.ToolTip(components);
             groupBox1.SuspendLayout();
             panel1.SuspendLayout();
             groupBox2.SuspendLayout();
@@ -112,6 +113,8 @@ namespace AssetStudioGUI
             // groupBox1
             // 
             groupBox1.AutoSize = true;
+            groupBox1.Controls.Add(assetGroupOptions);
+            groupBox1.Controls.Add(label7);
             groupBox1.Controls.Add(openAfterExport);
             groupBox1.Controls.Add(restoreExtensionName);
             groupBox1.Controls.Add(assetGroupOptions);
@@ -123,17 +126,38 @@ namespace AssetStudioGUI
             groupBox1.Margin = new System.Windows.Forms.Padding(4);
             groupBox1.Name = "groupBox1";
             groupBox1.Padding = new System.Windows.Forms.Padding(4);
-            groupBox1.Size = new System.Drawing.Size(271, 243);
+            groupBox1.Size = new System.Drawing.Size(271, 273);
             groupBox1.TabIndex = 9;
             groupBox1.TabStop = false;
             groupBox1.Text = "Export";
+            // 
+            // assetGroupOptions
+            // 
+            assetGroupOptions.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            assetGroupOptions.FormattingEnabled = true;
+            assetGroupOptions.Items.AddRange(new object[] { "type name", "container path", "source file name", "do not group" });
+            assetGroupOptions.Location = new System.Drawing.Point(7, 83);
+            assetGroupOptions.Margin = new System.Windows.Forms.Padding(4);
+            assetGroupOptions.Name = "assetGroupOptions";
+            assetGroupOptions.Size = new System.Drawing.Size(173, 23);
+            assetGroupOptions.TabIndex = 12;
+            // 
+            // label7
+            // 
+            label7.AutoSize = true;
+            label7.Location = new System.Drawing.Point(7, 64);
+            label7.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            label7.Name = "label7";
+            label7.Size = new System.Drawing.Size(140, 15);
+            label7.TabIndex = 11;
+            label7.Text = "Group exported assets by";
             // 
             // openAfterExport
             // 
             openAfterExport.AutoSize = true;
             openAfterExport.Checked = true;
             openAfterExport.CheckState = System.Windows.Forms.CheckState.Checked;
-            openAfterExport.Location = new System.Drawing.Point(7, 200);
+            openAfterExport.Location = new System.Drawing.Point(8, 230);
             openAfterExport.Margin = new System.Windows.Forms.Padding(4);
             openAfterExport.Name = "openAfterExport";
             openAfterExport.Size = new System.Drawing.Size(153, 19);
@@ -146,7 +170,7 @@ namespace AssetStudioGUI
             restoreExtensionName.AutoSize = true;
             restoreExtensionName.Checked = true;
             restoreExtensionName.CheckState = System.Windows.Forms.CheckState.Checked;
-            restoreExtensionName.Location = new System.Drawing.Point(7, 72);
+            restoreExtensionName.Location = new System.Drawing.Point(7, 109);
             restoreExtensionName.Margin = new System.Windows.Forms.Padding(4);
             restoreExtensionName.Name = "restoreExtensionName";
             restoreExtensionName.Size = new System.Drawing.Size(204, 19);
@@ -171,7 +195,7 @@ namespace AssetStudioGUI
             label6.Location = new System.Drawing.Point(7, 21);
             label6.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label6.Name = "label6";
-            label6.Size = new System.Drawing.Size(140, 15);
+            label6.Size = new System.Drawing.Size(80, 15);
             label6.TabIndex = 7;
             label6.Text = "Group exported assets by";
             // 
@@ -180,7 +204,7 @@ namespace AssetStudioGUI
             convertAudio.AutoSize = true;
             convertAudio.Checked = true;
             convertAudio.CheckState = System.Windows.Forms.CheckState.Checked;
-            convertAudio.Location = new System.Drawing.Point(7, 172);
+            convertAudio.Location = new System.Drawing.Point(7, 204);
             convertAudio.Margin = new System.Windows.Forms.Padding(4);
             convertAudio.Name = "convertAudio";
             convertAudio.Size = new System.Drawing.Size(200, 19);
@@ -194,7 +218,7 @@ namespace AssetStudioGUI
             panel1.Controls.Add(tojpg);
             panel1.Controls.Add(topng);
             panel1.Controls.Add(tobmp);
-            panel1.Location = new System.Drawing.Point(23, 128);
+            panel1.Location = new System.Drawing.Point(23, 164);
             panel1.Margin = new System.Windows.Forms.Padding(4);
             panel1.Name = "panel1";
             panel1.Size = new System.Drawing.Size(236, 38);
@@ -251,7 +275,7 @@ namespace AssetStudioGUI
             converttexture.AutoSize = true;
             converttexture.Checked = true;
             converttexture.CheckState = System.Windows.Forms.CheckState.Checked;
-            converttexture.Location = new System.Drawing.Point(7, 100);
+            converttexture.Location = new System.Drawing.Point(7, 136);
             converttexture.Margin = new System.Windows.Forms.Padding(4);
             converttexture.Name = "converttexture";
             converttexture.Size = new System.Drawing.Size(123, 19);
@@ -536,19 +560,31 @@ namespace AssetStudioGUI
             // groupBox4
             // 
             groupBox4.AutoSize = true;
+            groupBox4.Controls.Add(disableAnimationClip);
             groupBox4.Controls.Add(minimalAssetMap);
             groupBox4.Controls.Add(disableShader);
             groupBox4.Controls.Add(disableRenderer);
             groupBox4.Controls.Add(key);
             groupBox4.Controls.Add(encrypted);
-            groupBox4.Location = new System.Drawing.Point(13, 258);
+            groupBox4.Location = new System.Drawing.Point(13, 287);
             groupBox4.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             groupBox4.Name = "groupBox4";
             groupBox4.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            groupBox4.Size = new System.Drawing.Size(272, 187);
+            groupBox4.Size = new System.Drawing.Size(272, 146);
             groupBox4.TabIndex = 13;
             groupBox4.TabStop = false;
             groupBox4.Text = "Options";
+            // 
+            // disableAnimationClip
+            // 
+            disableAnimationClip.AutoSize = true;
+            disableAnimationClip.Location = new System.Drawing.Point(119, 72);
+            disableAnimationClip.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            disableAnimationClip.Name = "disableAnimationClip";
+            disableAnimationClip.Size = new System.Drawing.Size(144, 19);
+            disableAnimationClip.TabIndex = 18;
+            disableAnimationClip.Text = "Disable AnimationClip";
+            disableAnimationClip.UseVisualStyleBackColor = true;
             // 
             // minimalAssetMap
             // 
@@ -569,7 +605,6 @@ namespace AssetStudioGUI
             disableShader.Size = new System.Drawing.Size(103, 19);
             disableShader.TabIndex = 16;
             disableShader.Text = "Disable Shader";
-            skipToolTip.SetToolTip(disableShader, "Skips the container recovery step.\nImproves loading when dealing with a large number of files.");
             disableShader.UseVisualStyleBackColor = true;
             // 
             // disableRenderer
@@ -581,7 +616,6 @@ namespace AssetStudioGUI
             disableRenderer.Size = new System.Drawing.Size(114, 19);
             disableRenderer.TabIndex = 15;
             disableRenderer.Text = "Disable Renderer";
-            skipToolTip.SetToolTip(disableRenderer, "Skips the container recovery step.\nImproves loading when dealing with a large number of files.");
             disableRenderer.UseVisualStyleBackColor = true;
             // 
             // ExportOptions
@@ -661,10 +695,11 @@ namespace AssetStudioGUI
         private System.Windows.Forms.ToolTip keyToolTip;
         private System.Windows.Forms.CheckBox exportUV0UV1;
         private System.Windows.Forms.GroupBox groupBox4;
-        private System.Windows.Forms.ToolTip resolveToolTip;
-        private System.Windows.Forms.ToolTip skipToolTip;
         private System.Windows.Forms.CheckBox disableShader;
         private System.Windows.Forms.CheckBox disableRenderer;
         private System.Windows.Forms.CheckBox minimalAssetMap;
+        private System.Windows.Forms.ComboBox assetGroupOptions;
+        private System.Windows.Forms.Label label7;
+        private System.Windows.Forms.CheckBox disableAnimationClip;
     }
 }

@@ -12,6 +12,7 @@ namespace AssetStudio
 
         public static void Decrypt(Span<byte> data, string path)
         {
+            Logger.Verbose($"Attempting to decrypt block with OPFP encryption...");
             if (IsEncryptionBundle(path, out var key, out var version))
             {
                 switch (version)
@@ -41,30 +42,39 @@ namespace AssetStudio
             {
                 if (V1_Prefixes.Any(prefix => relativePath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
                 {
+                    Logger.Verbose("Path matches with V1 prefixes, generatring key...");
                     key = (byte)Path.GetFileName(relativePath).Length;
                     version = 1;
+                    Logger.Verbose($"version: {version}, key: {key}");
                     return true;
                 }
                 else if (V0_Prefixes.Any(prefix => relativePath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
                 {
+                    Logger.Verbose("Path matches with V2 prefixes, generatring key...");
+
                     key = (byte)relativePath.Length;
                     version = 0;
+                    Logger.Verbose($"version: {version}, key: {key}");
                     return true;
                 }
             }
+            Logger.Verbose($"Unknown encryption type");
             key = 0x00;
             version = 0;
             return false;
         }
         private static bool IsFixedPath(string path, out string fixedPath)
         {
+            Logger.Verbose($"Fixing path before checking...");
             var dirs = path.Split(Path.DirectorySeparatorChar);
             if (dirs.Contains(BaseFolder))
             {
                 var idx = Array.IndexOf(dirs, BaseFolder);
+                Logger.Verbose($"Seperator found at index {idx}");
                 fixedPath = string.Join(Path.DirectorySeparatorChar, dirs[(idx+1)..]).Replace("\\", "/");
                 return true;
             }
+            Logger.Verbose($"Unknown path");
             fixedPath = string.Empty;
             return false;
         }

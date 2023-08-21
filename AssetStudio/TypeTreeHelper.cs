@@ -186,6 +186,7 @@ namespace AssetStudio
         {
             var m_Node = m_Nodes[i];
             var varTypeStr = m_Node.m_Type;
+            Logger.Verbose($"Reading {m_Node.m_Name} of type {varTypeStr}");
             object value;
             var align = (m_Node.m_MetaFlag & 0x4000) != 0;
             switch (varTypeStr)

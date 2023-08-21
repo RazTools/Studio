@@ -44,6 +44,7 @@ namespace AssetStudioGUI
             key.Value = Properties.Settings.Default.key;
             disableRenderer.Checked = Properties.Settings.Default.disableRenderer;
             disableShader.Checked = Properties.Settings.Default.disableShader;
+            disableAnimationClip.Checked = Properties.Settings.Default.disableAnimationClip;
             minimalAssetMap.Checked = Properties.Settings.Default.minimalAssetMap;
         }
 
@@ -80,6 +81,7 @@ namespace AssetStudioGUI
             Properties.Settings.Default.key = (byte)key.Value;
             Properties.Settings.Default.disableRenderer = disableRenderer.Checked;
             Properties.Settings.Default.disableShader = disableShader.Checked;
+            Properties.Settings.Default.disableAnimationClip = disableAnimationClip.Checked;
             Properties.Settings.Default.minimalAssetMap = minimalAssetMap.Checked;
             Properties.Settings.Default.Save();
             MiHoYoBinData.Key = (byte)key.Value;
@@ -87,6 +89,7 @@ namespace AssetStudioGUI
             AssetsHelper.Minimal = Properties.Settings.Default.minimalAssetMap;
             Renderer.Parsable = !Properties.Settings.Default.disableRenderer;
             Shader.Parsable = !Properties.Settings.Default.disableShader;
+            AnimationClip.Parsable = !Properties.Settings.Default.disableAnimationClip;
             DialogResult = DialogResult.OK;
             Close();
         }

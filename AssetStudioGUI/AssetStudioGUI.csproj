@@ -5,9 +5,9 @@
 		<TargetFrameworks>net6.0-windows;net7.0-windows</TargetFrameworks>
 		<UseWindowsForms>true</UseWindowsForms>
 		<ApplicationIcon>Resources\as.ico</ApplicationIcon>
-		<Version>0.90.00</Version>
-		<AssemblyVersion>0.90.00</AssemblyVersion>
-		<FileVersion>0.90.00</FileVersion>
+		<Version>0.90.10</Version>
+		<AssemblyVersion>0.90.10</AssemblyVersion>
+		<FileVersion>0.90.10</FileVersion>
 		<Copyright>Copyright © Razmoth 2022; Copyright © Perfare 2018-2022</Copyright>
 		<DebugType>embedded</DebugType>
 	</PropertyGroup>
@@ -69,7 +69,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-		<PackageReference Include="OpenTK" Version="5.0.0-pre.8" />
+		<PackageReference Include="OpenTK" Version="4.8.0" />
 		<Reference Include="OpenTK.WinForms">
 			<HintPath>Libraries\OpenTK.WinForms.dll</HintPath>
 		</Reference>

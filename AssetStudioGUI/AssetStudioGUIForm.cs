@@ -23,6 +23,7 @@ using Matrix4 = OpenTK.Mathematics.Matrix4;
 using OpenTK.Graphics;
 using OpenTK.Mathematics;
 using Newtonsoft.Json.Converters;
+using System.Text.RegularExpressions;
 
 namespace AssetStudioGUI
 {
@@ -50,14 +51,14 @@ namespace AssetStudioGUI
         private bool glControlLoaded;
         private int mdx, mdy;
         private bool lmdown, rmdown;
-        private ProgramHandle pgmID, pgmColorID, pgmBlackID;
+        private int pgmID, pgmColorID, pgmBlackID;
         private int attributeVertexPosition;
         private int attributeNormalDirection;
         private int attributeVertexColor;
         private int uniformModelMatrix;
         private int uniformViewMatrix;
         private int uniformProjMatrix;
-        private VertexArrayHandle vao;
+        private int vao;
         private Vector3[] vertexData;
         private Vector3[] normalData;
         private Vector3[] normal2Data;
@@ -75,10 +76,6 @@ namespace AssetStudioGUI
         private int sortColumn = -1;
         private bool reverseSort;
 
-        //asset list filter
-        private System.Timers.Timer delayTimer;
-        private bool enableFiltering;
-
         //tree search
         private int nextGObject;
         private List<TreeNode> treeSrcResults = new List<TreeNode>();
@@ -93,8 +90,6 @@ namespace AssetStudioGUI
             Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
             InitializeComponent();
             Text = $"Studio v{Application.ProductVersion}";
-            delayTimer = new System.Timers.Timer(800);
-            delayTimer.Elapsed += new ElapsedEventHandler(delayTimer_Elapsed);
             InitializeExportOptions();
             InitializeProgressBar();
             InitializeLogger();
@@ -105,6 +100,8 @@ namespace AssetStudioGUI
         private void InitializeExportOptions()
         {
             enableConsole.Checked = Properties.Settings.Default.enableConsole;
+            enableFileLogging.Checked = Properties.Settings.Default.enableFileLogging;
+            enableVerbose.Checked = Properties.Settings.Default.enableVerbose;
             displayAll.Checked = Properties.Settings.Default.displayAll;
             displayInfo.Checked = Properties.Settings.Default.displayInfo;
             enablePreview.Checked = Properties.Settings.Default.enablePreview;
@@ -119,10 +116,13 @@ namespace AssetStudioGUI
             AssetsHelper.Minimal = Properties.Settings.Default.minimalAssetMap;
             Renderer.Parsable = !Properties.Settings.Default.disableRenderer;
             Shader.Parsable = !Properties.Settings.Default.disableShader;
+            AnimationClip.Parsable = !Properties.Settings.Default.disableAnimationClip;
         }
 
         private void InitializeLogger()
         {
+            Logger.LogVerbose = enableVerbose.Checked;
+            Logger.FileLogging = enableFileLogging.Checked;
             logger = new GUILogger(StatusStripUpdate);
             ConsoleHelper.AllocConsole();
             ConsoleHelper.SetConsoleTitle("Debug Console");
@@ -559,24 +559,6 @@ namespace AssetStudioGUI
             }
         }
 
-        private void treeSearch_Enter(object sender, EventArgs e)
-        {
-            if (treeSearch.Text == " Search ")
-            {
-                treeSearch.Text = "";
-                treeSearch.ForeColor = SystemColors.WindowText;
-            }
-        }
-
-        private void treeSearch_Leave(object sender, EventArgs e)
-        {
-            if (treeSearch.Text == "")
-            {
-                treeSearch.Text = " Search ";
-                treeSearch.ForeColor = SystemColors.GrayText;
-            }
-        }
-
         private void treeSearch_TextChanged(object sender, EventArgs e)
         {
             treeSrcResults.Clear();
@@ -585,38 +567,52 @@ namespace AssetStudioGUI
 
         private void treeSearch_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Enter)
+            if (e.KeyCode == Keys.Enter && !string.IsNullOrEmpty(treeSearch.Text))
             {
                 if (treeSrcResults.Count == 0)
                 {
+                    var regex = new Regex(treeSearch.Text, RegexOptions.IgnoreCase);
                     foreach (TreeNode node in sceneTreeView.Nodes)
                     {
-                        TreeNodeSearch(node);
+                        TreeNodeSearch(regex, node);
                     }
                 }
                 if (treeSrcResults.Count > 0)
                 {
+                    if (e.Shift)
+                    {
+                        foreach(var node in treeSrcResults)
+                        {
+                            node.EnsureVisible();
+                            node.Checked = e.Control;
+                        }
+                        sceneTreeView.SelectedNode = treeSrcResults[0];
+                    }
+                    else
+                    {
                     if (nextGObject >= treeSrcResults.Count)
                     {
                         nextGObject = 0;
                     }
                     treeSrcResults[nextGObject].EnsureVisible();
+                        treeSrcResults[nextGObject].Checked = e.Control;
                     sceneTreeView.SelectedNode = treeSrcResults[nextGObject];
                     nextGObject++;
                 }
             }
         }
+        }
 
-        private void TreeNodeSearch(TreeNode treeNode)
+        private void TreeNodeSearch(Regex regex, TreeNode treeNode)
         {
-            if (treeNode.Text.IndexOf(treeSearch.Text, StringComparison.OrdinalIgnoreCase) >= 0)
+            if (regex.IsMatch(treeNode.Text))
             {
                 treeSrcResults.Add(treeNode);
             }
 
             foreach (TreeNode node in treeNode.Nodes)
             {
-                TreeNodeSearch(node);
+                TreeNodeSearch(regex, node);
             }
         }
 
@@ -628,46 +624,12 @@ namespace AssetStudioGUI
             }
         }
 
-        private void listSearch_Enter(object sender, EventArgs e)
+        private void listSearch_KeyPress(object sender, KeyPressEventArgs e)
         {
-            if (listSearch.Text == " Filter ")
+            if (e.KeyChar == (char)Keys.Enter)
             {
-                listSearch.Text = "";
-                listSearch.ForeColor = SystemColors.WindowText;
-                enableFiltering = true;
+                Invoke(new Action(FilterAssetList));
             }
-        }
-
-        private void listSearch_Leave(object sender, EventArgs e)
-        {
-            if (listSearch.Text == "")
-            {
-                enableFiltering = false;
-                listSearch.Text = " Filter ";
-                listSearch.ForeColor = SystemColors.GrayText;
-            }
-        }
-
-        private void ListSearchTextChanged(object sender, EventArgs e)
-        {
-            if (enableFiltering)
-            {
-                if (delayTimer.Enabled)
-                {
-                    delayTimer.Stop();
-                    delayTimer.Start();
-                }
-                else
-                {
-                    delayTimer.Start();
-                }
-            }
-        }
-
-        private void delayTimer_Elapsed(object sender, ElapsedEventArgs e)
-        {
-            delayTimer.Stop();
-            Invoke(new Action(FilterAssetList));
         }
 
         private void assetListView_ColumnClick(object sender, ColumnClickEventArgs e)
@@ -1429,8 +1391,7 @@ namespace AssetStudioGUI
             lastSelectedItem = null;
             sortColumn = -1;
             reverseSort = false;
-            enableFiltering = false;
-            listSearch.Text = " Filter ";
+            listSearch.Text = string.Empty;
 
             var count = filterTypeToolStripMenuItem.DropDownItems.Count;
             for (var i = 1; i < count; i++)
@@ -1788,12 +1749,13 @@ namespace AssetStudioGUI
                     }
                 }
             }
-            if (listSearch.Text != " Filter ")
+            if (!string.IsNullOrEmpty(listSearch.Text))
             {
+                var regex = new Regex(listSearch.Text, RegexOptions.IgnoreCase);
                 visibleAssets = visibleAssets.FindAll(
-                    x => x.Text.IndexOf(listSearch.Text, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    x.SubItems[1].Text.IndexOf(listSearch.Text, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    x.SubItems[3].Text.IndexOf(listSearch.Text, StringComparison.OrdinalIgnoreCase) >= 0);
+                    x => regex.IsMatch(x.Text) ||
+                    regex.IsMatch(x.SubItems[1].Text) ||
+                    regex.IsMatch(x.SubItems[3].Text));
             }
             assetListView.VirtualListSize = visibleAssets.Count;
             assetListView.EndUpdate();
@@ -2238,6 +2200,22 @@ namespace AssetStudioGUI
             }
         }
 
+        private void enableFileLogging_CheckedChanged(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.enableFileLogging = enableFileLogging.Checked;
+            Properties.Settings.Default.Save();
+
+            Logger.FileLogging = enableFileLogging.Checked;
+        }
+
+        private void enableVerbose_Click(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.enableVerbose = enableVerbose.Checked;
+            Properties.Settings.Default.Save();
+
+            Logger.LogVerbose = enableVerbose.Checked;
+        }
+
         private void abortStripMenuItem_Click(object sender, EventArgs e)
         {
             Logger.Info("Aborting....");
@@ -2607,10 +2585,10 @@ namespace AssetStudioGUI
         private void InitOpenTK()
         {
             ChangeGLSize(glControl.Size);
-            GL.ClearColor(Color4.Cadetblue);
+            GL.ClearColor(System.Drawing.Color.CadetBlue);
             pgmID = GL.CreateProgram();
-            LoadShader("vs", ShaderType.VertexShader, pgmID, out ShaderHandle vsID);
-            LoadShader("fs", ShaderType.FragmentShader, pgmID, out ShaderHandle fsID);
+            LoadShader("vs", ShaderType.VertexShader, pgmID, out int vsID);
+            LoadShader("fs", ShaderType.FragmentShader, pgmID, out int fsID);
             GL.LinkProgram(pgmID);
 
             pgmColorID = GL.CreateProgram();
@@ -2631,7 +2609,7 @@ namespace AssetStudioGUI
             uniformProjMatrix = GL.GetUniformLocation(pgmID, "projMatrix");
         }
 
-        private static void LoadShader(string filename, ShaderType type, ProgramHandle program, out ShaderHandle address)
+        private static void LoadShader(string filename, ShaderType type, int program, out int address)
         {
             address = GL.CreateShader(type);
             var str = (string)Properties.Resources.ResourceManager.GetObject(filename);
@@ -2641,47 +2619,50 @@ namespace AssetStudioGUI
             GL.DeleteShader(address);
         }
 
-        private static void CreateVBO(out BufferHandle vboAddress, Vector3[] data, int address)
+        private static void CreateVBO(out int vboAddress, Vector3[] data, int address)
         {
-            GL.CreateBuffer(out vboAddress);
-            GL.BindBuffer(BufferTargetARB.ArrayBuffer, vboAddress);
-            GL.BufferData(BufferTargetARB.ArrayBuffer,
+            GL.GenBuffers(1, out vboAddress);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, vboAddress);
+            GL.BufferData(BufferTarget.ArrayBuffer,
+                                    (IntPtr)(data.Length * Vector3.SizeInBytes),
                                     data,
-                                    BufferUsageARB.StaticDraw);
-            GL.VertexAttribPointer((uint)address, 3, VertexAttribPointerType.Float, false, 0, 0);
-            GL.EnableVertexAttribArray((uint)address);
+                                    BufferUsageHint.StaticDraw);
+            GL.VertexAttribPointer(address, 3, VertexAttribPointerType.Float, false, 0, 0);
+            GL.EnableVertexAttribArray(address);
         }
 
-        private static void CreateVBO(out BufferHandle vboAddress, Vector4[] data, int address)
+        private static void CreateVBO(out int vboAddress, Vector4[] data, int address)
         {
-            GL.CreateBuffer(out vboAddress);
-            GL.BindBuffer(BufferTargetARB.ArrayBuffer, vboAddress);
-            GL.BufferData(BufferTargetARB.ArrayBuffer,
+            GL.GenBuffers(1, out vboAddress);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, vboAddress);
+            GL.BufferData(BufferTarget.ArrayBuffer,
+                                    (IntPtr)(data.Length * Vector4.SizeInBytes),
                                     data,
-                                    BufferUsageARB.StaticDraw);
-            GL.VertexAttribPointer((uint)address, 4, VertexAttribPointerType.Float, false, 0, 0);
-            GL.EnableVertexAttribArray((uint)address);
+                                    BufferUsageHint.StaticDraw);
+            GL.VertexAttribPointer(address, 4, VertexAttribPointerType.Float, false, 0, 0);
+            GL.EnableVertexAttribArray(address);
         }
 
-        private static void CreateVBO(out BufferHandle vboAddress, Matrix4 data, int address)
+        private static void CreateVBO(out int vboAddress, Matrix4 data, int address)
         {
-            GL.CreateBuffer(out vboAddress);
-            GL.UniformMatrix4f(address, false, in data);
+            GL.GenBuffers(1, out vboAddress);
+            GL.UniformMatrix4(address, false, ref data);
         }
 
-        private static void CreateEBO(out BufferHandle address, int[] data)
+        private static void CreateEBO(out int address, int[] data)
         {
-            GL.CreateBuffer(out address);
-            GL.BindBuffer(BufferTargetARB.ElementArrayBuffer, address);
-            GL.BufferData(BufferTargetARB.ElementArrayBuffer,
+            GL.GenBuffers(1, out address);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, address);
+            GL.BufferData(BufferTarget.ElementArrayBuffer,
+                            (IntPtr)(data.Length * sizeof(int)),
                             data,
-                            BufferUsageARB.StaticDraw);
+                            BufferUsageHint.StaticDraw);
         }
 
         private void CreateVAO()
         {
             GL.DeleteVertexArray(vao);
-            GL.CreateVertexArray(out vao);
+            GL.GenVertexArrays(1, out vao);
             GL.BindVertexArray(vao);
             CreateVBO(out var vboPositions, vertexData, attributeVertexPosition);
             if (normalMode == 0)
@@ -2698,8 +2679,8 @@ namespace AssetStudioGUI
             CreateVBO(out var vboViewMatrix, viewMatrixData, uniformViewMatrix);
             CreateVBO(out var vboProjMatrix, projMatrixData, uniformProjMatrix);
             CreateEBO(out var eboElements, indiceData);
-            GL.BindBuffer(BufferTargetARB.ArrayBuffer, BufferHandle.Zero);
-            GL.BindVertexArray(VertexArrayHandle.Zero);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindVertexArray(0);
         }
 
         private void ChangeGLSize(Size size)
@@ -2734,10 +2715,10 @@ namespace AssetStudioGUI
             if (wireFrameMode == 0 || wireFrameMode == 2)
             {
                 GL.UseProgram(shadeMode == 0 ? pgmID : pgmColorID);
-                GL.UniformMatrix4f(uniformModelMatrix, false, in modelMatrixData);
-                GL.UniformMatrix4f(uniformViewMatrix, false, in viewMatrixData);
-                GL.UniformMatrix4f(uniformProjMatrix, false, in projMatrixData);
-                GL.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Fill);
+                GL.UniformMatrix4(uniformModelMatrix, false, ref modelMatrixData);
+                GL.UniformMatrix4(uniformViewMatrix, false, ref viewMatrixData);
+                GL.UniformMatrix4(uniformProjMatrix, false, ref projMatrixData);
+                GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
                 GL.DrawElements(PrimitiveType.Triangles, indiceData.Length, DrawElementsType.UnsignedInt, 0);
             }
             //Wireframe
@@ -2746,14 +2727,14 @@ namespace AssetStudioGUI
                 GL.Enable(EnableCap.PolygonOffsetLine);
                 GL.PolygonOffset(-1, -1);
                 GL.UseProgram(pgmBlackID);
-                GL.UniformMatrix4f(uniformModelMatrix, false, in modelMatrixData);
-                GL.UniformMatrix4f(uniformViewMatrix, false, in viewMatrixData);
-                GL.UniformMatrix4f(uniformProjMatrix, false, in projMatrixData);
-                GL.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Line);
+                GL.UniformMatrix4(uniformModelMatrix, false, ref modelMatrixData);
+                GL.UniformMatrix4(uniformViewMatrix, false, ref viewMatrixData);
+                GL.UniformMatrix4(uniformProjMatrix, false, ref projMatrixData);
+                GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
                 GL.DrawElements(PrimitiveType.Triangles, indiceData.Length, DrawElementsType.UnsignedInt, 0);
                 GL.Disable(EnableCap.PolygonOffsetLine);
             }
-            GL.BindVertexArray(VertexArrayHandle.Zero);
+            GL.BindVertexArray(0);
             GL.Flush();
             glControl.SwapBuffers();
         }

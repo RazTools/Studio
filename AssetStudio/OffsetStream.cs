@@ -60,14 +60,7 @@ namespace AssetStudio
             _baseStream.Seek(target, SeekOrigin.Begin);
             return Position;
         }
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            if (offset > _baseStream.Length || Position + count > _baseStream.Length)
-            {
-                throw new IOException("Unable to read beyond stream bound");
-            }
-            return _baseStream.Read(buffer, offset, count);
-        }
+        public override int Read(byte[] buffer, int offset, int count) => _baseStream.Read(buffer, offset, count);
         public override void Write(byte[] buffer, int offset, int count) => throw new NotImplementedException();
         public override void SetLength(long value) => throw new NotImplementedException();
         public override void Flush() => throw new NotImplementedException();

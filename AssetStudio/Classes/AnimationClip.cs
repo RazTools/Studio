@@ -965,6 +965,8 @@ namespace AssetStudio
 
     public sealed class AnimationClip : NamedObject
     {
+        public static bool Parsable;
+
         public AnimationType m_AnimationType;
         public bool m_Legacy;
         public bool m_Compressed;

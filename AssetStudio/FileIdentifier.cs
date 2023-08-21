@@ -13,5 +13,15 @@ namespace AssetStudio
 
         //custom
         public string fileName;
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+            sb.Append($"Guid: {guid} | ");
+            sb.Append($"type: {type} | ");
+            sb.Append($"pathName: {pathName} | ");
+            sb.Append($"fileName: {fileName}");
+            return sb.ToString();
+        }
     }
 }

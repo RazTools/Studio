@@ -27,9 +27,10 @@ namespace AssetStudio.FbxInterop
         [DllImport(FbxDll.DllName)]
         private static extern IntPtr AsFbxGetSceneRootNode(IntPtr context);
 
-        private static IntPtr AsFbxExportSingleFrame(IntPtr context, IntPtr parentNode, string framePath, string frameName, in Vector3 localPosition, in Vector3 localRotation, in Vector3 localScale)
+        private static IntPtr AsFbxExportSingleFrame(IntPtr context, IntPtr parentNode, string framePath, string frameName, in Vector3 localPosition, in Quaternion localRotation, in Vector3 localScale)
         {
-            return AsFbxExportSingleFrame(context, parentNode, framePath, frameName, localPosition.X, localPosition.Y, localPosition.Z, localRotation.X, localRotation.Y, localRotation.Z, localScale.X, localScale.Y, localScale.Z);
+            var localRotationEuler = Fbx.QuaternionToEuler(localRotation);
+            return AsFbxExportSingleFrame(context, parentNode, framePath, frameName, localPosition.X, localPosition.Y, localPosition.Z, localRotationEuler.X, localRotationEuler.Y, localRotationEuler.Z, localScale.X, localScale.Y, localScale.Z);
         }
 
         [DllImport(FbxDll.DllName)]

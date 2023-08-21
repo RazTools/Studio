@@ -39,10 +39,13 @@ namespace AssetStudio
             serializedType = objectInfo.serializedType;
             platform = assetsFile.m_TargetPlatform;
             m_Version = assetsFile.header.m_Version;
+
+            Logger.Verbose($"Initialized reader for {type} object with {m_PathID} in file {assetsFile.fileName} !!");
         }
 
         public void Reset()
         {
+            Logger.Verbose($"Resetting reader position to object offset 0x{byteStart:X8}...");
             Position = byteStart;
         }
     }

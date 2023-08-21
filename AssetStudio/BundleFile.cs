@@ -5,6 +5,7 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Text;
 
 namespace AssetStudio
 {
@@ -49,6 +50,20 @@ namespace AssetStudio
             public uint compressedBlocksInfoSize;
             public uint uncompressedBlocksInfoSize;
             public ArchiveFlags flags;
+
+            public override string ToString()
+            {
+                var sb = new StringBuilder();
+                sb.Append($"signature: {signature} | ");
+                sb.Append($"version: {version} | ");
+                sb.Append($"unityVersion: {unityVersion} | ");
+                sb.Append($"unityRevision: {unityRevision} | ");
+                sb.Append($"size: 0x{size:X8} | ");
+                sb.Append($"compressedBlocksInfoSize: 0x{compressedBlocksInfoSize:X8} | ");
+                sb.Append($"uncompressedBlocksInfoSize: 0x{uncompressedBlocksInfoSize:X8} | ");
+                sb.Append($"flags: 0x{(int)flags:X8}");
+                return sb.ToString();
+            }
         }
 
         public class StorageBlock
@@ -56,6 +71,15 @@ namespace AssetStudio
             public uint compressedSize;
             public uint uncompressedSize;
             public StorageBlockFlags flags;
+
+            public override string ToString()
+            {
+                var sb = new StringBuilder();
+                sb.Append($"compressedSize: 0x{compressedSize:X8} | ");
+                sb.Append($"uncompressedSize: 0x{uncompressedSize:X8} | ");
+                sb.Append($"flags: 0x{(int)flags:X8}");
+                return sb.ToString();
+            }
         }
 
         public class Node
@@ -64,6 +88,16 @@ namespace AssetStudio
             public long size;
             public uint flags;
             public string path;
+
+            public override string ToString()
+            {
+                var sb = new StringBuilder();
+                sb.Append($"offset: 0x{offset:X8} | ");
+                sb.Append($"size: 0x{size:X8} | ");
+                sb.Append($"flags: {flags} | ");
+                sb.Append($"path: {path}");
+                return sb.ToString();
+            }
         }
 
         private Game Game;
@@ -121,6 +155,7 @@ namespace AssetStudio
         {
             Header header = new Header();
             header.signature = reader.ReadStringToNull(20);
+            Logger.Verbose($"Parsed signature {header.signature}");
             switch (header.signature)
             {
                 case "UnityFS":
@@ -129,6 +164,7 @@ namespace AssetStudio
                         var version = reader.ReadUInt32();
                         if (version > 11)
                         {
+                            Logger.Verbose($"Encrypted bundle header with key {version}");
                             XORShift128.InitSeed(version);
                             header.version = 6;
                             header.unityVersion = "5.x.x";
@@ -205,6 +241,7 @@ namespace AssetStudio
         {
             Stream blocksStream;
             var uncompressedSizeSum = m_BlocksInfo.Sum(x => x.uncompressedSize);
+            Logger.Verbose($"Total size of decompressed blocks: {uncompressedSizeSum}");
             if (uncompressedSizeSum >= int.MaxValue)
             {
                 /*var memoryMappedFile = MemoryMappedFile.CreateNew(null, uncompressedSizeSum);
@@ -220,19 +257,17 @@ namespace AssetStudio
 
         private void ReadBlocksAndDirectory(FileReader reader, Stream blocksStream)
         {
+            Logger.Verbose($"Writing block and directory to blocks stream...");
+
             var isCompressed = m_Header.signature == "UnityWeb";
             foreach (var blockInfo in m_BlocksInfo)
             {
                 var uncompressedBytes = reader.ReadBytes((int)blockInfo.compressedSize);
                 if (isCompressed)
                 {
-                    using (var memoryStream = new MemoryStream(uncompressedBytes))
-                    {
-                        using (var decompressStream = SevenZipHelper.StreamDecompress(memoryStream))
-                        {
-                            uncompressedBytes = decompressStream.ToArray();
-                        }
-                    }
+                    using var memoryStream = new MemoryStream(uncompressedBytes);
+                    using var decompressStream = SevenZipHelper.StreamDecompress(memoryStream);
+                    uncompressedBytes = decompressStream.ToArray();
                 }
                 blocksStream.Write(uncompressedBytes, 0, uncompressedBytes.Length);
             }
@@ -240,6 +275,7 @@ namespace AssetStudio
             var blocksReader = new EndianBinaryReader(blocksStream);
             var nodesCount = blocksReader.ReadInt32();
             m_DirectoryInfo = new Node[nodesCount];
+            Logger.Verbose($"Directory count: {nodesCount}");
             for (int i = 0; i < nodesCount; i++)
             {
                 m_DirectoryInfo[i] = new Node
@@ -253,6 +289,8 @@ namespace AssetStudio
 
         public void ReadFiles(Stream blocksStream, string path)
         {
+            Logger.Verbose($"Writing files from blocks stream...");
+
             fileList = new StreamFile[m_DirectoryInfo.Length];
             for (int i = 0; i < m_DirectoryInfo.Length; i++)
             {
@@ -286,6 +324,7 @@ namespace AssetStudio
             m_Header.uncompressedBlocksInfoSize ^= XORShift128.NextDecryptUInt();
             m_Header.compressedBlocksInfoSize ^= XORShift128.NextDecryptUInt();
             XORShift128.Init = false;
+            Logger.Verbose($"Bundle header decrypted");
         }
 
         private void ReadHeader(FileReader reader)
@@ -317,10 +356,13 @@ namespace AssetStudio
                 m_Header.compressedBlocksInfoSize -= 0xCA;
                 m_Header.uncompressedBlocksInfoSize -= 0xCA;
             }
+
+            Logger.Verbose($"Bundle header Info: {m_Header}");
         }
 
-        private void ReadUnityCN(EndianBinaryReader reader)
+        private void ReadUnityCN(FileReader reader)
         {
+            Logger.Verbose($"Attempting to decrypt file {reader.FileName} with UnityCN encryption");
             ArchiveFlags mask;
 
             var version = ParseVersion();
@@ -339,8 +381,11 @@ namespace AssetStudio
                 HasBlockInfoNeedPaddingAtStart = true;
             }
 
+            Logger.Verbose($"Mask set to 0x{mask:X8}");
+
             if ((m_Header.flags & mask) != 0)
             {
+                Logger.Verbose($"Encryption flag exist, file is encrypted, attempting to decrypt");
                 UnityCN = new UnityCN(reader);
             }
         }
@@ -367,6 +412,7 @@ namespace AssetStudio
             var blocksInfoBytesSpan = blocksInfoBytes.AsSpan();
             var uncompressedSize = m_Header.uncompressedBlocksInfoSize;
             var compressionType = (CompressionType)(m_Header.flags & ArchiveFlags.CompressionTypeMask);
+            Logger.Verbose($"BlockInfo compression type: {compressionType}");
             switch (compressionType) //kArchiveCompressionTypeMask
             {
                 case CompressionType.None: //None
@@ -399,6 +445,7 @@ namespace AssetStudio
                 case CompressionType.Lz4Mr0k: //Lz4Mr0k
                     if (Mr0kUtils.IsMr0k(blocksInfoBytesSpan))
                     {
+                        Logger.Verbose($"Header encrypted with mr0k, decrypting...");
                         blocksInfoBytesSpan = Mr0kUtils.Decrypt(blocksInfoBytesSpan, (Mr0k)Game).ToArray();
                     }
                     goto case CompressionType.Lz4HC;
@@ -413,6 +460,7 @@ namespace AssetStudio
                 }
                 var blocksInfoCount = blocksInfoReader.ReadInt32();
                 m_BlocksInfo = new StorageBlock[blocksInfoCount];
+                Logger.Verbose($"Blocks count: {blocksInfoCount}");
                 for (int i = 0; i < blocksInfoCount; i++)
                 {
                     m_BlocksInfo[i] = new StorageBlock
@@ -421,10 +469,13 @@ namespace AssetStudio
                         compressedSize = blocksInfoReader.ReadUInt32(),
                         flags = (StorageBlockFlags)blocksInfoReader.ReadUInt16()
                     };
+
+                    Logger.Verbose($"Block {i} Info: {m_BlocksInfo[i]}");
                 }
 
                 var nodesCount = blocksInfoReader.ReadInt32();
                 m_DirectoryInfo = new Node[nodesCount];
+                Logger.Verbose($"Directory count: {nodesCount}");
                 for (int i = 0; i < nodesCount; i++)
                 {
                     m_DirectoryInfo[i] = new Node
@@ -434,6 +485,8 @@ namespace AssetStudio
                         flags = blocksInfoReader.ReadUInt32(),
                         path = blocksInfoReader.ReadStringToNull(),
                     };
+
+                    Logger.Verbose($"Directory {i} Info: {m_DirectoryInfo[i]}");
                 }
             }
             if (HasBlockInfoNeedPaddingAtStart && (m_Header.flags & ArchiveFlags.BlockInfoNeedPaddingAtStart) != 0)
@@ -444,10 +497,14 @@ namespace AssetStudio
 
         private void ReadBlocks(FileReader reader, Stream blocksStream)
         {
+            Logger.Verbose($"Writing block to blocks stream...");
+
             for (int i = 0; i < m_BlocksInfo.Length; i++)
             {
+                Logger.Verbose($"Reading block {i}...");
                 var blockInfo = m_BlocksInfo[i];
                 var compressionType = (CompressionType)(blockInfo.flags & StorageBlockFlags.CompressionTypeMask);
+                Logger.Verbose($"Block compression type {compressionType}");
                 switch (compressionType) //kStorageBlockCompressionTypeMask
                 {
                     case CompressionType.None: //None
@@ -470,10 +527,12 @@ namespace AssetStudio
                             var compressedBytesSpan = compressedBytes.AsSpan(0, compressedSize);
                             if (compressionType == CompressionType.Lz4Mr0k && Mr0kUtils.IsMr0k(compressedBytes))
                             {
+                                Logger.Verbose($"Block encrypted with mr0k, decrypting...");
                                 compressedBytesSpan = Mr0kUtils.Decrypt(compressedBytesSpan, (Mr0k)Game);
                             }
                             if (Game.Type.IsUnityCN() && ((int)blockInfo.flags & 0x100) != 0)
                             {
+                                Logger.Verbose($"Decrypting block with UnityCN...");
                                 UnityCN.DecryptBlock(compressedBytes, compressedSize, i);
                             }
                             if (Game.Type.IsNetEase() && i == 0)

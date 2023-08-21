@@ -19,7 +19,7 @@ namespace AssetStudio
             return buffer;
         }
         public static int Search(this byte[] src, string value, int offset = 0) => Search(src.AsSpan(), Encoding.UTF8.GetBytes(value), offset);
-        public static int Search(this Span<byte> src, byte[] pattern, int offset)
+        public static int Search(this Span<byte> src, byte[] pattern, int offset = 0)
         {
             int maxFirstCharSlot = src.Length - pattern.Length + 1;
             for (int i = offset; i < maxFirstCharSlot; i++)

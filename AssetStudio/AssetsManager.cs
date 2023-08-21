@@ -56,6 +56,8 @@ namespace AssetStudio
             var path = Path.GetDirectoryName(Path.GetFullPath(files[0]));
             MergeSplitAssets(path);
             var toReadFile = ProcessingSplitFiles(files.ToList());
+            if (ResolveDependencies)
+                toReadFile = AssetsHelper.ProcessDependencies(toReadFile);
             Load(toReadFile);
 
             if (Silent)
@@ -89,6 +91,7 @@ namespace AssetStudio
         {
             foreach (var file in files)
             {
+                Logger.Verbose($"caching {file} path and name to filter out duplicates");
                 importFiles.Add(file);
                 importFilesHash.Add(Path.GetFileName(file));
             }
@@ -171,6 +174,7 @@ namespace AssetStudio
 
                     foreach (var sharedFile in assetsFile.m_Externals)
                     {
+                        Logger.Verbose($"{assetsFile.fileName} needs external file {sharedFile.fileName}, attempting to look it up...");
                         var sharedFileName = sharedFile.fileName;
 
                         if (!importFilesHash.Contains(sharedFileName))
@@ -183,6 +187,7 @@ namespace AssetStudio
                                     var findFiles = Directory.GetFiles(Path.GetDirectoryName(reader.FullPath), sharedFileName, SearchOption.AllDirectories);
                                     if (findFiles.Length > 0)
                                     {
+                                        Logger.Verbose($"Found {findFiles.Length} matching files, picking first file {findFiles[0]} !!");
                                         sharedFilePath = findFiles[0];
                                     }
                                 }
@@ -193,6 +198,7 @@ namespace AssetStudio
                                 }
                                 else
                                 {
+                                    Logger.Verbose("Nothing was found, caching into non existant files to avoid repeated searching !!");
                                     noexistFiles.Add(sharedFilePath);
                                 }
                             }
@@ -214,6 +220,7 @@ namespace AssetStudio
 
         private void LoadAssetsFromMemory(FileReader reader, string originalPath, string unityVersion = null, long originalOffset = 0)
         {
+            Logger.Verbose($"Loading asset file {reader.FileName} with version {unityVersion} from {originalPath} at offset 0x{originalOffset:X8}");
             if (!assetsFileListHash.Contains(reader.FileName))
             {
                 try
@@ -228,38 +235,6 @@ namespace AssetStudio
                     CheckStrippedVersion(assetsFile);
                     assetsFileList.Add(assetsFile);
                     assetsFileListHash.Add(assetsFile.fileName);
-
-                    if (ResolveDependencies)
-                    {
-                        foreach (var sharedFile in assetsFile.m_Externals)
-                        {
-                            var sharedFileName = sharedFile.fileName;
-                    
-                            if (!importFilesHash.Contains(sharedFileName))
-                            {
-                                var sharedFilePath = Path.Combine(Path.GetDirectoryName(originalPath), sharedFileName);
-                                if (!noexistFiles.Contains(sharedFilePath))
-                                {
-                                    if (AssetsHelper.TryAdd(sharedFileName, out var path))
-                                    {
-                                        sharedFilePath = path;
-                                    }
-                                    if (File.Exists(sharedFilePath))
-                                    {
-                                        if (!importFiles.Contains(sharedFilePath))
-                                        {
-                                            importFiles.Add(sharedFilePath);
-                                        }
-                                        importFilesHash.Add(sharedFileName);
-                                    }
-                                    else
-                                    {
-                                        noexistFiles.Add(sharedFilePath);
-                                    }
-                                }
-                            }
-                        }
-                    }
                 }
                 catch (Exception e)
                 {
@@ -290,6 +265,7 @@ namespace AssetStudio
                     }
                     else
                     {
+                        Logger.Verbose("Caching resource stream");
                         resourceFileReaders[file.fileName] = subReader; //TODO
                     }
                 }
@@ -335,6 +311,7 @@ namespace AssetStudio
                             LoadWebFile(subReader);
                             break;
                         case FileType.ResourceFile:
+                            Logger.Verbose("Caching resource stream");
                             resourceFileReaders[file.fileName] = subReader; //TODO
                             break;
                     }
@@ -358,8 +335,7 @@ namespace AssetStudio
                 using (ZipArchive archive = new ZipArchive(reader.BaseStream, ZipArchiveMode.Read))
                 {
                     List<string> splitFiles = new List<string>();
-                    // register all files before parsing the assets so that the external references can be found
-                    // and find split files
+                    Logger.Verbose("Register all files before parsing the assets so that the external references can be found and find split files");
                     foreach (ZipArchiveEntry entry in archive.Entries)
                     {
                         if (entry.Name.Contains(".split"))
@@ -378,7 +354,7 @@ namespace AssetStudio
                         }
                     }
 
-                    // merge split files and load the result
+                    Logger.Verbose("Merge split files and load the result");
                     foreach (string basePath in splitFiles)
                     {
                         try
@@ -406,15 +382,14 @@ namespace AssetStudio
                         }
                     }
 
-                    // load all entries
+                    Logger.Verbose("Load all entries");
+                    Logger.Verbose($"Found {archive.Entries.Count} entries"); 
                     foreach (ZipArchiveEntry entry in archive.Entries)
                     {
                         try
                         {
                             string dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), reader.FileName, entry.FullName);
-                            // create a new stream
-                            // - to store the deflated stream in
-                            // - to keep the data for later extraction
+                            Logger.Verbose("Create a new stream to store the deflated stream in and keep the data for later extraction");
                             Stream streamReader = new MemoryStream();
                             using (Stream entryStream = entry.Open())
                             {
@@ -429,6 +404,7 @@ namespace AssetStudio
                                 entryReader.Position = 0;
                                 if (!resourceFileReaders.ContainsKey(entry.Name))
                                 {
+                                    Logger.Verbose("Caching resource file");
                                     resourceFileReaders.Add(entry.Name, entryReader);
                                 }
                             }
@@ -459,27 +435,14 @@ namespace AssetStudio
                 {
                     foreach (var offset in offsets)
                     {
-                        var name = offset.ToString("X8");
-                        Logger.Info($"Loading Block {name}");
-
-                        stream.Offset = offset;
-                        var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), name);
-                        var subReader = new FileReader(dummyPath, stream, true);
-                        LoadBundleFile(subReader, reader.FullPath, offset, false);
+                        LoadBlockSubFile(reader.FullPath, stream, offset);
                     }
-                    AssetsHelper.Remove(reader.FullPath);
                 }
                 else
                 {
                     do
                     {
-                        var name = stream.AbsolutePosition.ToString("X8");
-                        Logger.Info($"Loading Block {name}");
-
-                        stream.Offset = stream.AbsolutePosition;
-                        var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), name);
-                        var subReader = new FileReader(dummyPath, stream, true);
-                        LoadBundleFile(subReader, reader.FullPath, stream.AbsolutePosition, false);
+                        LoadBlockSubFile(reader.FullPath, stream, stream.AbsolutePosition);
                     } while (stream.Remaining > 0);
                 }    
             }
@@ -492,55 +455,38 @@ namespace AssetStudio
                 reader.Dispose();
             }
         }
+        private void LoadBlockSubFile(string path, OffsetStream stream, long offset)
+        {
+            var name = offset.ToString("X8");
+            Logger.Info($"Loading Block {name}");
+
+            stream.Offset = offset;
+            var dummyPath = Path.Combine(Path.GetDirectoryName(path), name);
+            var subReader = new FileReader(dummyPath, stream, true);
+            LoadBundleFile(subReader, path, offset, false);
+        }
         private void LoadBlkFile(FileReader reader)
         {
             Logger.Info("Loading " + reader.FullPath);
             try
             {
                 using var stream = BlkUtils.Decrypt(reader, (Blk)Game);
-                if (AssetsHelper.TryGet(reader.FullPath, out var offsets))
+                foreach (var offset in stream.GetOffsets(reader.FullPath))
                 {
-                    foreach (var offset in offsets)
-                    {
-                        var name = offset.ToString("X8");
-                        Logger.Info($"Loading Block {name}");
+                    var name = offset.ToString("X8");
+                    Logger.Info($"Loading Block {name}");
 
-                        stream.Offset = offset;
-                        var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), name);
-                        var subReader = new FileReader(dummyPath, stream, true);
-                        switch (subReader.FileType)
-                        {
-                            case FileType.BundleFile:
-                                LoadBundleFile(subReader, reader.FullPath, offset, false);
-                                break;
-                            case FileType.Mhy0File:
-                                LoadMhy0File(subReader, reader.FullPath, offset, false);
-                                break;
-                        }
+                    var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), name);
+                    var subReader = new FileReader(dummyPath, stream, true);
+                    switch (subReader.FileType)
+                    {
+                        case FileType.BundleFile:
+                            LoadBundleFile(subReader, reader.FullPath, offset, false);
+                            break;
+                        case FileType.Mhy0File:
+                            LoadMhy0File(subReader, reader.FullPath, offset, false);
+                            break;
                     }
-                    AssetsHelper.Remove(reader.FullPath);
-                }
-                else
-                {
-                    do
-                    {
-                        var name = stream.AbsolutePosition.ToString("X8");
-                        Logger.Info($"Loading Block {name}");
-
-                        var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), name);
-                        var subReader = new FileReader(dummyPath, stream, true);
-                        switch (subReader.FileType)
-                        {
-                            case FileType.BundleFile:
-                                LoadBundleFile(subReader, reader.FullPath, stream.AbsolutePosition, false);
-                                break;
-                            case FileType.Mhy0File:
-                                LoadMhy0File(subReader, reader.FullPath, stream.AbsolutePosition, false);
-                                break;
-                        }
-
-                        stream.Offset = stream.AbsolutePosition;
-                    } while (stream.Remaining > 0);
                 }
             }
             catch (InvalidCastException)
@@ -555,7 +501,7 @@ namespace AssetStudio
             {
                 reader.Dispose();
             }
-        } 
+        }
         private void LoadMhy0File(FileReader reader, string originalPath = null, long originalOffset = 0, bool log = true)
         {
             if (log)
@@ -565,6 +511,7 @@ namespace AssetStudio
             try
             {
                 var mhy0File = new Mhy0File(reader, reader.FullPath, (Mhy0)Game);
+                Logger.Verbose($"mhy0 total size: {mhy0File.TotalSize:X8}");
                 foreach (var file in mhy0File.fileList)
                 {
                     var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), file.fileName);
@@ -575,6 +522,7 @@ namespace AssetStudio
                     }
                     else
                     {
+                        Logger.Verbose("Caching resource stream");
                         resourceFileReaders[file.fileName] = cabReader; //TODO
                     }
                 }
@@ -612,6 +560,8 @@ namespace AssetStudio
 
         public void Clear()
         {
+            Logger.Verbose("Cleaning up...");
+
             foreach (var assetsFile in assetsFileList)
             {
                 assetsFile.Objects.Clear();
@@ -653,103 +603,40 @@ namespace AssetStudio
                     var objectReader = new ObjectReader(assetsFile.reader, assetsFile, objectInfo, Game);
                     try
                     {
-                        Object obj;
-                        switch (objectReader.type)
+                        Object obj = objectReader.type switch
                         {
-                            case ClassIDType.Animation:
-                                obj = new Animation(objectReader);
-                                break;
-                            case ClassIDType.AnimationClip:
-                                obj = new AnimationClip(objectReader);
-                                break;
-                            case ClassIDType.Animator:
-                                obj = new Animator(objectReader);
-                                break;
-                            case ClassIDType.AnimatorController:
-                                obj = new AnimatorController(objectReader);
-                                break;
-                            case ClassIDType.AnimatorOverrideController:
-                                obj = new AnimatorOverrideController(objectReader);
-                                break;
-                            case ClassIDType.AssetBundle:
-                                obj = new AssetBundle(objectReader);
-                                break;
-                            case ClassIDType.AudioClip:
-                                obj = new AudioClip(objectReader);
-                                break;
-                            case ClassIDType.Avatar:
-                                obj = new Avatar(objectReader);
-                                break;
-                            case ClassIDType.Font:
-                                obj = new Font(objectReader);
-                                break;
-                            case ClassIDType.GameObject:
-                                obj = new GameObject(objectReader);
-                                break;
-                            case ClassIDType.IndexObject:
-                                obj = new IndexObject(objectReader);
-                                break;
-                            case ClassIDType.Material:
-                                obj = new Material(objectReader);
-                                break;
-                            case ClassIDType.Mesh:
-                                obj = new Mesh(objectReader);
-                                break;
-                            case ClassIDType.MeshFilter:
-                                obj = new MeshFilter(objectReader);
-                                break;
-                            case ClassIDType.MeshRenderer when Renderer.Parsable:
-                                obj = new MeshRenderer(objectReader);
-                                break;
-                            case ClassIDType.MiHoYoBinData:
-                                obj = new MiHoYoBinData(objectReader);
-                                break;
-                            case ClassIDType.MonoBehaviour:
-                                obj = new MonoBehaviour(objectReader);
-                                break;
-                            case ClassIDType.MonoScript:
-                                obj = new MonoScript(objectReader);
-                                break;
-                            case ClassIDType.MovieTexture:
-                                obj = new MovieTexture(objectReader);
-                                break;
-                            case ClassIDType.PlayerSettings:
-                                obj = new PlayerSettings(objectReader);
-                                break;
-                            case ClassIDType.RectTransform:
-                                obj = new RectTransform(objectReader);
-                                break;
-                            case ClassIDType.Shader when Shader.Parsable:
-                                obj = new Shader(objectReader);
-                                break;
-                            case ClassIDType.SkinnedMeshRenderer when Renderer.Parsable:
-                                obj = new SkinnedMeshRenderer(objectReader);
-                                break;
-                            case ClassIDType.Sprite:
-                                obj = new Sprite(objectReader);
-                                break;
-                            case ClassIDType.SpriteAtlas:
-                                obj = new SpriteAtlas(objectReader);
-                                break;
-                            case ClassIDType.TextAsset:
-                                obj = new TextAsset(objectReader);
-                                break;
-                            case ClassIDType.Texture2D:
-                                obj = new Texture2D(objectReader);
-                                break;
-                            case ClassIDType.Transform:
-                                obj = new Transform(objectReader);
-                                break;
-                            case ClassIDType.VideoClip:
-                                obj = new VideoClip(objectReader);
-                                break;
-                            case ClassIDType.ResourceManager:
-                                obj = new ResourceManager(objectReader);
-                                break;
-                            default:
-                                obj = new Object(objectReader);
-                                break;
-                        }
+                            ClassIDType.Animation => new Animation(objectReader),
+                            ClassIDType.AnimationClip when AnimationClip.Parsable => new AnimationClip(objectReader),
+                            ClassIDType.Animator => new Animator(objectReader),
+                            ClassIDType.AnimatorController => new AnimatorController(objectReader),
+                            ClassIDType.AnimatorOverrideController => new AnimatorOverrideController(objectReader),
+                            ClassIDType.AssetBundle => new AssetBundle(objectReader),
+                            ClassIDType.AudioClip => new AudioClip(objectReader),
+                            ClassIDType.Avatar => new Avatar(objectReader),
+                            ClassIDType.Font => new Font(objectReader),
+                            ClassIDType.GameObject => new GameObject(objectReader),
+                            ClassIDType.IndexObject => new IndexObject(objectReader),
+                            ClassIDType.Material => new Material(objectReader),
+                            ClassIDType.Mesh => new Mesh(objectReader),
+                            ClassIDType.MeshFilter => new MeshFilter(objectReader),
+                            ClassIDType.MeshRenderer when Renderer.Parsable => new MeshRenderer(objectReader),
+                            ClassIDType.MiHoYoBinData => new MiHoYoBinData(objectReader),
+                            ClassIDType.MonoBehaviour => new MonoBehaviour(objectReader),
+                            ClassIDType.MonoScript => new MonoScript(objectReader),
+                            ClassIDType.MovieTexture => new MovieTexture(objectReader),
+                            ClassIDType.PlayerSettings => new PlayerSettings(objectReader),
+                            ClassIDType.RectTransform => new RectTransform(objectReader),
+                            ClassIDType.Shader when Shader.Parsable => new Shader(objectReader),
+                            ClassIDType.SkinnedMeshRenderer when Renderer.Parsable => new SkinnedMeshRenderer(objectReader),
+                            ClassIDType.Sprite => new Sprite(objectReader),
+                            ClassIDType.SpriteAtlas => new SpriteAtlas(objectReader),
+                            ClassIDType.TextAsset => new TextAsset(objectReader),
+                            ClassIDType.Texture2D => new Texture2D(objectReader),
+                            ClassIDType.Transform => new Transform(objectReader),
+                            ClassIDType.VideoClip => new VideoClip(objectReader),
+                            ClassIDType.ResourceManager => new ResourceManager(objectReader),
+                            _ => new Object(objectReader),
+                        };
                         assetsFile.AddObject(obj);
                     }
                     catch (Exception e)
@@ -784,57 +671,67 @@ namespace AssetStudio
                     }
                     if (obj is GameObject m_GameObject)
                     {
-                            foreach (var pptr in m_GameObject.m_Components)
-                            {
+                        Logger.Verbose($"GameObject with {m_GameObject.m_PathID} in file {m_GameObject.assetsFile.fileName} has {m_GameObject.m_Components.Length} components, Attempting to fetch them...");
+                        foreach (var pptr in m_GameObject.m_Components)
+                        {
                             if (pptr.TryGet(out var m_Component))
-                                {
+                            {
                                 switch (m_Component)
-                                    {
+                                {
                                     case Transform m_Transform:
+                                        Logger.Verbose($"Fetched Transform component with {m_Transform.m_PathID} in file {m_Transform.assetsFile.fileName}, assigning to GameObject components...");
                                         m_GameObject.m_Transform = m_Transform;
                                             break;
                                     case MeshRenderer m_MeshRenderer:
+                                        Logger.Verbose($"Fetched MeshRenderer component with {m_MeshRenderer.m_PathID} in file {m_MeshRenderer.assetsFile.fileName}, assigning to GameObject components...");
                                         m_GameObject.m_MeshRenderer = m_MeshRenderer;
                                             break;
                                     case MeshFilter m_MeshFilter:
+                                        Logger.Verbose($"Fetched MeshFilter component with {m_MeshFilter.m_PathID} in file {m_MeshFilter.assetsFile.fileName}, assigning to GameObject components...");
                                         m_GameObject.m_MeshFilter = m_MeshFilter;
                                             break;
                                     case SkinnedMeshRenderer m_SkinnedMeshRenderer:
+                                        Logger.Verbose($"Fetched SkinnedMeshRenderer component with {m_SkinnedMeshRenderer.m_PathID} in file {m_SkinnedMeshRenderer.assetsFile.fileName}, assigning to GameObject components...");
                                         m_GameObject.m_SkinnedMeshRenderer = m_SkinnedMeshRenderer;
                                             break;
                                     case Animator m_Animator:
+                                        Logger.Verbose($"Fetched Animator component with {m_Animator.m_PathID} in file {m_Animator.assetsFile.fileName}, assigning to GameObject components...");
                                         m_GameObject.m_Animator = m_Animator;
                                             break;
                                     case Animation m_Animation:
+                                        Logger.Verbose($"Fetched Animation component with {m_Animation.m_PathID} in file {m_Animation.assetsFile.fileName}, assigning to GameObject components...");
                                         m_GameObject.m_Animation = m_Animation;
                                             break;
-                                    }
                                 }
                             }
+                        }
                     }
                     else if (obj is SpriteAtlas m_SpriteAtlas)
                     {
-                            if (m_SpriteAtlas.m_RenderDataMap.Count > 0)
+                        if (m_SpriteAtlas.m_RenderDataMap.Count > 0)
+                        {
+                            Logger.Verbose($"SpriteAtlas with {m_SpriteAtlas.m_PathID} in file {m_SpriteAtlas.assetsFile.fileName} has {m_SpriteAtlas.m_PackedSprites.Length} packed sprites, Attempting to fetch them...");
+                            foreach (var m_PackedSprite in m_SpriteAtlas.m_PackedSprites)
                             {
-                                foreach (var m_PackedSprite in m_SpriteAtlas.m_PackedSprites)
-                                {
                                 if (m_PackedSprite.TryGet(out var m_Sprite))
+                                {
+                                    if (m_Sprite.m_SpriteAtlas.IsNull)
                                     {
-                                        if (m_Sprite.m_SpriteAtlas.IsNull)
-                                        {
-                                            m_Sprite.m_SpriteAtlas.Set(m_SpriteAtlas);
-                                        }
-                                        else
-                                        {
+                                        Logger.Verbose($"Fetched Sprite with {m_Sprite.m_PathID} in file {m_Sprite.assetsFile.fileName}, assigning to parent SpriteAtlas...");
+                                        m_Sprite.m_SpriteAtlas.Set(m_SpriteAtlas);
+                                    }
+                                    else
+                                    {
                                         m_Sprite.m_SpriteAtlas.TryGet(out var m_SpriteAtlaOld);
-                                            if (m_SpriteAtlaOld.m_IsVariant)
-                                            {
-                                                m_Sprite.m_SpriteAtlas.Set(m_SpriteAtlas);
-                                            }
+                                        if (m_SpriteAtlaOld.m_IsVariant)
+                                        {
+                                            Logger.Verbose($"Fetched Sprite with {m_Sprite.m_PathID} in file {m_Sprite.assetsFile.fileName} has a variant of the origianl SpriteAtlas, disposing of the variant and assinging to the parent SpriteAtlas...");
+                                            m_Sprite.m_SpriteAtlas.Set(m_SpriteAtlas);
                                         }
                                     }
                                 }
                             }
+                        }
                     }
                 }
             }

@@ -36,7 +36,9 @@ namespace AssetStudio
         {
             Directory.CreateDirectory(MapName);
             var files = Directory.GetFiles(MapName, "*.bin", SearchOption.TopDirectoryOnly);
-            return files.Select(Path.GetFileNameWithoutExtension).ToArray();
+            var mapNames = files.Select(Path.GetFileNameWithoutExtension).ToArray();
+            Logger.Verbose($"Found {mapNames.Length} CABMaps under Maps folder");
+            return mapNames;
         }
 
         public static void Clear()
@@ -48,39 +50,86 @@ namespace AssetStudio
             tokenSource.Dispose();
             tokenSource = new CancellationTokenSource();
 
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
+            Logger.Verbose("Cleared AssetsHelper successfully !!");
         }
 
-        public static void ClearOffsets() => Offsets.Clear();
-
-        public static void Remove(string path) => Offsets.Remove(path);
-
-        public static bool TryAdd(string name, out string path)
+        public static void ClearOffsets()
         {
-            if (CABMap.TryGetValue(name, out var entry))
-            {
-                path = Path.Combine(BaseFolder, entry.Path);
-                if (!Offsets.ContainsKey(path))
-                {
-                    Offsets.Add(path, new HashSet<long>());
-                }
-                Offsets[path].Add(entry.Offset);
-                return true;
-            }
-            path = string.Empty;
-            return false;
+            Offsets.Clear();
+            Logger.Verbose("Cleared cached offsets");
         }
 
         public static bool TryGet(string path, out long[] offsets)
         {
-            if (Offsets.TryGetValue(path, out var list))
+            if (Offsets.TryGetValue(path, out var list) && list.Count > 0)
             {
+                Logger.Verbose($"Found {list.Count} offsets for path {path}");
                 offsets = list.ToArray();
                 return true;
             }
             offsets = Array.Empty<long>();
             return false;
+        }
+
+        public static void AddCABOffsets(string[] paths, List<string> cabs)
+        {
+            for (int i = 0; i < cabs.Count; i++)
+            {
+                var cab = cabs[i];
+                if (CABMap.TryGetValue(cab, out var entry))
+                {
+                    var fullPath = Path.Combine(BaseFolder, entry.Path);
+                    Logger.Verbose($"Found {cab} in {fullPath}");
+                    if (!paths.Contains(fullPath))
+                    {
+                        Offsets.TryAdd(fullPath, new HashSet<long>());
+                        Offsets[fullPath].Add(entry.Offset);
+                        Logger.Verbose($"Added {fullPath} to Offsets, at offset {entry.Offset}");
+                    }
+                    foreach (var dep in entry.Dependencies)
+                    {
+                        if (!cabs.Contains(dep))
+                            cabs.Add(dep);
+                    }
+                }
+            }
+        }
+
+        public static bool FindCAB(string path, out List<string> cabs)
+        {
+            var relativePath = Path.GetRelativePath(BaseFolder, path);
+            cabs = CABMap.AsParallel().Where(x => x.Value.Path.Equals(relativePath, StringComparison.OrdinalIgnoreCase)).Select(x => x.Key).Distinct().ToList();
+            Logger.Verbose($"Found {cabs.Count} that belongs to {relativePath}");
+            return cabs.Count != 0;
+        }
+
+        public static string[] ProcessFiles(string[] files)
+        {
+            foreach (var file in files)
+            {
+                Offsets.TryAdd(file, new HashSet<long>());
+                Logger.Verbose($"Added {file} to Offsets dictionary");
+                if (FindCAB(file, out var cabs))
+                {
+                    AddCABOffsets(files, cabs);
+                }
+            }
+            Logger.Verbose($"Finished resolving dependncies, the original {files.Length} files will be loaded entirely, and the {Offsets.Count - files.Length} dependicnes will be loaded from cached offsets only");
+            return Offsets.Keys.ToArray();
+        }
+
+        public static string[] ProcessDependencies(string[] files)
+        {
+            if (CABMap.Count == 0)
+            {
+                Logger.Warning("CABMap is not build, skip resolving dependencies...");
+            }
+            else
+            {
+                Logger.Info("Resolving Dependencies...");
+                files = ProcessFiles(files);
+            }
+            return files;
         }
 
         public static void BuildCABMap(string[] files, string mapName, string baseFolder, Game game)
@@ -220,6 +269,7 @@ namespace AssetStudio
                         CABMap.Add(cab, entry);
                     }
                 }
+                Logger.Verbose($"Initialized CABMap with {CABMap.Count} entries");
                 Logger.Info($"Loaded {mapName} !!");
             }
             catch (Exception e)
@@ -342,7 +392,7 @@ namespace AssetStudio
                             case ClassIDType.Texture2D:
                             case ClassIDType.VideoClip:
                             case ClassIDType.AudioClip:
-                            case ClassIDType.AnimationClip:
+                            case ClassIDType.AnimationClip when AnimationClip.Parsable:
                                 asset.Name = objectReader.ReadAlignedString();
                                 break;
                             default:

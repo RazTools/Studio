@@ -28,5 +28,19 @@ namespace AssetStudio
             m_Level = level;
             m_MetaFlag = align ? 0x4000 : 0;
         }
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+            sb.Append($"Type: {m_Type} | ");
+            sb.Append($"Name: {m_Name} | ");
+            sb.Append($"ByteSize: 0x{m_ByteSize:X8} | ");
+            sb.Append($"Index: {m_Index} | ");
+            sb.Append($"TypeFlags: {m_TypeFlags} | ");
+            sb.Append($"Version: {m_Version} | ");
+            sb.Append($"TypeStrOffset: 0x{m_TypeStrOffset:X8} | ");
+            sb.Append($"NameStrOffset: 0x{m_NameStrOffset:X8}");
+            return sb.ToString();
+        }
     }
 }
