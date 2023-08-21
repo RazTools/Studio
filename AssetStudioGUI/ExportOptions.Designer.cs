@@ -39,7 +39,6 @@ namespace AssetStudioGUI
             label7 = new System.Windows.Forms.Label();
             openAfterExport = new System.Windows.Forms.CheckBox();
             restoreExtensionName = new System.Windows.Forms.CheckBox();
-            assetGroupOptions = new System.Windows.Forms.ComboBox();
             label6 = new System.Windows.Forms.Label();
             convertAudio = new System.Windows.Forms.CheckBox();
             panel1 = new System.Windows.Forms.Panel();
@@ -117,7 +116,6 @@ namespace AssetStudioGUI
             groupBox1.Controls.Add(label7);
             groupBox1.Controls.Add(openAfterExport);
             groupBox1.Controls.Add(restoreExtensionName);
-            groupBox1.Controls.Add(assetGroupOptions);
             groupBox1.Controls.Add(label6);
             groupBox1.Controls.Add(convertAudio);
             groupBox1.Controls.Add(panel1);
@@ -177,17 +175,6 @@ namespace AssetStudioGUI
             restoreExtensionName.TabIndex = 9;
             restoreExtensionName.Text = "Restore TextAsset extension name";
             restoreExtensionName.UseVisualStyleBackColor = true;
-            // 
-            // assetGroupOptions
-            // 
-            assetGroupOptions.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            assetGroupOptions.FormattingEnabled = true;
-            assetGroupOptions.Items.AddRange(new object[] { "type name", "container path", "source file name", "do not group" });
-            assetGroupOptions.Location = new System.Drawing.Point(7, 40);
-            assetGroupOptions.Margin = new System.Windows.Forms.Padding(4);
-            assetGroupOptions.Name = "assetGroupOptions";
-            assetGroupOptions.Size = new System.Drawing.Size(173, 23);
-            assetGroupOptions.TabIndex = 8;
             // 
             // label6
             // 
@@ -698,7 +685,6 @@ namespace AssetStudioGUI
         private System.Windows.Forms.CheckBox disableShader;
         private System.Windows.Forms.CheckBox disableRenderer;
         private System.Windows.Forms.CheckBox minimalAssetMap;
-        private System.Windows.Forms.ComboBox assetGroupOptions;
         private System.Windows.Forms.Label label7;
         private System.Windows.Forms.CheckBox disableAnimationClip;
     }
