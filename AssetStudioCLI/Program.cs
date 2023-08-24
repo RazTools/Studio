@@ -40,10 +40,13 @@ namespace AssetStudioCLI
                 }
 
                 Studio.Game = game;
+                Logger.LogVerbose = o.Verbose;
                 Logger.Default = new ConsoleLogger();
+                Logger.FileLogging = Settings.Default.enableFileLogging;
                 AssetsHelper.Minimal = Settings.Default.minimalAssetMap;
                 Shader.Parsable = !Settings.Default.disableShader;
                 Renderer.Parsable = !Settings.Default.disableRenderer;
+                AnimationClip.Parsable = !Settings.Default.disableAnimationClip;
                 assetsManager.Silent = o.Silent;
                 assetsManager.Game = game;
                 ModelOnly = o.Model;

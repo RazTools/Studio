@@ -374,6 +374,7 @@ namespace AssetStudio
                             }
                             splitStream.Seek(0, SeekOrigin.Begin);
                             FileReader entryReader = new FileReader(basePath, splitStream);
+                            entryReader = entryReader.PreProcessing(Game);
                             LoadFile(entryReader);
                         }
                         catch (Exception e)

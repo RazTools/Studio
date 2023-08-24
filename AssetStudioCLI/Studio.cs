@@ -324,7 +324,7 @@ namespace AssetStudioCLI
                     break;
                 case Mesh _:
                 case TextAsset _:
-                case AnimationClip _:
+                case AnimationClip _ when AnimationClip.Parsable:
                 case Font _:
                 case Sprite _:
                 case Material _:

@@ -22,6 +22,7 @@ namespace AssetStudioCLI
             var rootCommand = new RootCommand()
             {
                 optionsBinder.Silent,
+                optionsBinder.Verbose,
                 optionsBinder.TypeFilter,
                 optionsBinder.NameFilter,
                 optionsBinder.ContainerFilter,
@@ -47,6 +48,7 @@ namespace AssetStudioCLI
     public class Options
     {
         public bool Silent { get; set; }
+        public bool Verbose { get; set; }
         public ClassIDType[] TypeFilter { get; set; }
         public Regex[] NameFilter { get; set; }
         public Regex[] ContainerFilter { get; set; }
@@ -67,6 +69,7 @@ namespace AssetStudioCLI
     public class OptionsBinder : BinderBase<Options>
     {
         public readonly Option<bool> Silent;
+        public readonly Option<bool> Verbose;
         public readonly Option<ClassIDType[]> TypeFilter;
         public readonly Option<Regex[]> NameFilter;
         public readonly Option<Regex[]> ContainerFilter;
@@ -87,6 +90,7 @@ namespace AssetStudioCLI
         public OptionsBinder()
         {
             Silent = new Option<bool>("--silent", "Hide log messages.");
+            Verbose = new Option<bool>("--verbose", "Hide log messages.");
             TypeFilter = new Option<ClassIDType[]>("--types", "Specify unity class type(s)") { AllowMultipleArgumentsPerToken = true, ArgumentHelpName = "Texture2D|Sprite|etc.." };
             NameFilter = new Option<Regex[]>("--names", result => result.Tokens.Select(x => new Regex(x.Value, RegexOptions.IgnoreCase)).ToArray(), false, "Specify name regex filter(s).") { AllowMultipleArgumentsPerToken = true };
             ContainerFilter = new Option<Regex[]>("--containers", result => result.Tokens.Select(x => new Regex(x.Value, RegexOptions.IgnoreCase)).ToArray(), false, "Specify container regex filter(s).") { AllowMultipleArgumentsPerToken = true };
@@ -175,6 +179,7 @@ namespace AssetStudioCLI
         new()
         {
             Silent = bindingContext.ParseResult.GetValueForOption(Silent),
+            Verbose = bindingContext.ParseResult.GetValueForOption(Verbose),
             TypeFilter = bindingContext.ParseResult.GetValueForOption(TypeFilter),
             NameFilter = bindingContext.ParseResult.GetValueForOption(NameFilter),
             ContainerFilter = bindingContext.ParseResult.GetValueForOption(ContainerFilter),

@@ -37,7 +37,7 @@ namespace AssetStudio
             serializedType = reader.serializedType;
             byteSize = reader.byteSize;
 
-            Logger.Verbose($"Attempting to read object {type} with {m_PathID} in file {assetsFile.fileName}, starting from offset 0x{reader.byteStart:X8} with expected size of 0x{byteSize:X8} !!");
+            Logger.Verbose($"Attempting to read object {type} with {m_PathID} in file {assetsFile.fileName}, starting from offset 0x{reader.byteStart:X8} with size of 0x{byteSize:X8} !!");
 
             if (platform == BuildTarget.NoTarget)
             {
