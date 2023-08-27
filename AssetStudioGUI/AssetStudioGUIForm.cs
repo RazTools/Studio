@@ -581,10 +581,15 @@ namespace AssetStudioGUI
                 {
                     if (e.Shift)
                     {
-                        foreach(var node in treeSrcResults)
+                        foreach (var node in treeSrcResults)
                         {
-                            node.EnsureVisible();
-                            node.Checked = e.Control;
+                            var tempNode = node;
+                            while (tempNode.Parent != null)
+                            {
+                                tempNode = tempNode.Parent;
+                        }
+                            tempNode.EnsureVisible();
+                            tempNode.Checked = e.Control;
                         }
                         sceneTreeView.SelectedNode = treeSrcResults[0];
                     }
@@ -594,8 +599,13 @@ namespace AssetStudioGUI
                     {
                         nextGObject = 0;
                     }
-                    treeSrcResults[nextGObject].EnsureVisible();
-                        treeSrcResults[nextGObject].Checked = e.Control;
+                        var node = treeSrcResults[nextGObject];
+                        while (node.Parent != null)
+                        {
+                            node = node.Parent;
+                        }
+                        node.EnsureVisible();
+                        node.Checked = e.Control;
                     sceneTreeView.SelectedNode = treeSrcResults[nextGObject];
                     nextGObject++;
                 }
