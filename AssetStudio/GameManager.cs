@@ -36,6 +36,7 @@ namespace AssetStudio
             Games.Add(index++, new Game(GameType.AnchorPanic));
             Games.Add(index++, new Game(GameType.DreamscapeAlbireo));
             Games.Add(index++, new Game(GameType.ImaginaryFest));
+            Games.Add(index++, new Game(GameType.AliceGearAegis));
         }
         public static Game GetGame(GameType gameType) => GetGame((int)gameType);
         public static Game GetGame(int index)
@@ -143,6 +144,7 @@ namespace AssetStudio
         AnchorPanic,
         DreamscapeAlbireo,
         ImaginaryFest,
+        AliceGearAegis,
     }
 
     public static class GameTypes

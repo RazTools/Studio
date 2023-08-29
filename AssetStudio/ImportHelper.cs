@@ -759,5 +759,45 @@ namespace AssetStudio
                 }
             }
         }
+        public static FileReader DecryptAliceGearAegis(FileReader reader)
+        {
+            Logger.Verbose($"Attempting to decrypt file {reader.FileName} with Alice Gear Aegis encryption");
+
+            var key = new byte[] { 0x1B, 0x59, 0x62, 0x33, 0x78, 0x76, 0x45, 0xB3, 0x5B, 0x48, 0x39, 0xD7, 0x9C, 0x21, 0x89, 0x94 };
+
+            var header = new Header()
+            {
+                signature = reader.ReadStringToNull(),
+                version = reader.ReadUInt32(),
+                unityVersion = reader.ReadStringToNull(),
+                unityRevision = reader.ReadStringToNull(),
+                size = reader.ReadInt64()
+            };
+            if (header.signature == "UnityFS" && header.size == reader.Length)
+            {
+                reader.Position = 0;
+                return reader;
+            }
+
+            reader.Position = 8;
+            var seed = (reader.Length - reader.Position) % key.Length;
+
+            var encryptedBlock = reader.ReadBytes(0x80);
+            var data = reader.ReadBytes((int)reader.Remaining);
+            for (int i = 0; i < encryptedBlock.Length; i++)
+            {
+                encryptedBlock[i] ^= key[seed % key.Length];
+                seed++;
+            }
+
+            Logger.Verbose("Decrypted Alice Gear Aegis file successfully !!");
+            MemoryStream ms = new();
+            ms.Write(Encoding.UTF8.GetBytes("UnityFS\x00"));
+            ms.Write(encryptedBlock);
+            ms.Write(data);
+            ms.Position = 0;
+
+            return new FileReader(reader.FullPath, ms);
+        }
     }
 }

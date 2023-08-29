@@ -178,7 +178,6 @@ namespace AssetStudio
                     case GameType.FantasyOfWind:
                         reader = DecryptFantasyOfWind(reader);
                         break;
-                        break;
                     case GameType.HelixWaltz2:
                         reader = ParseHelixWaltz2(reader);
                         break;
@@ -190,6 +189,9 @@ namespace AssetStudio
                         break;
                     case GameType.ImaginaryFest:
                         reader = DecryptImaginaryFest(reader);
+                        break;
+                    case GameType.AliceGearAegis:
+                        reader = DecryptAliceGearAegis(reader);
                         break;
                 }
             }
