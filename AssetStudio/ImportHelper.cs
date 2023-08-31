@@ -786,8 +786,7 @@ namespace AssetStudio
             var data = reader.ReadBytes((int)reader.Remaining);
             for (int i = 0; i < encryptedBlock.Length; i++)
             {
-                encryptedBlock[i] ^= key[seed % key.Length];
-                seed++;
+                encryptedBlock[i] ^= key[seed++ % key.Length];
             }
 
             Logger.Verbose("Decrypted Alice Gear Aegis file successfully !!");
