@@ -90,7 +90,7 @@ namespace AssetStudioCLI
         public OptionsBinder()
         {
             Silent = new Option<bool>("--silent", "Hide log messages.");
-            Verbose = new Option<bool>("--verbose", "Hide log messages.");
+            Verbose = new Option<bool>("--verbose", "Enable verbose logging.");
             TypeFilter = new Option<ClassIDType[]>("--types", "Specify unity class type(s)") { AllowMultipleArgumentsPerToken = true, ArgumentHelpName = "Texture2D|Sprite|etc.." };
             NameFilter = new Option<Regex[]>("--names", result => result.Tokens.Select(x => new Regex(x.Value, RegexOptions.IgnoreCase)).ToArray(), false, "Specify name regex filter(s).") { AllowMultipleArgumentsPerToken = true };
             ContainerFilter = new Option<Regex[]>("--containers", result => result.Tokens.Select(x => new Regex(x.Value, RegexOptions.IgnoreCase)).ToArray(), false, "Specify container regex filter(s).") { AllowMultipleArgumentsPerToken = true };

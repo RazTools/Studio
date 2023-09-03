@@ -381,7 +381,7 @@ namespace AssetStudio
                 HasBlockInfoNeedPaddingAtStart = true;
             }
 
-            Logger.Verbose($"Mask set to 0x{mask:X8}");
+            Logger.Verbose($"Mask set to {mask}");
 
             if ((m_Header.flags & mask) != 0)
             {

@@ -8,7 +8,7 @@ namespace AssetStudio
 {
     public static class Logger
     {
-        private static bool _fileLogging = true;
+        private static bool _fileLogging;
 
         public static ILogger Default = new DummyLogger();
         public static ILogger File;
