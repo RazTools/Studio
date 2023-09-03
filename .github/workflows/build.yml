@@ -16,7 +16,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: microsoft/setup-msbuild@v1.1
 
       - name: Download FBX SDK 
@@ -44,25 +44,25 @@ jobs:
         run: msbuild /t:AssetStudioCLI:publish /p:Configuration=Release /p:TargetFramework=net7.0-windows /p:SelfContained=false /verbosity:minimal
 
       - name: Upload .Net6 Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: net6.0-${{ github.sha }}
           path: AssetStudioGUI/bin/Release/net6.0-windows/publish
 
       - name: Upload .Net7 Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: net7.0-${{ github.sha }}
           path: AssetStudioGUI/bin/Release/net7.0-windows/publish
 
       - name: Upload .Net6 CLI Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: net6.0-${{ github.sha }}
           path: AssetStudioGUI/bin/Release/net6.0-windows/publish
 
       - name: Upload .Net7 CLI Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: net7.0-${{ github.sha }}
           path: AssetStudioGUI/bin/Release/net7.0-windows/publish
