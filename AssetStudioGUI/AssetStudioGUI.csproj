@@ -35,6 +35,17 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ContentWithTargetPath Include="Libraries\x86\AssetStudioFBXNative.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<TargetPath>x86\AssetStudioFBXNative.dll</TargetPath>
+		</ContentWithTargetPath>
+		<ContentWithTargetPath Include="Libraries\x64\AssetStudioFBXNative.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<TargetPath>x64\AssetStudioFBXNative.dll</TargetPath>
+		</ContentWithTargetPath>
+	</ItemGroup>
+
+	<ItemGroup>
 		<ContentWithTargetPath Include="Libraries\x86\fmod.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<TargetPath>x86\fmod.dll</TargetPath>

@@ -23,7 +23,7 @@ namespace AssetStudioGUI
         {
             loadAssetMap.Enabled = false;
 
-            var openFileDialog = new OpenFileDialog() { Multiselect = false, Filter = "AssetMap File|*.map" };
+            var openFileDialog = new OpenFileDialog() { Multiselect = false, Filter = "MessagePack AssetMap File|*.map" };
             if (openFileDialog.ShowDialog(this) == DialogResult.OK)
             {
                 var path = openFileDialog.FileName;
