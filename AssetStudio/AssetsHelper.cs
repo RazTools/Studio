@@ -32,6 +32,11 @@ namespace AssetStudio
             public string[] Dependencies { get; set; }
         }
 
+        public static void SetUnityVersion(string version)
+        {
+            assetsManager.SpecifyUnityVersion = version;
+        }
+
         public static string[] GetMaps()
         {
             Directory.CreateDirectory(MapName);
@@ -46,6 +51,7 @@ namespace AssetStudio
             CABMap.Clear();
             Offsets.Clear();
             BaseFolder = string.Empty;
+            assetsManager.SpecifyUnityVersion = string.Empty;
 
             tokenSource.Dispose();
             tokenSource = new CancellationTokenSource();

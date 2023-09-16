@@ -2280,6 +2280,7 @@ namespace AssetStudioGUI
                 name = input;
             }
 
+            var version = specifyUnityVersion.Text;
             var openFolderDialog = new OpenFolderDialog();
             openFolderDialog.Title = $"Select Game Folder";
             if (openFolderDialog.ShowDialog(this) == DialogResult.OK)
@@ -2303,6 +2304,7 @@ namespace AssetStudioGUI
                         }
                     }
                     saveDirectoryBackup = saveFolderDialog.Folder;
+                    AssetsHelper.SetUnityVersion(version);
                     await Task.Run(() => AssetsHelper.BuildAssetMap(files, name, Studio.Game, saveFolderDialog.Folder, exportListType));
                 }
             }
