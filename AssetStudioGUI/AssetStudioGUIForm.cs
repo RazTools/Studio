@@ -158,8 +158,8 @@ namespace AssetStudioGUI
 
             if (Studio.Game.Type.IsUnityCN())
             {
-            UnityCNManager.SetKey(Properties.Settings.Default.selectedUnityCNKey);
-        }
+                UnityCNManager.SetKey(Properties.Settings.Default.selectedUnityCNKey);
+            }
 
             MapNameComboBox.SelectedIndexChanged += new EventHandler(specifyNameComboBox_SelectedIndexChanged);
             if (!string.IsNullOrEmpty(Properties.Settings.Default.selectedCABMapName))
@@ -587,7 +587,7 @@ namespace AssetStudioGUI
                             while (tempNode.Parent != null)
                             {
                                 tempNode = tempNode.Parent;
-                        }
+                            }
                             tempNode.EnsureVisible();
                             tempNode.Checked = e.Control;
                         }
@@ -595,10 +595,10 @@ namespace AssetStudioGUI
                     }
                     else
                     {
-                    if (nextGObject >= treeSrcResults.Count)
-                    {
-                        nextGObject = 0;
-                    }
+                        if (nextGObject >= treeSrcResults.Count)
+                        {
+                            nextGObject = 0;
+                        }
                         var node = treeSrcResults[nextGObject];
                         while (node.Parent != null)
                         {
@@ -606,11 +606,11 @@ namespace AssetStudioGUI
                         }
                         node.EnsureVisible();
                         node.Checked = e.Control;
-                    sceneTreeView.SelectedNode = treeSrcResults[nextGObject];
-                    nextGObject++;
+                        sceneTreeView.SelectedNode = treeSrcResults[nextGObject];
+                        nextGObject++;
+                    }
                 }
             }
-        }
         }
 
         private void TreeNodeSearch(Regex regex, TreeNode treeNode)
@@ -631,6 +631,42 @@ namespace AssetStudioGUI
             foreach (TreeNode childNode in e.Node.Nodes)
             {
                 childNode.Checked = e.Node.Checked;
+            }
+        }
+
+        private void sceneHierarchy_Click(object sender, EventArgs e)
+        {
+            var saveFileDialog = new SaveFileDialog() { FileName = "scene.json", Filter = "Scene Hierarchy dump | *.json" };
+            if (saveFileDialog.ShowDialog(this) == DialogResult.OK)
+            {
+                var path = saveFileDialog.FileName;
+                var nodes = new Dictionary<string, dynamic>();
+                foreach (TreeNode node in sceneTreeView.Nodes)
+                {
+                    var value = GetNode(node);
+                    nodes.Add(node.Text, value);
+                }
+                var json = JsonConvert.SerializeObject(nodes, Formatting.Indented);
+                File.WriteAllText(path, json);
+                Logger.Info("Scene Hierarchy dumped sucessfully !!");
+            }
+        }
+
+        private dynamic GetNode(TreeNode treeNode)
+        {
+            if (treeNode.GetNodeCount(true) == 0)
+            {
+                return string.Empty;
+            }
+            else
+            {
+                var nodes = new Dictionary<string, dynamic>();
+                var exportableNodes = treeNode.Nodes.Cast<GameObjectTreeNode>().Where(x => x.gameObject.m_Animator != null || (bool)x.gameObject.m_Transform?.m_Father.IsNull).ToList();
+                foreach (TreeNode node in exportableNodes)
+                {
+                    nodes.TryAdd(node.Text, GetNode(node));
+                }
+                return nodes;
             }
         }
 

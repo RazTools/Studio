@@ -171,6 +171,7 @@ namespace AssetStudioGUI
             exportAnimatorwithselectedAnimationClipMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             goToSceneHierarchyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             showOriginalFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            sceneHierarchy = new System.Windows.Forms.ToolStripMenuItem();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
@@ -477,7 +478,7 @@ namespace AssetStudioGUI
             // 
             // exportToolStripMenuItem
             // 
-            exportToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { exportAllAssetsMenuItem, exportSelectedAssetsMenuItem, exportFilteredAssetsMenuItem, toolStripSeparator3, exportAnimatorWithSelectedAnimationClipToolStripMenuItem, toolStripSeparator4, toolStripMenuItem2, toolStripMenuItem3, toolStripMenuItem16, toolStripSeparator2, toolStripMenuItem10 });
+            exportToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { exportAllAssetsMenuItem, exportSelectedAssetsMenuItem, exportFilteredAssetsMenuItem, toolStripSeparator3, exportAnimatorWithSelectedAnimationClipToolStripMenuItem, toolStripSeparator4, toolStripMenuItem2, toolStripMenuItem3, toolStripMenuItem16, toolStripSeparator2, toolStripMenuItem10, sceneHierarchy });
             exportToolStripMenuItem.Name = "exportToolStripMenuItem";
             exportToolStripMenuItem.Size = new System.Drawing.Size(53, 20);
             exportToolStripMenuItem.Text = "Export";
@@ -586,21 +587,21 @@ namespace AssetStudioGUI
             // toolStripMenuItem17
             // 
             toolStripMenuItem17.Name = "toolStripMenuItem17";
-            toolStripMenuItem17.Size = new System.Drawing.Size(152, 22);
+            toolStripMenuItem17.Size = new System.Drawing.Size(180, 22);
             toolStripMenuItem17.Text = "All assets";
             toolStripMenuItem17.Click += toolStripMenuItem17_Click;
             // 
             // toolStripMenuItem24
             // 
             toolStripMenuItem24.Name = "toolStripMenuItem24";
-            toolStripMenuItem24.Size = new System.Drawing.Size(152, 22);
+            toolStripMenuItem24.Size = new System.Drawing.Size(180, 22);
             toolStripMenuItem24.Text = "Selected assets";
             toolStripMenuItem24.Click += toolStripMenuItem24_Click;
             // 
             // toolStripMenuItem25
             // 
             toolStripMenuItem25.Name = "toolStripMenuItem25";
-            toolStripMenuItem25.Size = new System.Drawing.Size(152, 22);
+            toolStripMenuItem25.Size = new System.Drawing.Size(180, 22);
             toolStripMenuItem25.Text = "Filtered assets";
             toolStripMenuItem25.Click += toolStripMenuItem25_Click;
             // 
@@ -619,21 +620,21 @@ namespace AssetStudioGUI
             // toolStripMenuItem11
             // 
             toolStripMenuItem11.Name = "toolStripMenuItem11";
-            toolStripMenuItem11.Size = new System.Drawing.Size(152, 22);
+            toolStripMenuItem11.Size = new System.Drawing.Size(180, 22);
             toolStripMenuItem11.Text = "All assets";
             toolStripMenuItem11.Click += toolStripMenuItem11_Click;
             // 
             // toolStripMenuItem12
             // 
             toolStripMenuItem12.Name = "toolStripMenuItem12";
-            toolStripMenuItem12.Size = new System.Drawing.Size(152, 22);
+            toolStripMenuItem12.Size = new System.Drawing.Size(180, 22);
             toolStripMenuItem12.Text = "Selected assets";
             toolStripMenuItem12.Click += toolStripMenuItem12_Click;
             // 
             // toolStripMenuItem13
             // 
             toolStripMenuItem13.Name = "toolStripMenuItem13";
-            toolStripMenuItem13.Size = new System.Drawing.Size(152, 22);
+            toolStripMenuItem13.Size = new System.Drawing.Size(180, 22);
             toolStripMenuItem13.Text = "Filtered assets";
             toolStripMenuItem13.Click += toolStripMenuItem13_Click;
             // 
@@ -878,9 +879,9 @@ namespace AssetStudioGUI
             treeSearch.ForeColor = System.Drawing.SystemColors.WindowText;
             treeSearch.Location = new System.Drawing.Point(0, 0);
             treeSearch.Name = "treeSearch";
+            treeSearch.PlaceholderText = "Search (with Ctrl to check result, with Shift for all)";
             treeSearch.Size = new System.Drawing.Size(472, 23);
             treeSearch.TabIndex = 0;
-            treeSearch.PlaceholderText = "Search (with Ctrl to check result, with Shift for all)";
             treeSearch.TextChanged += treeSearch_TextChanged;
             treeSearch.KeyDown += treeSearch_KeyDown;
             // 
@@ -943,9 +944,9 @@ namespace AssetStudioGUI
             listSearch.ForeColor = System.Drawing.SystemColors.WindowText;
             listSearch.Location = new System.Drawing.Point(0, 0);
             listSearch.Name = "listSearch";
+            listSearch.PlaceholderText = "Search";
             listSearch.Size = new System.Drawing.Size(472, 23);
             listSearch.TabIndex = 0;
-            listSearch.PlaceholderText = "Search";
             listSearch.KeyPress += listSearch_KeyPress;
             // 
             // tabPage3
@@ -1336,6 +1337,13 @@ namespace AssetStudioGUI
             showOriginalFileToolStripMenuItem.Visible = false;
             showOriginalFileToolStripMenuItem.Click += showOriginalFileToolStripMenuItem_Click;
             // 
+            // sceneHierarchy
+            // 
+            sceneHierarchy.Name = "sceneHierarchy";
+            sceneHierarchy.Size = new System.Drawing.Size(266, 22);
+            sceneHierarchy.Text = "Scene hierarchy";
+            sceneHierarchy.Click += sceneHierarchy_Click;
+            // 
             // AssetStudioGUIForm
             // 
             AllowDrop = true;
@@ -1524,6 +1532,7 @@ namespace AssetStudioGUI
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator13;
         private System.Windows.Forms.ToolStripMenuItem enableFileLogging;
         private System.Windows.Forms.ToolStripMenuItem enableVerbose;
+        private System.Windows.Forms.ToolStripMenuItem sceneHierarchy;
     }
 }
 
