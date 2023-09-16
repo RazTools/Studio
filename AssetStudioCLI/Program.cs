@@ -50,6 +50,7 @@ namespace AssetStudioCLI
                 assetsManager.Silent = o.Silent;
                 assetsManager.Game = game;
                 ModelOnly = o.Model;
+                o.Output.Create();
 
                 if (o.Key != default)
                 {
@@ -85,10 +86,6 @@ namespace AssetStudioCLI
                     if (files.Length == 1)
                     {
                         throw new Exception("Unable to build AssetMap with input_path as a file !!");
-                    }
-                    if (!o.Output.Exists)
-                    {
-                        o.Output.Create();
                     }
                     var resetEvent = new ManualResetEvent(false);
                     AssetsHelper.BuildAssetMap(files, o.MapName, game, o.Output.FullName, o.MapType, resetEvent, o.TypeFilter, o.NameFilter, o.ContainerFilter);
