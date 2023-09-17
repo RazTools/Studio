@@ -31,6 +31,7 @@ namespace AssetStudioCLI
                 optionsBinder.MapOp,
                 optionsBinder.MapType,
                 optionsBinder.MapName,
+                optionsBinder.UnityVersion,
                 optionsBinder.GroupAssetsType,
                 optionsBinder.Model,
                 optionsBinder.Key,
@@ -57,6 +58,7 @@ namespace AssetStudioCLI
         public MapOpType MapOp { get; set; }
         public ExportListType MapType { get; set; }
         public string MapName { get; set; }
+        public string UnityVersion { get; set; }
         public AssetGroupOption GroupAssetsType { get; set; }
         public bool Model { get; set; }
         public byte Key { get; set; }
@@ -78,6 +80,7 @@ namespace AssetStudioCLI
         public readonly Option<MapOpType> MapOp;
         public readonly Option<ExportListType> MapType;
         public readonly Option<string> MapName;
+        public readonly Option<string> UnityVersion;
         public readonly Option<AssetGroupOption> GroupAssetsType;
         public readonly Option<bool> Model;
         public readonly Option<byte> Key;
@@ -99,6 +102,7 @@ namespace AssetStudioCLI
             MapOp = new Option<MapOpType>("--map_op", "Specify which map to build.");
             MapType = new Option<ExportListType>("--map_type", "AssetMap output type.");
             MapName = new Option<string>("--map_name", () => "assets_map", "Specify AssetMap file name.");
+            UnityVersion = new Option<string>("--version", "Specify Unity version.");
             GroupAssetsType = new Option<AssetGroupOption>("--group_assets", "Specify how exported assets should be grouped.");
             Model = new Option<bool>("--models", "Enable to export models only");
             AIFile = new Option<FileInfo>("--ai_file", "Specify asset_index json file path (to recover GI containers).").LegalFilePathsOnly();
@@ -188,6 +192,7 @@ namespace AssetStudioCLI
             MapOp = bindingContext.ParseResult.GetValueForOption(MapOp),
             MapType = bindingContext.ParseResult.GetValueForOption(MapType),
             MapName = bindingContext.ParseResult.GetValueForOption(MapName),
+            UnityVersion = bindingContext.ParseResult.GetValueForOption(UnityVersion),
             GroupAssetsType = bindingContext.ParseResult.GetValueForOption(GroupAssetsType),
             Model = bindingContext.ParseResult.GetValueForOption(Model),
             Key = bindingContext.ParseResult.GetValueForOption(Key),

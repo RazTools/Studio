@@ -2110,6 +2110,7 @@ namespace AssetStudioGUI
                 }
             }
 
+            var version = assetsManager.SpecifyUnityVersion;
             var openFolderDialog = new OpenFolderDialog();
             openFolderDialog.Title = "Select Game Folder";
             if (openFolderDialog.ShowDialog(this) == DialogResult.OK)
@@ -2117,6 +2118,7 @@ namespace AssetStudioGUI
                 Logger.Info("Scanning for files...");
                 var files = Directory.GetFiles(openFolderDialog.Folder, "*.*", SearchOption.AllDirectories).ToArray();
                 Logger.Info($"Found {files.Length} files");
+                AssetsHelper.SetUnityVersion(version);
                 await Task.Run(() => AssetsHelper.BuildCABMap(files, name, openFolderDialog.Folder, Studio.Game));
             }
             InvokeUpdate(miscToolStripMenuItem, true);
@@ -2164,6 +2166,7 @@ namespace AssetStudioGUI
                 }
             }
 
+            var version = assetsManager.SpecifyUnityVersion;
             var openFolderDialog = new OpenFolderDialog();
             openFolderDialog.Title = "Select Game Folder";
             if (openFolderDialog.ShowDialog(this) == DialogResult.OK)
@@ -2187,6 +2190,7 @@ namespace AssetStudioGUI
                         }
                     }
                     saveDirectoryBackup = saveFolderDialog.Folder;
+                    AssetsHelper.SetUnityVersion(version);
                     await Task.Run(() => AssetsHelper.BuildBoth(files, name, openFolderDialog.Folder, Studio.Game, saveFolderDialog.Folder, exportListType));
                 }
             }

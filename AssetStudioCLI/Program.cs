@@ -47,8 +47,11 @@ namespace AssetStudioCLI
                 Shader.Parsable = !Settings.Default.disableShader;
                 Renderer.Parsable = !Settings.Default.disableRenderer;
                 AnimationClip.Parsable = !Settings.Default.disableAnimationClip;
+                AssetsHelper.SetUnityVersion(o.UnityVersion);
+
                 assetsManager.Silent = o.Silent;
                 assetsManager.Game = game;
+                assetsManager.SpecifyUnityVersion = o.UnityVersion;
                 ModelOnly = o.Model;
                 o.Output.Create();
 
