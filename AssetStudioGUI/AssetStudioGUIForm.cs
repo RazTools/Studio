@@ -2110,7 +2110,7 @@ namespace AssetStudioGUI
                 }
             }
 
-            var version = assetsManager.SpecifyUnityVersion;
+            var version = specifyUnityVersion.Text;
             var openFolderDialog = new OpenFolderDialog();
             openFolderDialog.Title = "Select Game Folder";
             if (openFolderDialog.ShowDialog(this) == DialogResult.OK)
@@ -2166,7 +2166,7 @@ namespace AssetStudioGUI
                 }
             }
 
-            var version = assetsManager.SpecifyUnityVersion;
+            var version = specifyUnityVersion.Text;
             var openFolderDialog = new OpenFolderDialog();
             openFolderDialog.Title = "Select Game Folder";
             if (openFolderDialog.ShowDialog(this) == DialogResult.OK)
