@@ -519,6 +519,8 @@ namespace AssetStudio
                         crc.Update(bytes, 0, (uint)bytes.Length);
                         morphChannelNames[crc.GetDigest()] = blendShapeName;
 
+                        morphChannelNames[shapeChannel.nameHash] = shapeChannel.name;
+
                         channel.Name = shapeChannel.name.Split('.').Last();
                         channel.KeyframeList = new List<ImportedMorphKeyframe>(shapeChannel.frameCount);
                         var frameEnd = shapeChannel.frameIndex + shapeChannel.frameCount;
@@ -870,14 +872,17 @@ namespace AssetStudio
                                 channelName = channelName.Substring(dotPos + 1);
                             }
 
-                            var path = FixBonePath(animationClip, m_FloatCurve.path);
+                            var path = GetPathByChannelName(channelName);
                             if (string.IsNullOrEmpty(path))
                             {
-                                path = GetPathByChannelName(channelName);
+                                path = FixBonePath(animationClip, m_FloatCurve.path);
                             }
-                            var track = iAnim.FindTrack(path);
-                            track.BlendShape = new ImportedBlendShape();
-                            track.BlendShape.ChannelName = channelName;
+                            var track = iAnim.FindTrack(path, channelName);
+                            if (track.BlendShape == null)
+                            {
+                                track.BlendShape = new ImportedBlendShape();
+                                track.BlendShape.ChannelName = channelName;
+                            }
                             foreach (var m_Curve in m_FloatCurve.curve.m_Curve)
                             {
                                 track.BlendShape.Keyframes.Add(new ImportedKeyframe<float>(m_Curve.time, m_Curve.value));
@@ -984,15 +989,18 @@ namespace AssetStudio
                     channelName = channelName.Substring(dotPos + 1);
                 }
 
-                var bPath = FixBonePath(GetPathFromHash(binding.path));
-                if (string.IsNullOrEmpty(bPath))
+                var path = GetPathByChannelName(channelName);
+                if (string.IsNullOrEmpty(path))
                 {
-                    bPath = GetPathByChannelName(channelName);
+                    path = FixBonePath(GetPathFromHash(binding.path));
                 }
-                var bTrack = iAnim.FindTrack(bPath);
-                bTrack.BlendShape = new ImportedBlendShape();
-                bTrack.BlendShape.ChannelName = channelName;
-                bTrack.BlendShape.Keyframes.Add(new ImportedKeyframe<float>(time, data[curveIndex++ + offset]));
+                var track = iAnim.FindTrack(path, channelName);
+                if (track.BlendShape == null)
+                {
+                    track.BlendShape = new ImportedBlendShape();
+                    track.BlendShape.ChannelName = channelName;
+                }
+                track.BlendShape.Keyframes.Add(new ImportedKeyframe<float>(time, data[curveIndex++ + offset]));
             }
             else if (binding.typeID == ClassIDType.Transform)
             {

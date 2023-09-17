@@ -231,9 +231,16 @@ namespace AssetStudio
         public float SampleRate { get; set; }
         public List<ImportedAnimationKeyframedTrack> TrackList { get; set; }
 
-        public ImportedAnimationKeyframedTrack FindTrack(string path)
+        public ImportedAnimationKeyframedTrack FindTrack(string path, string attribute = null)
         {
-            var track = TrackList.Find(x => x.Path == path);
+            var track = TrackList.Find(t => {
+                if (attribute == null)
+                {
+                    return t.Path == path;
+                } else {
+                    return t.Path == path && t.BlendShape?.ChannelName == attribute;
+                }
+            });
             if (track == null)
             {
                 track = new ImportedAnimationKeyframedTrack { Path = path };
