@@ -1,4 +1,5 @@
 ﻿using K4os.Compression.LZ4;
+using SpirV;
 using System;
 using System.Globalization;
 using System.IO;
@@ -10,7 +11,7 @@ namespace AssetStudio
 {
     public static class ShaderConverter
     {
-        public static string Convert(this Shader shader, Game game)
+        public static string Convert(this Shader shader)
         {
             if (shader.m_SubProgramBlob != null) //5.3 - 5.4
             {
@@ -18,7 +19,7 @@ namespace AssetStudio
                 LZ4Codec.Decode(shader.m_SubProgramBlob, decompressedBytes);
                 using (var blobReader = new EndianBinaryReader(new MemoryStream(decompressedBytes), EndianType.LittleEndian))
                 {
-                    var program = new ShaderProgram(blobReader, shader.version);
+                    var program = new ShaderProgram(blobReader, shader);
                     program.Read(blobReader, 0);
                     return header + program.Export(Encoding.UTF8.GetString(shader.m_Script));
                 }
@@ -26,13 +27,13 @@ namespace AssetStudio
 
             if (shader.compressedBlob != null) //5.5 and up
             {
-                return header + ConvertSerializedShader(shader, game);
+                return header + ConvertSerializedShader(shader);
             }
 
             return header + Encoding.UTF8.GetString(shader.m_Script);
         }
 
-        private static string ConvertSerializedShader(Shader shader, Game game)
+        private static string ConvertSerializedShader(Shader shader)
         {
             var length = shader.platforms.Length;
             var shaderPrograms = new ShaderProgram[length];
@@ -44,7 +45,7 @@ namespace AssetStudio
                     var compressedLength = shader.compressedLengths[i][j];
                     var decompressedLength = shader.decompressedLengths[i][j];
                     var decompressedBytes = new byte[decompressedLength];
-                    if (game.Type.IsGISubGroup())
+                    if (shader.assetsFile.game.Type.IsGISubGroup())
                     {
                         Buffer.BlockCopy(shader.compressedBlob, (int)offset, decompressedBytes, 0, (int)decompressedLength);
                     }
@@ -56,7 +57,7 @@ namespace AssetStudio
                     {
                         if (j == 0)
                         {
-                            shaderPrograms[i] = new ShaderProgram(blobReader, shader.version);
+                            shaderPrograms[i] = new ShaderProgram(blobReader, shader);
                         }
                         shaderPrograms[i].Read(blobReader, j);
                     }
@@ -894,15 +895,21 @@ namespace AssetStudio
         public ShaderSubProgramEntry[] entries;
         public ShaderSubProgram[] m_SubPrograms;
 
-        public ShaderProgram(EndianBinaryReader reader, int[] version)
+        private bool hasUpdatedGpuProgram = false;
+
+        public ShaderProgram(EndianBinaryReader reader, Shader shader)
         {
             var subProgramsCapacity = reader.ReadInt32();
             entries = new ShaderSubProgramEntry[subProgramsCapacity];
             for (int i = 0; i < subProgramsCapacity; i++)
             {
-                entries[i] = new ShaderSubProgramEntry(reader, version);
+                entries[i] = new ShaderSubProgramEntry(reader, shader.version);
             }
             m_SubPrograms = new ShaderSubProgram[subProgramsCapacity];
+            if (shader.assetsFile.game.Type.IsGI())
+            {
+                hasUpdatedGpuProgram = SerializedSubProgram.HasInstancedStructuredBuffers(shader.serializedType) || SerializedSubProgram.HasGlobalLocalKeywordIndices(shader.serializedType);
+            }
         }
 
         public void Read(EndianBinaryReader reader, int segment)
@@ -913,7 +920,7 @@ namespace AssetStudio
                 if (entry.Segment == segment)
                 {
                     reader.BaseStream.Position = entry.Offset;
-                    m_SubPrograms[i] = new ShaderSubProgram(reader);
+                    m_SubPrograms[i] = new ShaderSubProgram(reader, hasUpdatedGpuProgram);
                 }
             }
         }
@@ -938,7 +945,7 @@ namespace AssetStudio
         public string[] m_LocalKeywords;
         public byte[] m_ProgramCode;
 
-        public ShaderSubProgram(EndianBinaryReader reader)
+        public ShaderSubProgram(EndianBinaryReader reader, bool hasUpdatedGpuProgram)
         {
             //LoadGpuProgramFromData
             //201509030 - Unity 5.3
@@ -950,6 +957,10 @@ namespace AssetStudio
             //201806140 - Unity 2019.1~2021.1
             //202012090 - Unity 2021.2
             m_Version = reader.ReadInt32();
+            if (hasUpdatedGpuProgram && m_Version > 201806140)
+            {
+                m_Version = 201806140;
+            }
             m_ProgramType = (ShaderGpuProgramType)reader.ReadInt32();
             reader.BaseStream.Position += 12;
             if (m_Version >= 201608170)

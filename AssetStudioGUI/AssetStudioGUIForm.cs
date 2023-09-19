@@ -1045,7 +1045,7 @@ namespace AssetStudioGUI
                 return;
             }
 
-            var str = ShaderConverter.Convert(m_Shader, Studio.Game);
+            var str = m_Shader.Convert();
             PreviewText(str == null ? "Serialized Shader can't be read" : str.Replace("\n", "\r\n"));
         }
 
