@@ -421,79 +421,96 @@ namespace AssetStudioGUI
 
             var treeNodeCollection = new List<TreeNode>();
             var treeNodeDictionary = new Dictionary<GameObject, GameObjectTreeNode>();
-            var assetsFileCount = assetsManager.assetsFileList.Count;
             int j = 0;
             Progress.Reset();
-            foreach (var assetsFile in assetsManager.assetsFileList)
+            var files = assetsManager.assetsFileList.GroupBy(x => x.originalPath ?? string.Empty).OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.ToList());
+            foreach (var (file, assetsFiles) in files)
             {
-                var fileNode = new TreeNode(assetsFile.fileName); //RootNode
+                var fileNode = !string.IsNullOrEmpty(file) ? new TreeNode(Path.GetFileName(file)) : null; //RootNode
 
-                foreach (var obj in assetsFile.Objects)
+                foreach (var assetsFile in assetsFiles)
                 {
-                    if (assetsManager.tokenSource.IsCancellationRequested)
+                    var assetsFileNode = new TreeNode(assetsFile.fileName);
+
+                    foreach (var obj in assetsFile.Objects)
                     {
-                        Logger.Info("Building tree structure been cancelled !!");
-                        return (string.Empty, Array.Empty<TreeNode>().ToList());
+                        if (assetsManager.tokenSource.IsCancellationRequested)
+                        {
+                            Logger.Info("Building tree structure been cancelled !!");
+                            return (string.Empty, Array.Empty<TreeNode>().ToList());
+                        }
+
+                        if (obj is GameObject m_GameObject)
+                        {
+                            if (!treeNodeDictionary.TryGetValue(m_GameObject, out var currentNode))
+                            {
+                                currentNode = new GameObjectTreeNode(m_GameObject);
+                                treeNodeDictionary.Add(m_GameObject, currentNode);
+                            }
+
+                            foreach (var pptr in m_GameObject.m_Components)
+                            {
+                                if (pptr.TryGet(out var m_Component))
+                                {
+                                    objectAssetItemDic[m_Component].TreeNode = currentNode;
+                                    if (m_Component is MeshFilter m_MeshFilter)
+                                    {
+                                        if (m_MeshFilter.m_Mesh.TryGet(out var m_Mesh))
+                                        {
+                                            objectAssetItemDic[m_Mesh].TreeNode = currentNode;
+                                        }
+                                    }
+                                    else if (m_Component is SkinnedMeshRenderer m_SkinnedMeshRenderer)
+                                    {
+                                        if (m_SkinnedMeshRenderer.m_Mesh.TryGet(out var m_Mesh))
+                                        {
+                                            objectAssetItemDic[m_Mesh].TreeNode = currentNode;
+                                        }
+                                    }
+                                }
+                            }
+
+                            var parentNode = assetsFileNode;
+
+                            if (m_GameObject.m_Transform != null)
+                            {
+                                if (m_GameObject.m_Transform.m_Father.TryGet(out var m_Father))
+                                {
+                                    if (m_Father.m_GameObject.TryGet(out var parentGameObject))
+                                    {
+                                        if (!treeNodeDictionary.TryGetValue(parentGameObject, out var parentGameObjectNode))
+                                        {
+                                            parentGameObjectNode = new GameObjectTreeNode(parentGameObject);
+                                            treeNodeDictionary.Add(parentGameObject, parentGameObjectNode);
+                                        }
+                                        parentNode = parentGameObjectNode;
+                                    }
+                                }
+                            }
+
+                            parentNode.Nodes.Add(currentNode);
+                        }
                     }
 
-                    if (obj is GameObject m_GameObject)
+                    if (assetsFileNode.Nodes.Count > 0)
                     {
-                        if (!treeNodeDictionary.TryGetValue(m_GameObject, out var currentNode))
+                        if (fileNode == null)
                         {
-                            currentNode = new GameObjectTreeNode(m_GameObject);
-                            treeNodeDictionary.Add(m_GameObject, currentNode);
+                            treeNodeCollection.Add(assetsFileNode);
                         }
-
-                        foreach (var pptr in m_GameObject.m_Components)
+                        else
                         {
-                            if (pptr.TryGet(out var m_Component))
-                            {
-                                objectAssetItemDic[m_Component].TreeNode = currentNode;
-                                if (m_Component is MeshFilter m_MeshFilter)
-                                {
-                                    if (m_MeshFilter.m_Mesh.TryGet(out var m_Mesh))
-                                    {
-                                        objectAssetItemDic[m_Mesh].TreeNode = currentNode;
-                                    }
-                                }
-                                else if (m_Component is SkinnedMeshRenderer m_SkinnedMeshRenderer)
-                                {
-                                    if (m_SkinnedMeshRenderer.m_Mesh.TryGet(out var m_Mesh))
-                                    {
-                                        objectAssetItemDic[m_Mesh].TreeNode = currentNode;
-                                    }
-                                }
-                            }
+                            fileNode.Nodes.Add(assetsFileNode);
                         }
-
-                        var parentNode = fileNode;
-
-                        if (m_GameObject.m_Transform != null)
-                        {
-                            if (m_GameObject.m_Transform.m_Father.TryGet(out var m_Father))
-                            {
-                                if (m_Father.m_GameObject.TryGet(out var parentGameObject))
-                                {
-                                    if (!treeNodeDictionary.TryGetValue(parentGameObject, out var parentGameObjectNode))
-                                    {
-                                        parentGameObjectNode = new GameObjectTreeNode(parentGameObject);
-                                        treeNodeDictionary.Add(parentGameObject, parentGameObjectNode);
-                                    }
-                                    parentNode = parentGameObjectNode;
-                                }
-                            }
-                        }
-
-                        parentNode.Nodes.Add(currentNode);
                     }
                 }
 
-                if (fileNode.Nodes.Count > 0)
+                if (fileNode?.Nodes.Count > 0)
                 {
                     treeNodeCollection.Add(fileNode);
                 }
 
-                Progress.Report(++j, assetsFileCount);
+                Progress.Report(++j, files.Count);
             }
             treeNodeDictionary.Clear();
 

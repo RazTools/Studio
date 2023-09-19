@@ -640,7 +640,7 @@ namespace AssetStudioGUI
             if (saveFileDialog.ShowDialog(this) == DialogResult.OK)
             {
                 var path = saveFileDialog.FileName;
-                var nodes = new Dictionary<string, dynamic>();
+                var nodes = new Dictionary<string, object>();
                 foreach (TreeNode node in sceneTreeView.Nodes)
                 {
                     var value = GetNode(node);
@@ -652,21 +652,32 @@ namespace AssetStudioGUI
             }
         }
 
-        private dynamic GetNode(TreeNode treeNode)
+        private object GetNode(TreeNode treeNode)
         {
-            if (treeNode.GetNodeCount(true) == 0)
+            var nodes = new Dictionary<string, object>();
+            foreach (TreeNode node in treeNode.Nodes)
             {
-                return string.Empty;
-            }
-            else
-            {
-                var nodes = new Dictionary<string, dynamic>();
-                var exportableNodes = treeNode.Nodes.Cast<GameObjectTreeNode>().Where(x => x.gameObject.m_Animator != null || (bool)x.gameObject.m_Transform?.m_Father.IsNull).ToList();
-                foreach (TreeNode node in exportableNodes)
+                if (HasGameObjectNode(node))
                 {
                     nodes.TryAdd(node.Text, GetNode(node));
                 }
-                return nodes;
+            }
+            return nodes.Count == 0 ? string.Empty : nodes;
+        }
+
+        private bool HasGameObjectNode(TreeNode treeNode)
+        {
+            if (treeNode is GameObjectTreeNode gameObjectNode && !(bool)gameObjectNode.gameObject.m_Transform?.m_Father.IsNull)
+            {
+                return gameObjectNode.gameObject.m_Animator != null;
+            }
+            else
+            {
+                foreach (TreeNode node in treeNode.Nodes)
+                {
+                    return HasGameObjectNode(node);
+                }
+                return false;
             }
         }
 
