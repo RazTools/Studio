@@ -18,7 +18,7 @@ namespace AssetStudio
         public string m_NameSpace;
         public string m_AsmName;
 
-        public bool Match(string hash) => Convert.ToHexString(m_OldTypeHash) == hash;
+        public bool Match(params string[] hashes) => hashes.Any(x => x == Convert.ToHexString(m_OldTypeHash));
         public override string ToString()
         {
             var sb = new StringBuilder();

@@ -578,7 +578,7 @@ namespace AssetStudio
         public UAVParameter[] m_UAVParams;
         public SamplerParameter[] m_Samplers;
 
-        public static bool HasGlobalLocalKeywordIndices(SerializedType type) => type.Match("E99740711222CD922E9A6F92FF1EB07A") || type.Match("450A058C218DAF000647948F2F59DA6D");
+        public static bool HasGlobalLocalKeywordIndices(SerializedType type) => type.Match("E99740711222CD922E9A6F92FF1EB07A", "450A058C218DAF000647948F2F59DA6D");
         public static bool HasInstancedStructuredBuffers(SerializedType type) => type.Match("E99740711222CD922E9A6F92FF1EB07A");
 
         public SerializedSubProgram(ObjectReader reader)
