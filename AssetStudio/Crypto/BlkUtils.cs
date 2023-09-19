@@ -10,7 +10,6 @@ namespace AssetStudio
         private const int DataOffset = 0x2A;
         private const int KeySize = 0x1000;
         private const int SeedBlockSize = 0x800;
-        private const int BufferSize = 0x10000;
 
         public static XORStream Decrypt(FileReader reader, Blk blk)
         {
@@ -63,49 +62,6 @@ namespace AssetStudio
             }
 
             return new XORStream(reader.BaseStream, DataOffset, xorpad);
-        }
-
-        public static IEnumerable<long> GetOffsets(this XORStream stream, string path)
-        {
-            if (AssetsHelper.TryGet(path, out var offsets))
-            {
-                foreach(var offset in offsets)
-                {
-                    stream.Offset = offset;
-                    yield return offset;
-                }
-            }
-            else
-            {
-                using var reader = new FileReader(path, stream, true);
-                var signature = reader.FileType switch
-                {
-                    FileType.BundleFile => "UnityFS\x00",
-                    FileType.Mhy0File => "mhy0",
-                    _ => throw new InvalidOperationException()
-                };
-
-                Logger.Verbose($"Prased signature: {signature}");
-
-                var signatureBytes = Encoding.UTF8.GetBytes(signature);
-                var buffer = BigArrayPool<byte>.Shared.Rent(BufferSize);
-                while (stream.Remaining > 0)
-                {
-                    var index = 0;
-                    var absOffset = stream.AbsolutePosition;
-                    var read = stream.Read(buffer);
-                    while (index < read)
-                    {
-                        index = buffer.AsSpan(0, read).Search(signatureBytes, index);
-                        if (index == -1) break;
-                        var offset = absOffset + index;
-                        stream.Offset = offset;
-                        yield return offset;
-                        index++;
-                    }
-                }
-                BigArrayPool<byte>.Shared.Return(buffer);
-            }
         }
     }
 }

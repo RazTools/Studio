@@ -1,10 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
 namespace AssetStudio
 {
     public class OffsetStream : Stream
     {
+        private const int BufferSize = 0x10000;
+
         private readonly Stream _baseStream;
         private long _offset;
 
@@ -64,5 +68,48 @@ namespace AssetStudio
         public override void Write(byte[] buffer, int offset, int count) => throw new NotImplementedException();
         public override void SetLength(long value) => throw new NotImplementedException();
         public override void Flush() => throw new NotImplementedException();
+        public IEnumerable<long> GetOffsets(string path)
+        {
+            if (AssetsHelper.TryGet(path, out var offsets))
+            {
+                foreach (var offset in offsets)
+                {
+                    Offset = offset;
+                    yield return offset;
+                }
+            }
+            else
+            {
+                using var reader = new FileReader(path, this, true);
+                var signature = reader.FileType switch
+                {
+                    FileType.BundleFile => "UnityFS\x00",
+                    FileType.BlbFile => "Blb\x02",
+                    FileType.Mhy0File => "mhy0",
+                    _ => throw new InvalidOperationException()
+                };
+
+                Logger.Verbose($"Prased signature: {signature}");
+
+                var signatureBytes = Encoding.UTF8.GetBytes(signature);
+                var buffer = BigArrayPool<byte>.Shared.Rent(BufferSize);
+                while (Remaining > 0)
+                {
+                    var index = 0;
+                    var absOffset = AbsolutePosition;
+                    var read = Read(buffer);
+                    while (index < read)
+                    {
+                        index = buffer.AsSpan(0, read).Search(signatureBytes, index);
+                        if (index == -1) break;
+                        var offset = absOffset + index;
+                        Offset = offset;
+                        yield return offset;
+                        index++;
+                    }
+                }
+                BigArrayPool<byte>.Shared.Return(buffer);
+            }
+        }
     }
 }

@@ -432,19 +432,22 @@ namespace AssetStudio
             try
             {
                 using var stream = new OffsetStream(reader.BaseStream, 0);
-                if (AssetsHelper.TryGet(reader.FullPath, out var offsets))
+                foreach (var offset in stream.GetOffsets(reader.FullPath))
                 {
-                    foreach (var offset in offsets)
+                    var name = offset.ToString("X8");
+                    Logger.Info($"Loading Block {name}");
+
+                    var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), name);
+                    var subReader = new FileReader(dummyPath, stream, true);
+                    switch (subReader.FileType)
                     {
-                        LoadBlockSubFile(reader.FullPath, stream, offset);
+                        case FileType.BundleFile:
+                            LoadBundleFile(subReader, reader.FullPath, offset, false);
+                            break;
+                        case FileType.BlbFile:
+                            LoadBlbFile(subReader, reader.FullPath, offset, false);
+                            break;
                     }
-                }
-                else
-                {
-                    do
-                    {
-                        LoadBlockSubFile(reader.FullPath, stream, stream.AbsolutePosition);
-                    } while (stream.Remaining > 0);
                 }    
             }
             catch (Exception e)
@@ -455,16 +458,6 @@ namespace AssetStudio
             {
                 reader.Dispose();
             }
-        }
-        private void LoadBlockSubFile(string path, OffsetStream stream, long offset)
-        {
-            var name = offset.ToString("X8");
-            Logger.Info($"Loading Block {name}");
-
-            stream.Offset = offset;
-            var dummyPath = Path.Combine(Path.GetDirectoryName(path), name);
-            var subReader = new FileReader(dummyPath, stream, true);
-            LoadBundleFile(subReader, path, offset, false);
         }
         private void LoadBlkFile(FileReader reader)
         {
@@ -535,6 +528,45 @@ namespace AssetStudio
             catch (Exception e)
             {
                 var str = $"Error while reading mhy0 file {reader.FullPath}";
+                if (originalPath != null)
+                {
+                    str += $" from {Path.GetFileName(originalPath)}";
+                }
+                Logger.Error(str, e);
+            }
+            finally
+            {
+                reader.Dispose();
+            }
+        }
+        
+        private void LoadBlbFile(FileReader reader, string originalPath = null, long originalOffset = 0, bool log = true)
+        {
+            if (log)
+            {
+                Logger.Info("Loading " + reader.FullPath);
+            }
+            try
+            {
+                var blbFile = new BlbFile(reader, reader.FullPath);
+                foreach (var file in blbFile.fileList)
+                {
+                    var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), file.fileName);
+                    var cabReader = new FileReader(dummyPath, file.stream);
+                    if (cabReader.FileType == FileType.AssetsFile)
+                    {
+                        LoadAssetsFromMemory(cabReader, originalPath ?? reader.FullPath, blbFile.m_Header.unityRevision, originalOffset);
+                    }
+                    else
+                    {
+                        Logger.Verbose("Caching resource stream");
+                        resourceFileReaders[file.fileName] = cabReader; //TODO
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                var str = $"Error while reading Blb file {reader.FullPath}";
                 if (originalPath != null)
                 {
                     str += $" from {Path.GetFileName(originalPath)}";

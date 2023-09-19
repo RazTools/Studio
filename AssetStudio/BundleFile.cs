@@ -195,6 +195,9 @@ namespace AssetStudio
                         header.signature = "UnityFS";
                         goto case "UnityFS";
                     }
+                    header.version = reader.ReadUInt32();
+                    header.unityVersion = reader.ReadStringToNull();
+                    header.unityRevision = reader.ReadStringToNull();
                     break;
 
             }
