@@ -38,7 +38,6 @@ namespace AssetStudio
             Logger.Verbose($"Parsed signature is {signature}");
             switch (signature)
             {
-                case "ENCR":
                 case "UnityWeb":
                 case "UnityRaw":
                 case "UnityArchive":
@@ -48,6 +47,8 @@ namespace AssetStudio
                     return FileType.WebFile;
                 case "blk":
                     return FileType.BlkFile;
+                case "ENCR":
+                    return FileType.ENCRFile;
                 default:
                     {
                         Logger.Verbose("signature does not match any of the supported string signatures, attempting to check bytes signatures");
@@ -201,7 +202,7 @@ namespace AssetStudio
                         break;
                 }
             }
-            if (reader.FileType == FileType.BundleFile && game.Type.IsBlockFile() || reader.FileType == FileType.BlbFile)
+            if (reader.FileType == FileType.BundleFile && game.Type.IsBlockFile() || reader.FileType == FileType.ENCRFile || reader.FileType == FileType.BlbFile)
             {
                 Logger.Verbose("File might have multiple bundles !!");
                 try
@@ -211,9 +212,9 @@ namespace AssetStudio
                     reader.ReadStringToNull();
                     reader.ReadStringToNull();
                     var size = reader.ReadInt64();
-                    if (!(signature == "UnityFS" && size == reader.BaseStream.Length))
+                    if (size != reader.BaseStream.Length)
                     {
-                        Logger.Verbose($"Found signature UnityFS, expected bundle size is 0x{size:X8}, found 0x{reader.BaseStream.Length} instead !!");
+                        Logger.Verbose($"Found signature {signature}, expected bundle size is 0x{size:X8}, found 0x{reader.BaseStream.Length} instead !!");
                         Logger.Verbose("Loading as block file !!");
                         reader.FileType = FileType.BlockFile;
                     }

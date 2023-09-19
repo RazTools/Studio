@@ -18,6 +18,7 @@ namespace AssetStudio
         BlkFile,
         Mhy0File,
         BlbFile,
+        ENCRFile,
         BlockFile
     }
 }

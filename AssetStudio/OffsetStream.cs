@@ -86,6 +86,7 @@ namespace AssetStudio
                     FileType.BundleFile => "UnityFS\x00",
                     FileType.BlbFile => "Blb\x02",
                     FileType.Mhy0File => "mhy0",
+                    FileType.ENCRFile => "ENCR\x00",
                     _ => throw new InvalidOperationException()
                 };
 

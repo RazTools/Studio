@@ -441,6 +441,7 @@ namespace AssetStudio
                     var subReader = new FileReader(dummyPath, stream, true);
                     switch (subReader.FileType)
                     {
+                        case FileType.ENCRFile:
                         case FileType.BundleFile:
                             LoadBundleFile(subReader, reader.FullPath, offset, false);
                             break;
