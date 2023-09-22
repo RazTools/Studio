@@ -31,7 +31,7 @@ namespace AssetStudioGUI
                     action(message);
                     break;
             }
-
+            return message;
         }
     }
 }

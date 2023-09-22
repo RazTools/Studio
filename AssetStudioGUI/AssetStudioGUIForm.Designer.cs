@@ -1344,6 +1344,14 @@ namespace AssetStudioGUI
             sceneHierarchy.Text = "Scene hierarchy";
             sceneHierarchy.Click += sceneHierarchy_Click;
             // 
+            // enableFileLogging
+            // 
+            this.enableFileLogging.CheckOnClick = true;
+            this.enableFileLogging.Name = "enableFileLogging";
+            this.enableFileLogging.Size = new System.Drawing.Size(191, 22);
+            this.enableFileLogging.Text = "Enable file logging";
+            this.enableFileLogging.CheckedChanged += new System.EventHandler(this.enableFileLogging_CheckedChanged);
+            // 
             // AssetStudioGUIForm
             // 
             AllowDrop = true;
