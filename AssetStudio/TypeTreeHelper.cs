@@ -25,7 +25,7 @@ namespace AssetStudio
             return sb.ToString();
         }
 
-        private static void ReadStringValue(StringBuilder sb, List<TypeTreeNode> m_Nodes, BinaryReader reader, ref int i)
+        private static void ReadStringValue(StringBuilder sb, List<TypeTreeNode> m_Nodes, EndianBinaryReader reader, ref int i)
         {
             var m_Node = m_Nodes[i];
             var level = m_Node.m_Level;
@@ -182,10 +182,11 @@ namespace AssetStudio
             return obj;
         }
 
-        private static object ReadValue(List<TypeTreeNode> m_Nodes, BinaryReader reader, ref int i)
+        private static object ReadValue(List<TypeTreeNode> m_Nodes, EndianBinaryReader reader, ref int i)
         {
             var m_Node = m_Nodes[i];
             var varTypeStr = m_Node.m_Type;
+            Logger.Verbose($"Reading {m_Node.m_Name} of type {varTypeStr}");
             object value;
             var align = (m_Node.m_MetaFlag & 0x4000) != 0;
             switch (varTypeStr)

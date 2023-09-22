@@ -17,7 +17,7 @@ namespace AssetStudio
     public class ImportedFrame
     {
         public string Name { get; set; }
-        public Vector3 LocalRotation { get; set; }
+        public Quaternion LocalRotation { get; set; }
         public Vector3 LocalPosition { get; set; }
         public Vector3 LocalScale { get; set; }
         public ImportedFrame Parent { get; set; }
@@ -73,23 +73,6 @@ namespace AssetStudio
             return null;
         }
 
-        public ImportedFrame FindFrame(string name)
-        {
-            if (Name == name)
-            {
-                return this;
-            }
-            foreach (var child in children)
-            {
-                var frame = child.FindFrame(name);
-                if (frame != null)
-                {
-                    return frame;
-                }
-            }
-            return null;
-        }
-
         public ImportedFrame FindRelativeFrameWithPath(string path)
         {
             var subs = path.Split(new[] { '/' }, 2);
@@ -107,6 +90,23 @@ namespace AssetStudio
                         if (result != null)
                             return result;
                     }
+                }
+            }
+            return null;
+        }
+
+        public ImportedFrame FindFrame(string name)
+        {
+            if (Name == name)
+            {
+                return this;
+            }
+            foreach (var child in children)
+            {
+                var frame = child.FindFrame(name);
+                if (frame != null)
+                {
+                    return frame;
                 }
             }
             return null;
@@ -231,9 +231,16 @@ namespace AssetStudio
         public float SampleRate { get; set; }
         public List<ImportedAnimationKeyframedTrack> TrackList { get; set; }
 
-        public ImportedAnimationKeyframedTrack FindTrack(string path)
+        public ImportedAnimationKeyframedTrack FindTrack(string path, string attribute = null)
         {
-            var track = TrackList.Find(x => x.Path == path);
+            var track = TrackList.Find(t => {
+                if (attribute == null)
+                {
+                    return t.Path == path;
+                } else {
+                    return t.Path == path && t.BlendShape?.ChannelName == attribute;
+                }
+            });
             if (track == null)
             {
                 track = new ImportedAnimationKeyframedTrack { Path = path };
@@ -248,7 +255,7 @@ namespace AssetStudio
     {
         public string Path { get; set; }
         public List<ImportedKeyframe<Vector3>> Scalings = new List<ImportedKeyframe<Vector3>>();
-        public List<ImportedKeyframe<Vector3>> Rotations = new List<ImportedKeyframe<Vector3>>();
+        public List<ImportedKeyframe<Quaternion>> Rotations = new List<ImportedKeyframe<Quaternion>>();
         public List<ImportedKeyframe<Vector3>> Translations = new List<ImportedKeyframe<Vector3>>();
         public ImportedBlendShape BlendShape;
     }

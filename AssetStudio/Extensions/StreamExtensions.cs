@@ -20,5 +20,29 @@ namespace AssetStudio
                 }
             }
         }
+
+        public static void AlignStream(this Stream stream)
+        {
+            stream.AlignStream(4);
+        }
+
+        public static void AlignStream(this Stream stream, int alignment)
+        {
+            var pos = stream.Position;
+            var mod = pos % alignment;
+            if (mod != 0)
+            {
+                var rem = alignment - mod;
+                for (int _ = 0; _ < rem; _++)
+                {
+                    if (!stream.CanWrite)
+                    {
+                        throw new IOException("End of stream");
+                    }
+
+                    stream.WriteByte(0);
+                }
+            }
+        }
     }
 }

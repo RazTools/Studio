@@ -2,7 +2,7 @@
 // Microsoft Visual C++ generated include file.
 // Used by AssetStudioFBXNative.rc
 
-// пб╤тоС╣добр╩вИд╛хож╣
+// О©╫б╤О©╫О©╫О©╫О©╫О©╫О©╫р╩О©╫О©╫д╛О©╫О©╫ж╣
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS

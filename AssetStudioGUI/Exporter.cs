@@ -1,6 +1,6 @@
 ﻿using AssetStudio;
 using Newtonsoft.Json;
-using System;
+using Newtonsoft.Json.Converters;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -25,7 +25,7 @@ namespace AssetStudioGUI
                 {
                     using (var file = File.OpenWrite(exportFullPath))
                     {
-                        image.WriteToStream(file, type);  
+                        image.WriteToStream(file, type);
                     }
                     return true;
                 }
@@ -69,7 +69,7 @@ namespace AssetStudioGUI
             if (!TryExportFile(exportPath, item, ".shader", out var exportFullPath))
                 return false;
             var m_Shader = (Shader)item.Asset;
-            var str = m_Shader.Convert(Studio.Game);
+            var str = m_Shader.Convert();
             File.WriteAllText(exportFullPath, str);
             return true;
         }
@@ -115,6 +115,7 @@ namespace AssetStudioGUI
                 switch (m_MiHoYoBinData.Type)
                 {
                     case MiHoYoBinDataType.JSON:
+                        
                         if (!TryExportFile(exportPath, item, ".json", out exportFullPath))
                             return false;
                         var json = m_MiHoYoBinData.Dump() as string;
@@ -125,10 +126,18 @@ namespace AssetStudioGUI
                         }
                         break;
                     case MiHoYoBinDataType.Bytes:
-                        if (!TryExportFile(exportPath, item, ".bin", out exportFullPath))
+                        var extension = ".bin";
+                        if (Properties.Settings.Default.restoreExtensionName)
+                        {
+                            if (!string.IsNullOrEmpty(item.Container))
+                            {
+                                extension = Path.GetExtension(item.Container);
+                            }
+                        }
+                        if (!TryExportFile(exportPath, item, extension, out exportFullPath))
                             return false;
                         var bytes = m_MiHoYoBinData.Dump() as byte[];
-                        if (bytes.Length != 0)
+                        if (!bytes.IsNullOrEmpty())
                         {
                             File.WriteAllBytes(exportFullPath, bytes);
                             return true;
@@ -281,22 +290,6 @@ namespace AssetStudioGUI
             return false;
         }
 
-        public static bool ExportJsonFile(AssetItem item, string exportPath)
-        {
-            if (!TryExportFile(exportPath, item, ".json", out var exportFullPath))
-                return false;
-            var str = JsonConvert.SerializeObject(item.Asset, Formatting.Indented);
-            if (!string.IsNullOrEmpty(str) && str != "{}")
-            {
-            File.WriteAllText(exportFullPath, str);
-            return true;
-        }
-            else
-            {
-                return ExportRawFile(item, exportPath);
-            }
-        }
-
         public static bool ExportRawFile(AssetItem item, string exportPath)
         {
             if (!TryExportFile(exportPath, item, ".dat", out var exportFullPath))
@@ -322,13 +315,12 @@ namespace AssetStudioGUI
             }
             return false;
         }
-
         public static bool ExportAnimationClip(AssetItem item, string exportPath)
         {
             if (!TryExportFile(exportPath, item, ".anim", out var exportFullPath))
                 return false;
             var m_AnimationClip = (AnimationClip)item.Asset;
-            var str = m_AnimationClip.Convert(Studio.Game);
+            var str = m_AnimationClip.Convert();
             File.WriteAllText(exportFullPath, str);
             return true;
         }
@@ -342,17 +334,29 @@ namespace AssetStudioGUI
             }
             var m_Animator = (Animator)item.Asset;
             var convert = animationList != null
-                ? new ModelConverter(m_Animator, Properties.Settings.Default.convertType, Studio.Game, animationList.Select(x => (AnimationClip)x.Asset).ToArray(), Properties.Settings.Default.ignoreController)
-                : new ModelConverter(m_Animator, Properties.Settings.Default.convertType, Studio.Game, ignoreController: Properties.Settings.Default.ignoreController);
+                ? new ModelConverter(m_Animator, Properties.Settings.Default.convertType, Studio.Game, Properties.Settings.Default.collectAnimations, animationList.Select(x => (AnimationClip)x.Asset).ToArray())
+                : new ModelConverter(m_Animator, Properties.Settings.Default.convertType, Studio.Game, Properties.Settings.Default.collectAnimations);
             ExportFbx(convert, exportFullPath);
+            return true;
+        }
+
+        public static bool ExportGameObject(AssetItem item, string exportPath, List <AssetItem> animationList = null)
+        {
+            var exportFullPath = Path.Combine(exportPath, item.Text, item.Text + ".fbx");
+            if (File.Exists(exportFullPath))
+            {
+                exportFullPath = Path.Combine(exportPath, item.Text + item.UniqueID, item.Text + ".fbx");
+            }
+            var m_GameObject = (GameObject)item.Asset;
+            ExportGameObject(m_GameObject, exportFullPath, animationList);
             return true;
         }
 
         public static void ExportGameObject(GameObject gameObject, string exportPath, List<AssetItem> animationList = null)
         {
             var convert = animationList != null
-                ? new ModelConverter(gameObject, Properties.Settings.Default.convertType, Studio.Game, animationList.Select(x => (AnimationClip)x.Asset).ToArray(), Properties.Settings.Default.ignoreController)
-                : new ModelConverter(gameObject, Properties.Settings.Default.convertType, Studio.Game, ignoreController: Properties.Settings.Default.ignoreController);
+                ? new ModelConverter(gameObject, Properties.Settings.Default.convertType, Studio.Game, Properties.Settings.Default.collectAnimations, animationList.Select(x => (AnimationClip)x.Asset).ToArray())
+                : new ModelConverter(gameObject, Properties.Settings.Default.convertType, Studio.Game, Properties.Settings.Default.collectAnimations);
             exportPath = exportPath + FixFileName(gameObject.m_Name) + ".fbx";
             ExportFbx(convert, exportPath);
         }
@@ -361,8 +365,8 @@ namespace AssetStudioGUI
         {
             var rootName = Path.GetFileNameWithoutExtension(exportPath);
             var convert = animationList != null
-                ? new ModelConverter(rootName, gameObject, Properties.Settings.Default.convertType, Studio.Game, animationList.Select(x => (AnimationClip)x.Asset).ToArray(), Properties.Settings.Default.ignoreController)
-                : new ModelConverter(rootName, gameObject, Properties.Settings.Default.convertType, Studio.Game, ignoreController: Properties.Settings.Default.ignoreController);
+                ? new ModelConverter(rootName, gameObject, Properties.Settings.Default.convertType, Studio.Game, Properties.Settings.Default.collectAnimations, animationList.Select(x => (AnimationClip)x.Asset).ToArray())
+                : new ModelConverter(rootName, gameObject, Properties.Settings.Default.convertType, Studio.Game, Properties.Settings.Default.collectAnimations);
             ExportFbx(convert, exportPath);
         }
 
@@ -407,6 +411,8 @@ namespace AssetStudioGUI
         {
             switch (item.Type)
             {
+                case ClassIDType.GameObject:
+                    return ExportGameObject(item, exportPath);
                 case ClassIDType.Texture2D:
                     return ExportTexture2D(item, exportPath);
                 case ClassIDType.AudioClip:
@@ -434,8 +440,20 @@ namespace AssetStudioGUI
                 case ClassIDType.MiHoYoBinData:
                     return ExportMiHoYoBinData(item, exportPath);
                 default:
-                    return ExportJsonFile(item, exportPath);
+                    return ExportRawFile(item, exportPath);
             }
+        }
+
+        public static bool ExportJSONFile(AssetItem item, string exportPath)
+        {
+            if (!TryExportFile(exportPath, item, ".json", out var exportFullPath))
+                return false;
+
+            var settings = new JsonSerializerSettings();
+            settings.Converters.Add(new StringEnumConverter());
+            var str = JsonConvert.SerializeObject(item.Asset, Formatting.Indented, settings);
+            File.WriteAllText(exportFullPath, str);
+            return true;
         }
 
         public static string FixFileName(string str)

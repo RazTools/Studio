@@ -10,11 +10,15 @@ namespace AssetStudio
     {
         AssetsFile,
         BundleFile,
-        GameFile,
         WebFile,
         ResourceFile,
         GZipFile,
         BrotliFile,
-        ZipFile
+        ZipFile,
+        BlkFile,
+        Mhy0File,
+        BlbFile,
+        ENCRFile,
+        BlockFile
     }
 }

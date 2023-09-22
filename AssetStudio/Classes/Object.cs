@@ -37,6 +37,8 @@ namespace AssetStudio
             serializedType = reader.serializedType;
             byteSize = reader.byteSize;
 
+            Logger.Verbose($"Attempting to read object {type} with {m_PathID} in file {assetsFile.fileName}, starting from offset 0x{reader.byteStart:X8} with size of 0x{byteSize:X8} !!");
+
             if (platform == BuildTarget.NoTarget)
             {
                 var m_ObjectHideFlags = reader.ReadUInt32();
@@ -81,6 +83,7 @@ namespace AssetStudio
 
         public byte[] GetRawData()
         {
+            Logger.Verbose($"Dumping raw bytes of the object with {m_PathID} in file {assetsFile.fileName}...");
             reader.Reset();
             return reader.ReadBytes((int)byteSize);
         }

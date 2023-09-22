@@ -1,7 +1,4 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using SevenZip;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace AssetStudio
 {
@@ -21,10 +18,6 @@ namespace AssetStudio
 
     public class UnityPropertySheet
     {
-        private const string HDRPostfixName = "_HDR";
-        private const string STPostfixName = "_ST";
-        private const string TexelSizePostfixName = "_TexelSize";
-
         public Dictionary<string, UnityTexEnv> m_TexEnvs;
         public Dictionary<string, int> m_Ints;
         public Dictionary<string, float> m_Floats;
@@ -65,50 +58,12 @@ namespace AssetStudio
                 m_Colors.Add(reader.ReadAlignedString(), reader.ReadColor4());
             }
         }
-
-        public string FindPropertyNameByCRC28(uint crc)
-        {
-            foreach (var property in m_TexEnvs.Keys)
-            {
-                string hdrName = property + HDRPostfixName;
-                if (CRC.Verify28DigestUTF8(hdrName, crc))
-                {
-                    return hdrName;
-                }
-                string stName = property + STPostfixName;
-                if (CRC.Verify28DigestUTF8(stName, crc))
-                {
-                    return stName;
-                }
-                string texelName = property + TexelSizePostfixName;
-                if (CRC.Verify28DigestUTF8(texelName, crc))
-                {
-                    return texelName;
-                }
-            }
-            foreach (var property in m_Floats.Keys)
-            {
-                if (CRC.Verify28DigestUTF8(property, crc))
-                {
-                    return property;
-                }
-            }
-            foreach (var property in m_Colors.Keys)
-            {
-                if (CRC.Verify28DigestUTF8(property, crc))
-                {
-                    return property;
-                }
-            }
-            return null;
-        }
     }
 
     public sealed class Material : NamedObject
     {
         public PPtr<Shader> m_Shader;
         public UnityPropertySheet m_SavedProperties;
-        public Dictionary<string, string> m_StringTagMap;
 
         public Material(ObjectReader reader) : base(reader)
         {
@@ -119,16 +74,25 @@ namespace AssetStudio
                 var m_ShaderKeywords = reader.ReadStringArray();
             }
 
-            if (version[0] >= 5) //5.0 and up
+            if (version[0] > 2021 || (version[0] == 2021 && version[1] >= 3)) //2021.3 and up
+            {
+                var m_ValidKeywords = reader.ReadStringArray();
+                var m_InvalidKeywords = reader.ReadStringArray();
+            }
+            else if (version[0] >= 5) //5.0 ~ 2021.2
             {
                 var m_ShaderKeywords = reader.ReadAlignedString();
+            }
+
+            if (version[0] >= 5) //5.0 and up
+            {
                 var m_LightmapFlags = reader.ReadUInt32();
             }
 
             if (version[0] > 5 || (version[0] == 5 && version[1] >= 6)) //5.6 and up
             {
                 var m_EnableInstancingVariants = reader.ReadBoolean();
-                var m_DoubleSidedGI = reader.ReadBoolean(); //2017 and up
+                //var m_DoubleSidedGI = a_Stream.ReadBoolean(); //2017 and up
                 reader.AlignStream();
             }
 
@@ -140,13 +104,16 @@ namespace AssetStudio
             if (version[0] > 5 || (version[0] == 5 && version[1] >= 1)) //5.1 and up
             {
                 var stringTagMapSize = reader.ReadInt32();
-                m_StringTagMap = new Dictionary<string, string>(stringTagMapSize);
                 for (int i = 0; i < stringTagMapSize; i++)
                 {
                     var first = reader.ReadAlignedString();
                     var second = reader.ReadAlignedString();
-                    m_StringTagMap.Add(first, second);
                 }
+            }
+
+            if (reader.Game.Type.IsNaraka())
+            {
+                var value = reader.ReadInt32();
             }
 
             if (version[0] > 5 || (version[0] == 5 && version[1] >= 6)) //5.6 and up
@@ -157,11 +124,6 @@ namespace AssetStudio
             m_SavedProperties = new UnityPropertySheet(reader);
 
             //vector m_BuildTextureStacks 2020 and up
-        }
-
-        public string FindPropertyNameByCRC28(uint crc)
-        {
-            return m_SavedProperties.FindPropertyNameByCRC28(crc);
         }
     }
 }

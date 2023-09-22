@@ -1,6 +1,7 @@
-﻿using SevenZip;
+﻿using AssetStudio;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Text;
 
@@ -10,8 +11,6 @@ namespace AssetStudio
     {
         public PPtr<Component>[] m_Components;
         public string m_Name;
-        public uint m_Tag;
-        public bool m_IsActive;
 
         public Transform m_Transform;
         public MeshRenderer m_MeshRenderer;
@@ -35,67 +34,56 @@ namespace AssetStudio
 
             var m_Layer = reader.ReadInt32();
             m_Name = reader.ReadAlignedString();
-            m_Tag = reader.ReadUInt16();
-            m_IsActive = reader.ReadBoolean();
         }
-        public Transform GetTransform()
-        {
-            foreach (PPtr<Component> ptr in FetchComponents())
-            {
-                if (!ptr.TryGet(out var comp))
-                {
-                    continue;
-                }
 
-                if (comp.type == ClassIDType.Transform)
+        public bool HasModel() => HasMesh(m_Transform, new List<bool>());
+        private static bool HasMesh(Transform m_Transform, List<bool> meshes)
+        {
+            m_Transform.m_GameObject.TryGet(out var m_GameObject);
+
+            if (m_GameObject.m_MeshRenderer != null)
+            {
+                var mesh = GetMesh(m_GameObject.m_MeshRenderer);
+                meshes.Add(mesh != null);
+            }
+
+            if (m_GameObject.m_SkinnedMeshRenderer != null)
+            {
+                var mesh = GetMesh(m_GameObject.m_SkinnedMeshRenderer);
+                meshes.Add(mesh != null);
+            }
+
+            foreach (var pptr in m_Transform.m_Children)
+            {
+                if (pptr.TryGet(out var child))
+                    meshes.Add(HasMesh(child, meshes));
+            }
+
+            return meshes.Any(x => x == true);
+        }
+
+        private static Mesh GetMesh(Renderer meshR)
+        {
+            if (meshR is SkinnedMeshRenderer sMesh)
+            {
+                if (sMesh.m_Mesh.TryGet(out var m_Mesh))
                 {
-                    return comp as Transform;
+                    return m_Mesh;
                 }
             }
-            throw new Exception("Can't find transform component");
-        }
-
-        private List<PPtr<Component>> FetchComponents()
-        {
-            return m_Components.ToList();
-        }
-
-        public T FindComponent<T>()
-            where T : Component
-        {
-            foreach (PPtr<Component> ptr in FetchComponents())
+            else
             {
-                // component could has not impelemented asset type
-                if (ptr.TryGet(out var comp) && comp is T t) 
+                meshR.m_GameObject.TryGet(out var m_GameObject);
+                if (m_GameObject.m_MeshFilter != null)
                 {
-                    return t;
-                }
-            }
-            return null;
-        }
-
-        public Dictionary<uint, string> BuildTOS()
-        {
-            Dictionary<uint, string> tos = new Dictionary<uint, string>() { { 0, string.Empty } };
-            BuildTOS(this, string.Empty, tos);
-            return tos;
-        }
-        private void BuildTOS(GameObject parent, string parentPath, Dictionary<uint, string> tos)
-        {
-            Transform transform = parent.GetTransform();
-            foreach (PPtr<Transform> childPtr in transform.m_Children)
-            {
-                if (childPtr.TryGet(out var childTransform))
-                {
-                    if (childTransform.m_GameObject.TryGet(out var child))
+                    if (m_GameObject.m_MeshFilter.m_Mesh.TryGet(out var m_Mesh))
                     {
-                        string path = parentPath != string.Empty ? parentPath + '/' + child.m_Name : child.m_Name;
-                        var pathHash = CRC.CalculateDigestUTF8(path);
-                        tos[pathHash] = path;
-                        BuildTOS(child, path, tos);
+                        return m_Mesh;
                     }
                 }
             }
+
+            return null;
         }
     }
 }

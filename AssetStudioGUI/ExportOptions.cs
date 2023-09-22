@@ -1,5 +1,8 @@
 ﻿using AssetStudio;
+using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace AssetStudioGUI
@@ -23,13 +26,6 @@ namespace AssetStudioGUI
                 }
             }
             openAfterExport.Checked = Properties.Settings.Default.openAfterExport;
-            exportAssetBundle.Checked = Properties.Settings.Default.exportAssetBundle;
-            exportIndexObject.Checked = Properties.Settings.Default.exportIndexObject;
-            disableRndrr.Checked = Properties.Settings.Default.disableRndrr;
-            disableShader.Checked = Properties.Settings.Default.disableShader;
-            key.Value = Properties.Settings.Default.key;
-            enableXor.Checked = Properties.Settings.Default.enableXor;
-            ignoreController.Checked = Properties.Settings.Default.ignoreController;
             eulerFilter.Checked = Properties.Settings.Default.eulerFilter;
             filterPrecision.Value = Properties.Settings.Default.filterPrecision;
             exportAllNodes.Checked = Properties.Settings.Default.exportAllNodes;
@@ -43,6 +39,13 @@ namespace AssetStudioGUI
             scaleFactor.Value = Properties.Settings.Default.scaleFactor;
             fbxVersion.SelectedIndex = Properties.Settings.Default.fbxVersion;
             fbxFormat.SelectedIndex = Properties.Settings.Default.fbxFormat;
+            collectAnimations.Checked = Properties.Settings.Default.collectAnimations;
+            encrypted.Checked = Properties.Settings.Default.encrypted;
+            key.Value = Properties.Settings.Default.key;
+            disableRenderer.Checked = Properties.Settings.Default.disableRenderer;
+            disableShader.Checked = Properties.Settings.Default.disableShader;
+            disableAnimationClip.Checked = Properties.Settings.Default.disableAnimationClip;
+            minimalAssetMap.Checked = Properties.Settings.Default.minimalAssetMap;
         }
 
         private void OKbutton_Click(object sender, EventArgs e)
@@ -60,19 +63,6 @@ namespace AssetStudioGUI
                 }
             }
             Properties.Settings.Default.openAfterExport = openAfterExport.Checked;
-            Properties.Settings.Default.exportAssetBundle = exportAssetBundle.Checked;
-            AssetBundle.Exportable = Properties.Settings.Default.exportAssetBundle;
-            Properties.Settings.Default.exportIndexObject = exportIndexObject.Checked;
-            IndexObject.Exportable = Properties.Settings.Default.exportAssetBundle;
-            Properties.Settings.Default.disableRndrr = disableRndrr.Checked;
-            Renderer.Parsable = !Properties.Settings.Default.disableRndrr;
-            Properties.Settings.Default.disableShader = disableShader.Checked;
-            Shader.Parsable = !Properties.Settings.Default.disableShader;
-            Properties.Settings.Default.key = (byte)key.Value;
-            Properties.Settings.Default.enableXor = enableXor.Checked;
-            MiHoYoBinData.Key = (byte)key.Value;
-            MiHoYoBinData.doXOR = enableXor.Checked;
-            Properties.Settings.Default.ignoreController = ignoreController.Checked;
             Properties.Settings.Default.eulerFilter = eulerFilter.Checked;
             Properties.Settings.Default.filterPrecision = filterPrecision.Value;
             Properties.Settings.Default.exportAllNodes = exportAllNodes.Checked;
@@ -86,7 +76,20 @@ namespace AssetStudioGUI
             Properties.Settings.Default.scaleFactor = scaleFactor.Value;
             Properties.Settings.Default.fbxVersion = fbxVersion.SelectedIndex;
             Properties.Settings.Default.fbxFormat = fbxFormat.SelectedIndex;
+            Properties.Settings.Default.collectAnimations = collectAnimations.Checked;
+            Properties.Settings.Default.encrypted = encrypted.Checked;
+            Properties.Settings.Default.key = (byte)key.Value;
+            Properties.Settings.Default.disableRenderer = disableRenderer.Checked;
+            Properties.Settings.Default.disableShader = disableShader.Checked;
+            Properties.Settings.Default.disableAnimationClip = disableAnimationClip.Checked;
+            Properties.Settings.Default.minimalAssetMap = minimalAssetMap.Checked;
             Properties.Settings.Default.Save();
+            MiHoYoBinData.Key = (byte)key.Value;
+            MiHoYoBinData.Encrypted = encrypted.Checked;
+            AssetsHelper.Minimal = Properties.Settings.Default.minimalAssetMap;
+            Renderer.Parsable = !Properties.Settings.Default.disableRenderer;
+            Shader.Parsable = !Properties.Settings.Default.disableShader;
+            AnimationClip.Parsable = !Properties.Settings.Default.disableAnimationClip;
             DialogResult = DialogResult.OK;
             Close();
         }

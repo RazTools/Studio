@@ -37,7 +37,7 @@ namespace AssetStudio.PInvoke
             return directedDllDir;
         }
 
-        private static class Win32
+        private static partial class Win32
         {
 
             internal static void LoadDll(string dllDir, string dllName)

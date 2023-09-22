@@ -1,5 +1,4 @@
-﻿using SevenZip;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,6 +14,7 @@ namespace AssetStudio
         public List<ImportedKeyframedAnimation> AnimationList { get; protected set; } = new List<ImportedKeyframedAnimation>();
         public List<ImportedMorph> MorphList { get; protected set; } = new List<ImportedMorph>();
 
+        private Game Game;
         private ImageFormat imageFormat;
         private Avatar avatar;
         private HashSet<AnimationClip> animationClipHashSet = new HashSet<AnimationClip>();
@@ -23,18 +23,17 @@ namespace AssetStudio
         private Dictionary<Texture2D, string> textureNameDictionary = new Dictionary<Texture2D, string>();
         private Dictionary<Transform, ImportedFrame> transformDictionary = new Dictionary<Transform, ImportedFrame>();
         Dictionary<uint, string> morphChannelNames = new Dictionary<uint, string>();
-        private Game Game;
 
-        public ModelConverter(GameObject m_GameObject, ImageFormat imageFormat, Game game, AnimationClip[] animationList = null, bool ignoreController = true)
+        public ModelConverter(GameObject m_GameObject, ImageFormat imageFormat, Game game, bool collectAnimations, AnimationClip[] animationList = null)
         {
             Game = game;
             this.imageFormat = imageFormat;
             if (m_GameObject.m_Animator != null)
             {
                 InitWithAnimator(m_GameObject.m_Animator);
-                if (animationList == null)
+                if (animationList == null && collectAnimations)
                 {
-                    CollectAnimationClip(m_GameObject.m_Animator, ignoreController);
+                    CollectAnimationClip(m_GameObject.m_Animator);
                 }
             }
             else
@@ -51,16 +50,16 @@ namespace AssetStudio
             ConvertAnimations();
         }
 
-        public ModelConverter(string rootName, List<GameObject> m_GameObjects, ImageFormat imageFormat, Game game, AnimationClip[] animationList = null, bool ignoreController = true)
+        public ModelConverter(string rootName, List<GameObject> m_GameObjects, ImageFormat imageFormat, Game game, bool collectAnimations, AnimationClip[] animationList = null)
         {
             Game = game;
             this.imageFormat = imageFormat;
             RootFrame = CreateFrame(rootName, Vector3.Zero, new Quaternion(0, 0, 0, 0), Vector3.One);
             foreach (var m_GameObject in m_GameObjects)
             {
-                if (m_GameObject.m_Animator != null && animationList == null)
+                if (m_GameObject.m_Animator != null && animationList == null && collectAnimations)
                 {
-                    CollectAnimationClip(m_GameObject.m_Animator, ignoreController);
+                    CollectAnimationClip(m_GameObject.m_Animator);
                 }
 
                 var m_Transform = m_GameObject.m_Transform;
@@ -82,21 +81,24 @@ namespace AssetStudio
             ConvertAnimations();
         }
 
-        public ModelConverter(Animator m_Animator, ImageFormat imageFormat, Game game, AnimationClip[] animationList = null, bool ignoreController = true)
+        public ModelConverter(Animator m_Animator, ImageFormat imageFormat, Game game, bool collectAnimations, AnimationClip[] animationList = null)
         {
             Game = game;
             this.imageFormat = imageFormat;
             InitWithAnimator(m_Animator);
-            if (animationList == null)
+            if (animationList == null && collectAnimations)
             {
-                CollectAnimationClip(m_Animator, ignoreController);
+                CollectAnimationClip(m_Animator);
             }
             else
             {
+                if (animationList != null)
+                {
                 foreach (var animationClip in animationList)
                 {
                     animationClipHashSet.Add(animationClip);
                 }
+            }
             }
             ConvertAnimations();
         }
@@ -185,9 +187,9 @@ namespace AssetStudio
             }
         }
 
-        private void CollectAnimationClip(Animator m_Animator, bool ignoreController)
+        private void CollectAnimationClip(Animator m_Animator)
         {
-            if (m_Animator.m_Controller.TryGet(out var m_Controller) && !ignoreController)
+            if (m_Animator.m_Controller.TryGet(out var m_Controller))
             {
                 switch (m_Controller)
                 {
@@ -242,7 +244,7 @@ namespace AssetStudio
         private static void SetFrame(ImportedFrame frame, Vector3 t, Quaternion q, Vector3 s)
         {
             frame.LocalPosition = new Vector3(-t.X, t.Y, t.Z);
-            frame.LocalRotation = Fbx.QuaternionToEuler(new Quaternion(q.X, -q.Y, -q.Z, q.W));
+            frame.LocalRotation = new Quaternion(q.X, -q.Y, -q.Z, q.W);
             frame.LocalScale = s;
         }
 
@@ -512,7 +514,12 @@ namespace AssetStudio
                         var shapeChannel = mesh.m_Shapes.channels[i];
 
                         var blendShapeName = "blendShape." + shapeChannel.name;
-                        morphChannelNames[CRC.CalculateDigestUTF8(blendShapeName)] = blendShapeName;
+                        var crc = new SevenZip.CRC();
+                        var bytes = Encoding.UTF8.GetBytes(blendShapeName);
+                        crc.Update(bytes, 0, (uint)bytes.Length);
+                        morphChannelNames[crc.GetDigest()] = blendShapeName;
+
+                        morphChannelNames[shapeChannel.nameHash] = shapeChannel.name;
 
                         channel.Name = shapeChannel.name.Split('.').Last();
                         channel.KeyframeList = new List<ImportedMorphKeyframe>(shapeChannel.frameCount);
@@ -709,6 +716,8 @@ namespace AssetStudio
                         dest = 2;
                     else if (texEnv.Key.Contains("Normal"))
                         dest = 1;
+                    else if (Game.Type.IsSRGroup() && texEnv.Key.Contains("Pack"))
+                        dest = 0;
 
                     texture.Dest = dest;
 
@@ -796,7 +805,7 @@ namespace AssetStudio
                     foreach (var m_CompressedRotationCurve in animationClip.m_CompressedRotationCurves)
                     {
                         var track = iAnim.FindTrack(FixBonePath(animationClip, m_CompressedRotationCurve.m_Path));
-        
+
                         var numKeys = m_CompressedRotationCurve.m_Times.m_NumItems;
                         var data = m_CompressedRotationCurve.m_Times.UnpackInts();
                         var times = new float[numKeys];
@@ -807,12 +816,12 @@ namespace AssetStudio
                             times[i] = t * 0.01f;
                         }
                         var quats = m_CompressedRotationCurve.m_Values.UnpackQuats();
-        
+
                         for (int i = 0; i < numKeys; i++)
                         {
                             var quat = quats[i];
-                            var value = Fbx.QuaternionToEuler(new Quaternion(quat.X, -quat.Y, -quat.Z, quat.W));
-                            track.Rotations.Add(new ImportedKeyframe<Vector3>(times[i], value));
+                            var value = new Quaternion(quat.X, -quat.Y, -quat.Z, quat.W);
+                            track.Rotations.Add(new ImportedKeyframe<Quaternion>(times[i], value));
                         }
                     }
                     foreach (var m_RotationCurve in animationClip.m_RotationCurves)
@@ -820,8 +829,8 @@ namespace AssetStudio
                         var track = iAnim.FindTrack(FixBonePath(animationClip, m_RotationCurve.path));
                         foreach (var m_Curve in m_RotationCurve.curve.m_Curve)
                         {
-                            var value = Fbx.QuaternionToEuler(new Quaternion(m_Curve.value.X, -m_Curve.value.Y, -m_Curve.value.Z, m_Curve.value.W));
-                            track.Rotations.Add(new ImportedKeyframe<Vector3>(m_Curve.time, value));
+                            var value = new Quaternion(m_Curve.value.X, -m_Curve.value.Y, -m_Curve.value.Z, m_Curve.value.W);
+                            track.Rotations.Add(new ImportedKeyframe<Quaternion>(m_Curve.time, value));
                         }
                     }
                     foreach (var m_PositionCurve in animationClip.m_PositionCurves)
@@ -847,7 +856,8 @@ namespace AssetStudio
                             var track = iAnim.FindTrack(FixBonePath(animationClip, m_EulerCurve.path));
                             foreach (var m_Curve in m_EulerCurve.curve.m_Curve)
                             {
-                                track.Rotations.Add(new ImportedKeyframe<Vector3>(m_Curve.time, new Vector3(m_Curve.value.X, -m_Curve.value.Y, -m_Curve.value.Z)));
+                                var value = Fbx.EulerToQuaternion(new Vector3(m_Curve.value.X, -m_Curve.value.Y, -m_Curve.value.Z));
+                                track.Rotations.Add(new ImportedKeyframe<Quaternion>(m_Curve.time, value));
                             }
                         }
                     }
@@ -861,15 +871,18 @@ namespace AssetStudio
                             {
                                 channelName = channelName.Substring(dotPos + 1);
                             }
-        
-                            var path = FixBonePath(animationClip, m_FloatCurve.path);
+
+                            var path = GetPathByChannelName(channelName);
                             if (string.IsNullOrEmpty(path))
                             {
-                                path = GetPathByChannelName(channelName);
+                                path = FixBonePath(animationClip, m_FloatCurve.path);
                             }
-                            var track = iAnim.FindTrack(path);
-                            track.BlendShape = new ImportedBlendShape();
-                            track.BlendShape.ChannelName = channelName;
+                            var track = iAnim.FindTrack(path, channelName);
+                            if (track.BlendShape == null)
+                            {
+                                track.BlendShape = new ImportedBlendShape();
+                                track.BlendShape.ChannelName = channelName;
+                            }
                             foreach (var m_Curve in m_FloatCurve.curve.m_Curve)
                             {
                                 track.BlendShape.Keyframes.Add(new ImportedKeyframe<float>(m_Curve.time, m_Curve.value));
@@ -884,9 +897,9 @@ namespace AssetStudio
                     var m_ClipBindingConstant = animationClip.m_ClipBindingConstant ?? m_Clip.ConvertValueArrayToGenericBinding();
                     var m_ACLClip = m_Clip.m_ACLClip;
                     var aclCount = m_ACLClip.m_CurveCount;
-                    if (m_ACLClip.IsSet && Game.Name != "SR_CB2" && Game.Name != "SR_CB3")
+                    if (!m_ACLClip.m_ClipData.IsNullOrEmpty() && !Game.Type.IsSRGroup())
                     {
-                        m_ACLClip.Process(out var values, out var times);
+                        m_ACLClip.Process(Game, out var values, out var times);
                         for (int frameIndex = 0; frameIndex < times.Length; frameIndex++)
                         {
                             var time = times[frameIndex];
@@ -896,7 +909,7 @@ namespace AssetStudio
                                 var index = curveIndex;
                                 ReadCurveData(iAnim, m_ClipBindingConstant, index, time, values, (int)frameOffset, ref curveIndex);
                             }
-                                
+
                         }
                     }
                     for (int frameIndex = 1; frameIndex < streamedFrames.Count - 1; frameIndex++)
@@ -906,7 +919,7 @@ namespace AssetStudio
                         for (int curveIndex = 0; curveIndex < frame.keyList.Length;)
                         {
                             var index = frame.keyList[curveIndex].index;
-                            if (Game.Name != "SR_CB2" && Game.Name != "SR_CB3")
+                            if (!Game.Type.IsSRGroup())
                                 index += (int)aclCount;
                             ReadCurveData(iAnim, m_ClipBindingConstant, index, frame.time, streamedValues, 0, ref curveIndex);
                         }
@@ -920,14 +933,14 @@ namespace AssetStudio
                         for (int curveIndex = 0; curveIndex < m_DenseClip.m_CurveCount;)
                         {
                             var index = streamCount + curveIndex;
-                            if (Game.Name != "SR_CB2" && Game.Name != "SR_CB3")
-                                index += aclCount;
+                            if (!Game.Type.IsSRGroup())
+                                index += (int)aclCount;
                             ReadCurveData(iAnim, m_ClipBindingConstant, (int)index, time, m_DenseClip.m_SampleArray, (int)frameOffset, ref curveIndex);
                         }
                     }
-                    if (m_ACLClip.IsSet && (Game.Name == "SR_CB2" || Game.Name == "SR_CB3"))
+                    if (!m_ACLClip.m_ClipData.IsNullOrEmpty() && Game.Type.IsSRGroup())
                     {
-                        m_ACLClip.ProcessSR(out var values, out var times);
+                        m_ACLClip.Process(Game, out var values, out var times);
                         for (int frameIndex = 0; frameIndex < times.Length; frameIndex++)
                         {
                             var time = times[frameIndex];
@@ -976,15 +989,18 @@ namespace AssetStudio
                     channelName = channelName.Substring(dotPos + 1);
                 }
 
-                var bPath = FixBonePath(GetPathFromHash(binding.path));
-                if (string.IsNullOrEmpty(bPath))
+                var path = GetPathByChannelName(channelName);
+                if (string.IsNullOrEmpty(path))
                 {
-                    bPath = GetPathByChannelName(channelName);
+                    path = FixBonePath(GetPathFromHash(binding.path));
                 }
-                var bTrack = iAnim.FindTrack(bPath);
-                bTrack.BlendShape = new ImportedBlendShape();
-                bTrack.BlendShape.ChannelName = channelName;
-                bTrack.BlendShape.Keyframes.Add(new ImportedKeyframe<float>(time, data[curveIndex++ + offset]));
+                var track = iAnim.FindTrack(path, channelName);
+                if (track.BlendShape == null)
+                {
+                    track.BlendShape = new ImportedBlendShape();
+                    track.BlendShape.ChannelName = channelName;
+                }
+                track.BlendShape.Keyframes.Add(new ImportedKeyframe<float>(time, data[curveIndex++ + offset]));
             }
             else if (binding.typeID == ClassIDType.Transform)
             {
@@ -1002,14 +1018,13 @@ namespace AssetStudio
                         )));
                         break;
                     case 2:
-                        var value = Fbx.QuaternionToEuler(new Quaternion
+                        track.Rotations.Add(new ImportedKeyframe<Quaternion>(time, new Quaternion
                         (
                             data[curveIndex++ + offset],
                             -data[curveIndex++ + offset],
                             -data[curveIndex++ + offset],
                             data[curveIndex++ + offset]
-                        ));
-                        track.Rotations.Add(new ImportedKeyframe<Vector3>(time, value));
+                        )));
                         break;
                     case 3:
                         track.Scalings.Add(new ImportedKeyframe<Vector3>(time, new Vector3
@@ -1020,12 +1035,13 @@ namespace AssetStudio
                         )));
                         break;
                     case 4:
-                        track.Rotations.Add(new ImportedKeyframe<Vector3>(time, new Vector3
+                        var value = Fbx.EulerToQuaternion(new Vector3
                         (
                             data[curveIndex++ + offset],
                             -data[curveIndex++ + offset],
                             -data[curveIndex++ + offset]
-                        )));
+                        ));
+                        track.Rotations.Add(new ImportedKeyframe<Quaternion>(time, value));
                         break;
                     default:
                         curveIndex++;
@@ -1037,6 +1053,7 @@ namespace AssetStudio
                 curveIndex++;
             }
         }
+
         private string GetPathFromHash(uint hash)
         {
             bonePathHash.TryGetValue(hash, out var boneName);
@@ -1054,12 +1071,18 @@ namespace AssetStudio
         private void CreateBonePathHash(Transform m_Transform)
         {
             var name = GetTransformPathByFather(m_Transform);
-            bonePathHash[CRC.CalculateDigestUTF8(name)] = name;
+            var crc = new SevenZip.CRC();
+            var bytes = Encoding.UTF8.GetBytes(name);
+            crc.Update(bytes, 0, (uint)bytes.Length);
+            bonePathHash[crc.GetDigest()] = name;
             int index;
             while ((index = name.IndexOf("/", StringComparison.Ordinal)) >= 0)
             {
                 name = name.Substring(index + 1);
-                bonePathHash[CRC.CalculateDigestUTF8(name)] = name;
+                crc = new SevenZip.CRC();
+                bytes = Encoding.UTF8.GetBytes(name);
+                crc.Update(bytes, 0, (uint)bytes.Length);
+                bonePathHash[crc.GetDigest()] = name;
             }
             foreach (var pptr in m_Transform.m_Children)
             {

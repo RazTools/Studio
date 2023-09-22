@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Text;
 
 namespace AssetStudio
 {
@@ -17,35 +14,17 @@ namespace AssetStudio
         public long m_PathID;
         public SerializedType serializedType;
 
-        public bool HasExportableType()
+        public override string ToString()
         {
-            var typeID = (ClassIDType)classID;
-            var isExportableType = ExportableTypes.Contains(typeID);
-            switch (typeID)
-            {
-                case ClassIDType.IndexObject:
-                case ClassIDType.MiHoYoBinData:
-                    return isExportableType && IndexObject.Exportable;
-                default:
-                    return isExportableType;
-            }
+            var sb = new StringBuilder();
+            sb.Append($"byteStart: 0x{byteStart:X8} | ");
+            sb.Append($"byteSize: 0x{byteSize:X8} | ");
+            sb.Append($"typeID: {typeID} | ");
+            sb.Append($"classID: {classID} | ");
+            sb.Append($"isDestroyed: {isDestroyed} | ");
+            sb.Append($"stripped: {stripped} | ");
+            sb.Append($"PathID: {m_PathID}");
+            return sb.ToString();
         }
-
-        public static ClassIDType[] ExportableTypes = new ClassIDType[]
-        {
-            ClassIDType.GameObject,
-            ClassIDType.Material,
-            ClassIDType.Texture2D,
-            ClassIDType.Mesh,
-            ClassIDType.Shader,
-            ClassIDType.TextAsset,
-            ClassIDType.AnimationClip,
-            ClassIDType.Animator,
-            ClassIDType.Font,
-            ClassIDType.AssetBundle,
-            ClassIDType.Sprite,
-            ClassIDType.MiHoYoBinData,
-            ClassIDType.IndexObject
-        };
     }
 }

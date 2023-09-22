@@ -14,8 +14,11 @@ namespace AssetStudioGUI
             this.action = action;
         }
 
-        public string Log(LoggerEvent loggerEvent, string message)
+        public void Log(LoggerEvent loggerEvent, string message, bool silent = false)
         {
+            if (silent)
+                return;
+
             switch (loggerEvent)
             {
                 case LoggerEvent.Error:

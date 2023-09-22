@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace AssetStudio
 {
@@ -10,7 +9,6 @@ namespace AssetStudio
 
         public Index(ObjectReader reader)
         {
-
             Object = new PPtr<Object>(reader);
             Size = reader.ReadUInt64();
         }
@@ -18,25 +16,16 @@ namespace AssetStudio
 
     public sealed class IndexObject : NamedObject
     {
-        public static bool Exportable;
-
         public int Count;
-        public Dictionary<string, Index> AssetMap;
-        public Dictionary<long, string> Names = new Dictionary<long, string>();
+        public KeyValuePair<string, Index>[] AssetMap;
 
         public IndexObject(ObjectReader reader) : base(reader)
         {
             Count = reader.ReadInt32();
-            AssetMap = new Dictionary<string, Index>(Count);
+            AssetMap = new KeyValuePair<string, Index>[Count];
             for (int i = 0; i < Count; i++)
             {
-                var key = reader.ReadAlignedString();
-                var value = new Index(reader);
-
-                AssetMap.Add(key, value);
-
-                if (value.Object.m_FileID == 0)
-                    Names.Add(value.Object.m_PathID, key);
+                AssetMap[i] = new KeyValuePair<string, Index>(reader.ReadAlignedString(), new Index(reader));
             }
         }
     } 

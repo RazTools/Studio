@@ -8,7 +8,7 @@ namespace AssetStudio
         public long m_Offset; //ulong
         public long m_Size; //ulong
 
-        public StreamedResource(BinaryReader reader)
+        public StreamedResource(EndianBinaryReader reader)
         {
             m_Source = reader.ReadAlignedString();
             m_Offset = reader.ReadInt64();

@@ -24,7 +24,6 @@
     <ProjectGuid>{11ea25a3-ed68-40ee-a9d0-7fde3b583027}</ProjectGuid>
     <RootNamespace>AssetStudioFBXNative</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>AssetStudioFBXNative</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

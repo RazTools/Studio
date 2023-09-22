@@ -5,10 +5,7 @@ Note: Requires Internet connection to fetch asset_index jsons.
 _____________________________________________________________________________________________________________________________
 How to use:
 
-```
-1. Build CABMap (Misc. -> Build CABMap).
-2. Load files.
-```
+Check the tutorial [here](https://gist.github.com/Modder4869/0f5371f8879607eb95b8e63badca227e) (Thanks to Modder4869 for the tutorial)
 _____________________________________________________________________________________________________________________________
 CLI Version:
 ```
@@ -50,8 +47,3 @@ Special Thank to:
 - Radioegor146: [Asset-indexes](https://github.com/radioegor146/gi-asset-indexes) for recovered/updated asset_index's.
 - Ds5678: [AssetRipper](https://github.com/AssetRipper/AssetRipper)[[discord](https://discord.gg/XqXa53W2Yh)] for information about Asset Formats & Parsing.
 - mafaca: [uTinyRipper](https://github.com/mafaca/UtinyRipper) for `YAML` and `AnimationClipConverter`. 
-
-_____________________________________________________________________________________________________________________________
-
-If you find `Studio` useful, you can leave a star 😄
-Thank you, looking forward for your feedback

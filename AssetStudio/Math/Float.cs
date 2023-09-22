@@ -19,7 +19,7 @@
             return value.Value;
         }
 
-        public YAMLNode ExportYAML()
+        public YAMLNode ExportYAML(int[] version)
         {
             return new YAMLScalarNode(Value);
         }

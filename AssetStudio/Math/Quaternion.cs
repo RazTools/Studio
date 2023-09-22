@@ -63,6 +63,7 @@ namespace AssetStudio
             return X.Equals(other.X) && Y.Equals(other.Y) && Z.Equals(other.Z) && W.Equals(other.W);
         }
 
+        public static Quaternion Zero => new Quaternion(0, 0, 0, 1);
         public static float Dot(Quaternion a, Quaternion b)
         {
             return a.X * b.X + a.Y * b.Y + a.Z * b.Z + a.W * b.W;
@@ -82,8 +83,7 @@ namespace AssetStudio
         {
             return !(lhs == rhs);
         }
-
-        public YAMLNode ExportYAML()
+        public YAMLNode ExportYAML(int[] version)
         {
             var node = new YAMLMappingNode();
             node.Style = MappingStyle.Flow;

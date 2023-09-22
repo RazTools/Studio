@@ -16,6 +16,7 @@ namespace AssetStudio.FbxInterop
 
         public FbxExporterContext()
         {
+            Fbx.QuaternionToEuler(Quaternion.Zero); // workaround to init dll
             _pContext = AsFbxCreateContext();
             _frameToNode = new Dictionary<ImportedFrame, IntPtr>();
             _createdMaterials = new List<KeyValuePair<string, IntPtr>>();
@@ -269,7 +270,7 @@ namespace AssetStudio.FbxInterop
                         {
                             AsFbxMeshCreateNormalMapUV(mesh, 1);
                         }
-                    } 
+                    }
                 }
                 else
                 {
@@ -554,7 +555,7 @@ namespace AssetStudio.FbxInterop
 
                 foreach (var rotation in track.Rotations)
                 {
-                    var value = rotation.value;
+                    var value = Fbx.QuaternionToEuler(rotation.value);
                     AsFbxAnimAddRotationKey(pAnimContext, rotation.time, value.X, value.Y, value.Z);
                 }
 

@@ -1,6 +1,5 @@
 ﻿using AssetStudio;
 using Newtonsoft.Json;
-using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
 using System;
 using System.Collections.Generic;
@@ -11,9 +10,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
@@ -23,14 +20,17 @@ using Font = AssetStudio.Font;
 using Vector3 = OpenTK.Mathematics.Vector3;
 using Vector4 = OpenTK.Mathematics.Vector4;
 using Matrix4 = OpenTK.Mathematics.Matrix4;
+using OpenTK.Graphics;
 using OpenTK.Mathematics;
-using SpirV;
+using Newtonsoft.Json.Converters;
+using System.Text.RegularExpressions;
 
 namespace AssetStudioGUI
 {
     partial class AssetStudioGUIForm : Form
     {
         private AssetItem lastSelectedItem;
+        private AssetBrowser assetBrowser;
         private DirectBitmap imageTexture;
         private string tempClipboard;
 
@@ -51,14 +51,14 @@ namespace AssetStudioGUI
         private bool glControlLoaded;
         private int mdx, mdy;
         private bool lmdown, rmdown;
-        private ProgramHandle pgmID, pgmColorID, pgmBlackID;
+        private int pgmID, pgmColorID, pgmBlackID;
         private int attributeVertexPosition;
         private int attributeNormalDirection;
         private int attributeVertexColor;
         private int uniformModelMatrix;
         private int uniformViewMatrix;
         private int uniformProjMatrix;
-        private VertexArrayHandle vao;
+        private int vao;
         private Vector3[] vertexData;
         private Vector3[] normalData;
         private Vector3[] normal2Data;
@@ -76,10 +76,6 @@ namespace AssetStudioGUI
         private int sortColumn = -1;
         private bool reverseSort;
 
-        //asset list filter
-        private System.Timers.Timer delayTimer;
-        private bool enableFiltering;
-
         //tree search
         private int nextGObject;
         private List<TreeNode> treeSrcResults = new List<TreeNode>();
@@ -89,36 +85,49 @@ namespace AssetStudioGUI
 
         private GUILogger logger;
 
-        [DllImport("gdi32.dll")]
-        private static extern IntPtr AddFontMemResourceEx(IntPtr pbFont, uint cbFont, IntPtr pdv, [In] ref uint pcFonts);
-
         public AssetStudioGUIForm()
         {
             Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
             InitializeComponent();
             Text = $"Studio v{Application.ProductVersion}";
-            delayTimer = new System.Timers.Timer(800);
-            delayTimer.Elapsed += new ElapsedEventHandler(delayTimer_Elapsed);
-            console.Checked = Properties.Settings.Default.console;
+            InitializeExportOptions();
+            InitializeProgressBar();
+            InitializeLogger();
+            InitalizeOptions();
+            FMODinit();
+        }
+
+        private void InitializeExportOptions()
+        {
+            enableConsole.Checked = Properties.Settings.Default.enableConsole;
+            enableFileLogging.Checked = Properties.Settings.Default.enableFileLogging;
+            enableVerbose.Checked = Properties.Settings.Default.enableVerbose;
             displayAll.Checked = Properties.Settings.Default.displayAll;
             displayInfo.Checked = Properties.Settings.Default.displayInfo;
             enablePreview.Checked = Properties.Settings.Default.enablePreview;
+            enableModelPreview.Checked = Properties.Settings.Default.enableModelPreview;
+            modelsOnly.Checked = Properties.Settings.Default.modelsOnly;
             enableResolveDependencies.Checked = Properties.Settings.Default.enableResolveDependencies;
-            assetsManager.ResolveDependancies = enableResolveDependencies.Checked;
-            AssetBundle.Exportable = Properties.Settings.Default.exportAssetBundle;
-            IndexObject.Exportable = Properties.Settings.Default.exportIndexObject;
-            Renderer.Parsable = !Properties.Settings.Default.disableRndrr;
-            Shader.Parsable = !Properties.Settings.Default.disableShader;
-            MiHoYoBinData.doXOR = Properties.Settings.Default.enableXor;
+            skipContainer.Checked = Properties.Settings.Default.skipContainer;
+            assetsManager.ResolveDependencies = enableResolveDependencies.Checked;
+            SkipContainer = Properties.Settings.Default.skipContainer;
+            MiHoYoBinData.Encrypted = Properties.Settings.Default.encrypted;
             MiHoYoBinData.Key = Properties.Settings.Default.key;
-            FMODinit();
+            AssetsHelper.Minimal = Properties.Settings.Default.minimalAssetMap;
+            Renderer.Parsable = !Properties.Settings.Default.disableRenderer;
+            Shader.Parsable = !Properties.Settings.Default.disableShader;
+            AnimationClip.Parsable = !Properties.Settings.Default.disableAnimationClip;
+        }
 
+        private void InitializeLogger()
+        {
+            Logger.LogVerbose = enableVerbose.Checked;
+            Logger.FileLogging = enableFileLogging.Checked;
             logger = new GUILogger(StatusStripUpdate);
-
             ConsoleHelper.AllocConsole();
             ConsoleHelper.SetConsoleTitle("Debug Console");
             var handle = ConsoleHelper.GetConsoleWindow();
-            if (console.Checked)
+            if (enableConsole.Checked)
             {
                 Logger.Default = new ConsoleLogger();
                 ConsoleHelper.ShowWindow(handle, ConsoleHelper.SW_SHOW);
@@ -128,21 +137,39 @@ namespace AssetStudioGUI
                 Logger.Default = logger;
                 ConsoleHelper.ShowWindow(handle, ConsoleHelper.SW_HIDE);
             }
-            enableFileLogging.Checked = Properties.Settings.Default.isFileLogging;
-            Logger.IsFileLogging = Properties.Settings.Default.isFileLogging;
-            Progress.Default = new Progress<int>(SetProgressBarValue);
-            Studio.StatusStripUpdate = StatusStripUpdate;
-            specifyGame.Items.AddRange(GameManager.GetGames());
-            Studio.Game = GameManager.GetGame(Properties.Settings.Default.selectedGame);
-            specifyGame.SelectedIndex = Properties.Settings.Default.selectedGame;
-            specifyGame.SelectedIndexChanged += new EventHandler(toolStripComboBox2_SelectedIndexChanged);
-            Logger.Info($"Target Game is {Studio.Game.Name}");
-            CABManager.LoadMap(Studio.Game);
         }
 
-        ~AssetStudioGUIForm()
+        private void InitializeProgressBar()
         {
-            Logger.Dispose();
+            Progress.Default = new Progress<int>(SetProgressBarValue);
+            Studio.StatusStripUpdate = StatusStripUpdate;
+        }
+
+        private void InitalizeOptions()
+        {
+            assetMapTypeComboBox.Items.AddRange(Enum.GetValues<ExportListType>().Cast<object>().ToArray());
+            assetMapTypeComboBox.SelectedIndex = Properties.Settings.Default.selectedAssetMapType;
+
+            specifyGame.Items.AddRange(GameManager.GetGames());
+            specifyGame.SelectedIndex = Properties.Settings.Default.selectedGame;
+            specifyGame.SelectedIndexChanged += new EventHandler(specifyGame_SelectedIndexChanged);
+            Studio.Game = GameManager.GetGame(Properties.Settings.Default.selectedGame);
+            Logger.Info($"Target Game type is {Studio.Game.Type}");
+
+            if (Studio.Game.Type.IsUnityCN())
+            {
+                UnityCNManager.SetKey(Properties.Settings.Default.selectedUnityCNKey);
+            }
+
+            MapNameComboBox.SelectedIndexChanged += new EventHandler(specifyNameComboBox_SelectedIndexChanged);
+            if (!string.IsNullOrEmpty(Properties.Settings.Default.selectedCABMapName))
+            {
+                if (!AssetsHelper.LoadCABMap(Properties.Settings.Default.selectedCABMapName))
+                {
+                    Properties.Settings.Default.selectedCABMapName = "";
+                    Properties.Settings.Default.Save();
+                }
+            }
         }
         private void AssetStudioGUIForm_DragEnter(object sender, DragEventArgs e)
         {
@@ -157,23 +184,28 @@ namespace AssetStudioGUI
             var paths = (string[])e.Data.GetData(DataFormats.FileDrop);
             if (paths.Length > 0)
             {
-                ResetForm();
-                assetsManager.SpecifyUnityVersion = specifyUnityVersion.Text;
-                assetsManager.Game = Studio.Game;
-                if (paths.Length == 1 && Directory.Exists(paths[0]))
-                {
-                    await Task.Run(() => assetsManager.LoadFolder(paths[0]));
-                }
-                else
-                {
-                    if (paths.Length == 1 && File.Exists(paths[0]) && Path.GetExtension(paths[0]) == ".txt")
-                    {
-                        paths = File.ReadAllLines(paths[0]);
-                    }
-                    await Task.Run(() => assetsManager.LoadFiles(paths));
-                }
-                BuildAssetStructures();
+                LoadPaths(paths);
             }
+        }
+
+        public async void LoadPaths(params string[] paths)
+        {
+            ResetForm();
+            assetsManager.SpecifyUnityVersion = specifyUnityVersion.Text;
+            assetsManager.Game = Studio.Game;
+            if (paths.Length == 1 && Directory.Exists(paths[0]))
+            {
+                await Task.Run(() => assetsManager.LoadFolder(paths[0]));
+            }
+            else
+            {
+                if (paths.Length == 1 && File.Exists(paths[0]) && Path.GetExtension(paths[0]) == ".txt")
+                {
+                    paths = File.ReadAllLines(paths[0]);
+                }
+                await Task.Run(() => assetsManager.LoadFiles(paths));
+            }
+            BuildAssetStructures();
         }
 
         private async void loadFile_Click(object sender, EventArgs e)
@@ -246,17 +278,26 @@ namespace AssetStudioGUI
                 return;
             }
 
-            (var productName, var treeNodeCollection) = await Task.Run(() => BuildAssetData());
-            var typeMap = await Task.Run(() => BuildClassStructure());
+            (var productName, var treeNodeCollection) = await Task.Run(BuildAssetData);
+            var typeMap = await Task.Run(BuildClassStructure);
 
-            if (!string.IsNullOrEmpty(productName))
+            if (string.IsNullOrEmpty(productName))
             {
-                Text = $"Studio v{Application.ProductVersion} - {productName} - {Path.GetFileName(assetsManager.assetsFileList[0].originalPath)} - {assetsManager.assetsFileList[0].unityVersion} - {assetsManager.assetsFileList[0].m_TargetPlatform}";
+                if (!Studio.Game.Type.IsNormal())
+                {
+                    productName = Studio.Game.Name;
+                }
+                else if (Studio.Game.Type.IsUnityCN() && UnityCNManager.TryGetEntry(Properties.Settings.Default.selectedUnityCNKey, out var unityCN))
+                {
+                    productName = unityCN.Name;
+                }
+                else
+                {
+                    productName = "no productName";
+                }
             }
-            else
-            {
-                Text = $"Studio v{Application.ProductVersion} - {Studio.Game.Name} - {Path.GetFileName(assetsManager.assetsFileList[0].originalPath)} - {assetsManager.assetsFileList[0].unityVersion} - {assetsManager.assetsFileList[0].m_TargetPlatform}";
-            }
+
+            Text = $"Studio v{Application.ProductVersion} - {productName} - {assetsManager.assetsFileList[0].unityVersion} - {assetsManager.assetsFileList[0].m_TargetPlatform}";
 
             assetListView.VirtualListSize = visibleAssets.Count;
 
@@ -412,24 +453,6 @@ namespace AssetStudioGUI
             }
         }
 
-        private void console_CheckedChanged(object sender, EventArgs e)
-        {
-            Properties.Settings.Default.console = console.Checked;
-            Properties.Settings.Default.Save();
-
-            var handle = ConsoleHelper.GetConsoleWindow();
-            if (console.Checked)
-            {
-                Logger.Default = new ConsoleLogger();
-                ConsoleHelper.ShowWindow(handle, ConsoleHelper.SW_SHOW);
-            }
-            else
-            {
-                Logger.Default = logger;
-                ConsoleHelper.ShowWindow(handle, ConsoleHelper.SW_HIDE);
-            }
-        }
-
         private void displayAll_CheckedChanged(object sender, EventArgs e)
         {
             Properties.Settings.Default.displayAll = displayAll.Checked;
@@ -459,6 +482,7 @@ namespace AssetStudioGUI
                     case ClassIDType.Shader:
                     case ClassIDType.TextAsset:
                     case ClassIDType.MonoBehaviour:
+                    case ClassIDType.MiHoYoBinData:
                         textPreviewBox.Visible = !textPreviewBox.Visible;
                         break;
                     case ClassIDType.Font:
@@ -496,15 +520,6 @@ namespace AssetStudioGUI
             Properties.Settings.Default.enablePreview = enablePreview.Checked;
             Properties.Settings.Default.Save();
         }
-
-        private void enableResolveDependencies_CheckedChanged(object sender, EventArgs e)
-        {
-            Properties.Settings.Default.enableResolveDependencies = enableResolveDependencies.Checked;
-            Properties.Settings.Default.Save();
-
-            assetsManager.ResolveDependancies = enableResolveDependencies.Checked;
-        }
-
         private void displayAssetInfo_Check(object sender, EventArgs e)
         {
             if (displayInfo.Checked && assetInfoLabel.Text != null)
@@ -544,24 +559,6 @@ namespace AssetStudioGUI
             }
         }
 
-        private void treeSearch_Enter(object sender, EventArgs e)
-        {
-            if (treeSearch.Text == " Search ")
-            {
-                treeSearch.Text = "";
-                treeSearch.ForeColor = SystemColors.WindowText;
-            }
-        }
-
-        private void treeSearch_Leave(object sender, EventArgs e)
-        {
-            if (treeSearch.Text == "")
-            {
-                treeSearch.Text = " Search ";
-                treeSearch.ForeColor = SystemColors.GrayText;
-            }
-        }
-
         private void treeSearch_TextChanged(object sender, EventArgs e)
         {
             treeSrcResults.Clear();
@@ -570,38 +567,62 @@ namespace AssetStudioGUI
 
         private void treeSearch_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Enter)
+            if (e.KeyCode == Keys.Enter && !string.IsNullOrEmpty(treeSearch.Text))
             {
                 if (treeSrcResults.Count == 0)
                 {
+                    var regex = new Regex(treeSearch.Text, RegexOptions.IgnoreCase);
                     foreach (TreeNode node in sceneTreeView.Nodes)
                     {
-                        TreeNodeSearch(node);
+                        TreeNodeSearch(regex, node);
                     }
                 }
                 if (treeSrcResults.Count > 0)
                 {
-                    if (nextGObject >= treeSrcResults.Count)
+                    if (e.Shift)
                     {
-                        nextGObject = 0;
+                        foreach (var node in treeSrcResults)
+                        {
+                            var tempNode = node;
+                            while (tempNode.Parent != null)
+                            {
+                                tempNode = tempNode.Parent;
+                            }
+                            tempNode.EnsureVisible();
+                            tempNode.Checked = e.Control;
+                        }
+                        sceneTreeView.SelectedNode = treeSrcResults[0];
                     }
-                    treeSrcResults[nextGObject].EnsureVisible();
-                    sceneTreeView.SelectedNode = treeSrcResults[nextGObject];
-                    nextGObject++;
+                    else
+                    {
+                        if (nextGObject >= treeSrcResults.Count)
+                        {
+                            nextGObject = 0;
+                        }
+                        var node = treeSrcResults[nextGObject];
+                        while (node.Parent != null)
+                        {
+                            node = node.Parent;
+                        }
+                        node.EnsureVisible();
+                        node.Checked = e.Control;
+                        sceneTreeView.SelectedNode = treeSrcResults[nextGObject];
+                        nextGObject++;
+                    }
                 }
             }
         }
 
-        private void TreeNodeSearch(TreeNode treeNode)
+        private void TreeNodeSearch(Regex regex, TreeNode treeNode)
         {
-            if (treeNode.Text.IndexOf(treeSearch.Text, StringComparison.OrdinalIgnoreCase) >= 0)
+            if (regex.IsMatch(treeNode.Text))
             {
                 treeSrcResults.Add(treeNode);
             }
 
             foreach (TreeNode node in treeNode.Nodes)
             {
-                TreeNodeSearch(node);
+                TreeNodeSearch(regex, node);
             }
         }
 
@@ -613,46 +634,59 @@ namespace AssetStudioGUI
             }
         }
 
-        private void listSearch_Enter(object sender, EventArgs e)
+        private void sceneHierarchy_Click(object sender, EventArgs e)
         {
-            if (listSearch.Text == " Filter ")
+            var saveFileDialog = new SaveFileDialog() { FileName = "scene.json", Filter = "Scene Hierarchy dump | *.json" };
+            if (saveFileDialog.ShowDialog(this) == DialogResult.OK)
             {
-                listSearch.Text = "";
-                listSearch.ForeColor = SystemColors.WindowText;
-                enableFiltering = true;
-            }
-        }
-
-        private void listSearch_Leave(object sender, EventArgs e)
-        {
-            if (listSearch.Text == "")
-            {
-                enableFiltering = false;
-                listSearch.Text = " Filter ";
-                listSearch.ForeColor = SystemColors.GrayText;
-            }
-        }
-
-        private void ListSearchTextChanged(object sender, EventArgs e)
-        {
-            if (enableFiltering)
-            {
-                if (delayTimer.Enabled)
+                var path = saveFileDialog.FileName;
+                var nodes = new Dictionary<string, object>();
+                foreach (TreeNode node in sceneTreeView.Nodes)
                 {
-                    delayTimer.Stop();
-                    delayTimer.Start();
+                    var value = GetNode(node);
+                    nodes.Add(node.Text, value);
                 }
-                else
+                var json = JsonConvert.SerializeObject(nodes, Formatting.Indented);
+                File.WriteAllText(path, json);
+                Logger.Info("Scene Hierarchy dumped sucessfully !!");
+            }
+        }
+
+        private object GetNode(TreeNode treeNode)
+        {
+            var nodes = new Dictionary<string, object>();
+            foreach (TreeNode node in treeNode.Nodes)
+            {
+                if (HasGameObjectNode(node))
                 {
-                    delayTimer.Start();
+                    nodes.TryAdd(node.Text, GetNode(node));
                 }
             }
+            return nodes.Count == 0 ? string.Empty : nodes;
         }
 
-        private void delayTimer_Elapsed(object sender, ElapsedEventArgs e)
+        private bool HasGameObjectNode(TreeNode treeNode)
         {
-            delayTimer.Stop();
-            Invoke(new Action(FilterAssetList));
+            if (treeNode is GameObjectTreeNode gameObjectNode && !(bool)gameObjectNode.gameObject.m_Transform?.m_Father.IsNull)
+            {
+                return gameObjectNode.gameObject.m_Animator != null;
+            }
+            else
+            {
+                foreach (TreeNode node in treeNode.Nodes)
+                {
+                    return HasGameObjectNode(node);
+                }
+                return false;
+            }
+        }
+
+        private void listSearch_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (e.KeyChar == (char)Keys.Enter)
+            {
+                Invoke(new Action(FilterAssetList));
+            }
         }
 
         private void assetListView_ColumnClick(object sender, ColumnClickEventArgs e)
@@ -766,6 +800,9 @@ namespace AssetStudioGUI
             {
                 switch (assetItem.Asset)
                 {
+                    case GameObject m_GameObject when Properties.Settings.Default.enableModelPreview:
+                        PreviewGameObject(m_GameObject);
+                        break;
                     case Texture2D m_Texture2D:
                         PreviewTexture2D(assetItem, m_Texture2D);
                         break;
@@ -794,21 +831,24 @@ namespace AssetStudioGUI
                     case Sprite m_Sprite:
                         PreviewSprite(assetItem, m_Sprite);
                         break;
-                    case Animator _:
-                        StatusStripUpdate("Can be exported to FBX file.");
-                        goto default;
-                    case AnimationClip _:
-                        StatusStripUpdate("Can be exported with Animator or Objects or .anim file.");
+                    case Animator m_Animator when Properties.Settings.Default.enableModelPreview:
+                        //StatusStripUpdate("Can be exported to FBX file.");
+                        PreviewAnimator(m_Animator);
+                        break;
+                    case AnimationClip m_AnimationClip:
+                        PreviewAnimationClip(m_AnimationClip);
                         break;
                     case MiHoYoBinData m_MiHoYoBinData:
-                        PreviewText(m_MiHoYoBinData.Str);
+                        PreviewText(m_MiHoYoBinData.AsString);
                         StatusStripUpdate("Can be exported/previewed as JSON if data is a valid JSON (check XOR).");
                         break;
                     default:
                         var str = assetItem.Asset.Dump();
-                        if (string.IsNullOrEmpty(str))
+                        if (Properties.Settings.Default.displayAll || string.IsNullOrEmpty(str))
                         {
-                            str = JsonConvert.SerializeObject(assetItem.Asset, Formatting.Indented);
+                            var settings = new JsonSerializerSettings();
+                            settings.Converters.Add(new StringEnumConverter());
+                            str = JsonConvert.SerializeObject(assetItem.Asset, Formatting.Indented, settings);
                         }
                         if (str != null)
                         {
@@ -1012,11 +1052,11 @@ namespace AssetStudioGUI
         {
             if (m_Shader.byteSize > 0xFFFFFFF)
             {
-                PreviewText("Serialized Shader can't be read");
+                PreviewText("Shader is too large to parse");
                 return;
             }
 
-            var str = ShaderConverter.Convert(m_Shader, Studio.Game);
+            var str = m_Shader.Convert();
             PreviewText(str == null ? "Serialized Shader can't be read" : str.Replace("\n", "\r\n"));
         }
 
@@ -1047,7 +1087,7 @@ namespace AssetStudioGUI
                 Marshal.Copy(m_Font.m_FontData, 0, data, m_Font.m_FontData.Length);
 
                 uint cFonts = 0;
-                var re = AddFontMemResourceEx(data, (uint)m_Font.m_FontData.Length, IntPtr.Zero, ref cFonts);
+                var re = FontHelper.AddFontMemResourceEx(data, (uint)m_Font.m_FontData.Length, IntPtr.Zero, ref cFonts);
                 if (re != IntPtr.Zero)
                 {
                     using (var pfc = new PrivateFontCollection())
@@ -1238,6 +1278,101 @@ namespace AssetStudioGUI
             }
         }
 
+        private void PreviewGameObject(GameObject m_GameObject)
+        {
+            var model = new ModelConverter(m_GameObject, Properties.Settings.Default.convertType, Studio.Game, false, Array.Empty<AnimationClip>());
+            PreviewModel(model);
+        }
+        private void PreviewAnimator(Animator m_Animator)
+        {
+            var model = new ModelConverter(m_Animator, Properties.Settings.Default.convertType, Studio.Game, false, Array.Empty<AnimationClip>());
+            PreviewModel(model);
+        }
+        
+        private void PreviewAnimationClip(AnimationClip clip)
+        {
+            var str = clip.Convert();
+            PreviewText(str.Replace("\n", "\r\n"));
+        }
+
+        private void PreviewModel(ModelConverter model)
+        {
+            if (model.MeshList.Count > 0)
+            {
+                viewMatrixData = Matrix4.CreateRotationY(-(float)Math.PI / 4) * Matrix4.CreateRotationX(-(float)Math.PI / 6);
+                #region Vertices
+                vertexData = model.MeshList.SelectMany(x => x.VertexList).Select(x => new Vector3(x.Vertex.X, x.Vertex.Y, x.Vertex.Z)).ToArray();
+                // Calculate Bounding
+                Vector3 min = vertexData.Aggregate(Vector3.ComponentMin);
+                Vector3 max = vertexData.Aggregate(Vector3.ComponentMax);
+
+                // Calculate modelMatrix
+                Vector3 dist = max - min;
+                Vector3 offset = (max - min) / 2;
+                float d = Math.Max(1e-5f, dist.Length);
+                modelMatrixData = Matrix4.CreateTranslation(-offset) * Matrix4.CreateScale(2f / d);
+                #endregion
+                #region Indicies
+                int meshOffset = 0;
+                var indices = new List<int>();
+                foreach (var mesh in model.MeshList)
+                {
+                    foreach (var submesh in mesh.SubmeshList)
+                    {
+                        foreach (var face in submesh.FaceList)
+                        {
+                            foreach (var index in face.VertexIndices)
+                            {
+                                indices.Add(submesh.BaseVertex + index + meshOffset);
+                            }
+                        }
+                    }
+                    meshOffset += mesh.VertexList.Count;
+                }
+                indiceData = indices.ToArray();
+                #endregion
+                #region Normals
+                normalData = model.MeshList.SelectMany(x => x.VertexList).Select(x => new Vector3(x.Normal.X, x.Normal.Y, x.Normal.Z)).ToArray();
+                // calculate normal by ourself
+                normal2Data = new Vector3[vertexData.Length];
+                int[] normalCalculatedCount = new int[vertexData.Length];
+                Array.Fill(normal2Data, Vector3.Zero);
+                Array.Fill(normalCalculatedCount, 0);
+                for (int j = 0; j < indiceData.Length; j += 3)
+                {
+                    Vector3 dir1 = vertexData[indiceData[j + 1]] - vertexData[indiceData[j]];
+                    Vector3 dir2 = vertexData[indiceData[j + 2]] - vertexData[indiceData[j]];
+                    Vector3 normal = Vector3.Cross(dir1, dir2);
+                    normal.Normalize();
+                    for (int k = 0; k < 3; k++)
+                    {
+                        normal2Data[indiceData[j + k]] += normal;
+                        normalCalculatedCount[indiceData[j + k]]++;
+                    }
+                }
+                for (int j = 0; j < vertexData.Length; j++)
+                {
+                    if (normalCalculatedCount[j] == 0)
+                        normal2Data[j] = new Vector3(0, 1, 0);
+                    else
+                        normal2Data[j] /= normalCalculatedCount[j];
+                }
+                #endregion
+                #region Colors
+                colorData = model.MeshList.SelectMany(x => x.VertexList).Select(x => new Vector4(x.Color.R, x.Color.G, x.Color.B, x.Color.A)).ToArray();
+                #endregion
+                glControl.Visible = true;
+                CreateVAO();
+                StatusStripUpdate("Using OpenGL Version: " + GL.GetString(StringName.Version) + "\n"
+                                  + "'Mouse Left'=Rotate | 'Mouse Right'=Move | 'Mouse Wheel'=Zoom \n"
+                                  + "'Ctrl W'=Wireframe | 'Ctrl S'=Shade | 'Ctrl N'=ReNormal ");
+            }
+            else
+            {
+                StatusStripUpdate("Unable to preview this model");
+            }
+        }
+
         private void PreviewSprite(AssetItem assetItem, Sprite m_Sprite)
         {
             var image = m_Sprite.GetImage();
@@ -1319,8 +1454,7 @@ namespace AssetStudioGUI
             lastSelectedItem = null;
             sortColumn = -1;
             reverseSort = false;
-            enableFiltering = false;
-            listSearch.Text = " Filter ";
+            listSearch.Text = string.Empty;
 
             var count = filterTypeToolStripMenuItem.DropDownItems.Count;
             for (var i = 1; i < count; i++)
@@ -1329,6 +1463,7 @@ namespace AssetStudioGUI
             }
 
             FMODreset();
+            StatusStripUpdate("Reset successfully !!");
         }
 
         private void assetListView_MouseClick(object sender, MouseEventArgs e)
@@ -1490,6 +1625,41 @@ namespace AssetStudioGUI
             }
         }
 
+        private void exportSelectedNodessplitToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ExportNodes(false);
+        }
+
+        private void exportSelectedNodessplitSelectedAnimationClipsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ExportNodes(true);
+        }
+
+        private void ExportNodes(bool animation)
+        {
+            if (sceneTreeView.Nodes.Count > 0)
+            {
+                var saveFolderDialog = new OpenFolderDialog();
+                saveFolderDialog.InitialFolder = saveDirectoryBackup;
+                if (saveFolderDialog.ShowDialog(this) == DialogResult.OK)
+                {
+                    saveDirectoryBackup = saveFolderDialog.Folder;
+                    var exportPath = Path.Combine(saveFolderDialog.Folder, "GameObject") + Path.DirectorySeparatorChar;
+                    var roots = sceneTreeView.Nodes.Cast<TreeNode>().Where(x => x.Level == 0 && x.Checked).ToList();
+                    List<AssetItem> animationList = null;
+                    if (animation)
+                    {
+                        animationList = GetSelectedAssets().Where(x => x.Type == ClassIDType.AnimationClip).ToList();
+                        if (animationList.Count == 0)
+                        {
+                            animationList = null;
+                        }
+                    }
+                    ExportNodesWithAnimationClip(exportPath, roots, animationList);
+                }
+            }
+        }
+
         private void goToSceneHierarchyToolStripMenuItem_Click(object sender, EventArgs e)
         {
             var selectasset = (AssetItem)assetListView.Items[assetListView.SelectedIndices[0]];
@@ -1543,6 +1713,20 @@ namespace AssetStudioGUI
         private void toolStripMenuItem9_Click(object sender, EventArgs e)
         {
             ExportAssets(ExportFilter.Filtered, ExportType.Dump);
+        }
+        private void toolStripMenuItem17_Click(object sender, EventArgs e)
+        {
+            ExportAssets(ExportFilter.All, ExportType.JSON);
+        }
+
+        private void toolStripMenuItem24_Click(object sender, EventArgs e)
+        {
+            ExportAssets(ExportFilter.Selected, ExportType.JSON);
+        }
+
+        private void toolStripMenuItem25_Click(object sender, EventArgs e)
+        {
+            ExportAssets(ExportFilter.Filtered, ExportType.JSON);
         }
 
         private void toolStripMenuItem11_Click(object sender, EventArgs e)
@@ -1611,12 +1795,30 @@ namespace AssetStudioGUI
             {
                 visibleAssets = exportableAssets;
             }
-            if (listSearch.Text != " Filter ")
+            if (Properties.Settings.Default.modelsOnly)
             {
+                var models = visibleAssets.FindAll(x => x.Type == ClassIDType.Animator || x.Type == ClassIDType.GameObject);
+                foreach (var model in models)
+                {
+                    var hasModel = model.Asset switch
+                    {
+                        GameObject m_GameObject => m_GameObject.HasModel(),
+                        Animator m_Animator => m_Animator.m_GameObject.TryGet(out var gameObject) && gameObject.HasModel(),
+                        _ => throw new NotImplementedException()
+                    };
+                    if (!hasModel)
+                    {
+                        visibleAssets.Remove(model);
+                    }
+                }
+            }
+            if (!string.IsNullOrEmpty(listSearch.Text))
+            {
+                var regex = new Regex(listSearch.Text, RegexOptions.IgnoreCase);
                 visibleAssets = visibleAssets.FindAll(
-                    x => x.Text.IndexOf(listSearch.Text, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    x.SubItems[1].Text.IndexOf(listSearch.Text, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    x.SubItems[3].Text.IndexOf(listSearch.Text, StringComparison.OrdinalIgnoreCase) >= 0);
+                    x => regex.IsMatch(x.Text) ||
+                    regex.IsMatch(x.SubItems[1].Text) ||
+                    regex.IsMatch(x.SubItems[3].Text));
             }
             assetListView.VirtualListSize = visibleAssets.Count;
             assetListView.EndUpdate();
@@ -1686,6 +1888,496 @@ namespace AssetStudioGUI
             {
                 StatusStripUpdate("No exportable assets loaded");
             }
+        }
+
+        private void toolStripMenuItem15_Click(object sender, EventArgs e)
+        {
+            logger.ShowErrorMessage = toolStripMenuItem15.Checked;
+        }
+        private async void toolStripMenuItem19_DropDownOpening(object sender, EventArgs e)
+        {
+            if (specifyAIVersion.Enabled && await AIVersionManager.FetchVersions())
+            {
+                UpdateVersionList();
+            }
+        }
+
+        private void miscToolStripMenuItem_DropDownOpening(object sender, EventArgs e)
+        {
+            if (miscToolStripMenuItem.Enabled)
+            {
+                MapNameComboBox.Items.Clear();
+                MapNameComboBox.Items.AddRange(AssetsHelper.GetMaps());
+            }
+        }
+
+        private async void toolStripComboBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (specifyAIVersion.SelectedIndex == 0)
+            {
+                return;
+            }
+            if (skipContainer.Checked)
+            {
+                Logger.Info("Skip container is enabled, aborting...");
+                return;
+            }
+            optionsToolStripMenuItem.DropDown.Visible = false;
+            var version = specifyAIVersion.SelectedItem.ToString();
+
+            if (version.Contains(' '))
+            {
+                version = version.Split(' ')[0];
+            }
+
+            Logger.Info($"Loading AI v{version}");
+            InvokeUpdate(specifyAIVersion, false);
+            var path = await AIVersionManager.FetchAI(version);
+            await Task.Run(() => ResourceIndex.FromFile(path));
+            UpdateContainers();
+            UpdateVersionList();
+            InvokeUpdate(specifyAIVersion, true);
+        }
+
+        private void UpdateVersionList()
+        {
+            var selectedIndex = specifyAIVersion.SelectedIndex;
+            specifyAIVersion.Items.Clear();
+            specifyAIVersion.Items.Add("None");
+
+            var versions = AIVersionManager.GetVersions();
+            foreach (var version in versions)
+            {
+                specifyAIVersion.Items.Add(version.Item1 + (version.Item2 ? " (cached)" : ""));
+            }
+
+            specifyAIVersion.SelectedIndexChanged -= new EventHandler(toolStripComboBox1_SelectedIndexChanged);
+            specifyAIVersion.SelectedIndex = selectedIndex;
+            specifyAIVersion.SelectedIndexChanged += new EventHandler(toolStripComboBox1_SelectedIndexChanged);
+        }
+
+        private void UpdateContainers()
+        {
+            if (exportableAssets.Count > 0)
+            {
+                Logger.Info("Updating Containers...");
+                assetListView.BeginUpdate();
+                foreach (var asset in exportableAssets)
+                {
+                    if (int.TryParse(asset.Container, out var value))
+                    {
+                        var last = unchecked((uint)value);
+                        var name = Path.GetFileNameWithoutExtension(asset.SourceFile.originalPath);
+                        if (uint.TryParse(name, out var id))
+                        {
+                            var path = ResourceIndex.GetContainer(id, last);
+                            if (!string.IsNullOrEmpty(path))
+                            {
+                                asset.Container = path;
+                                asset.SubItems[1].Text = path;
+                                if (asset.Type == ClassIDType.MiHoYoBinData)
+                                {
+                                    asset.Text = Path.GetFileNameWithoutExtension(path);
+                                }
+                            }
+                        }
+                    }
+                }
+                assetListView.EndUpdate();
+                Logger.Info("Updated !!");
+            }
+        }
+
+        private void InvokeUpdate(ToolStripItem item, bool value)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(() => { item.Enabled = value; }));
+            }
+            else
+            {
+                item.Enabled = value;
+            }
+        }
+
+        private void tabControl2_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (tabControl2.SelectedIndex == 1 && lastSelectedItem != null)
+            {
+                dumpTextBox.Text = DumpAsset(lastSelectedItem.Asset);
+            }
+        }
+        private void enableResolveDependencies_CheckedChanged(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.enableResolveDependencies = enableResolveDependencies.Checked;
+            Properties.Settings.Default.Save();
+
+            assetsManager.ResolveDependencies = enableResolveDependencies.Checked;
+        }
+        private void skipContainer_CheckedChanged(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.skipContainer = skipContainer.Checked;
+            Properties.Settings.Default.Save();
+
+            SkipContainer = skipContainer.Checked;
+
+        }
+        private void assetMapTypeComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.selectedAssetMapType = assetMapTypeComboBox.SelectedIndex;
+            Properties.Settings.Default.Save();
+        }
+        private void modelsOnly_CheckedChanged(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.modelsOnly = modelsOnly.Checked;
+            Properties.Settings.Default.Save();
+
+            if (visibleAssets.Count > 0)
+            {
+                FilterAssetList();
+            }
+        }
+        private void enableModelPreview_CheckedChanged(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.enableModelPreview = enableModelPreview.Checked;
+            Properties.Settings.Default.Save();
+        }
+
+        private void specifyGame_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            optionsToolStripMenuItem.DropDown.Visible = false;
+            Properties.Settings.Default.selectedGame = specifyGame.SelectedIndex;
+            Properties.Settings.Default.Save();
+
+            ResetForm();
+
+            Studio.Game = GameManager.GetGame(Properties.Settings.Default.selectedGame);
+            Logger.Info($"Target Game is {Studio.Game.Name}");
+
+            if (Studio.Game.Type.IsUnityCN())
+            {
+                UnityCNManager.SetKey(Properties.Settings.Default.selectedUnityCNKey);
+            }
+
+            assetsManager.SpecifyUnityVersion = specifyUnityVersion.Text;
+            assetsManager.Game = Studio.Game;
+        }
+
+        private async void specifyNameComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            miscToolStripMenuItem.DropDown.Visible = false;
+            InvokeUpdate(miscToolStripMenuItem, false);
+
+            ResetForm();
+
+            var name = MapNameComboBox.SelectedItem.ToString();
+            await Task.Run(() =>
+            {
+                if (AssetsHelper.LoadCABMap(name))
+                {
+                    Properties.Settings.Default.selectedCABMapName = name;
+                    Properties.Settings.Default.Save();
+                }
+            });
+
+            assetsManager.SpecifyUnityVersion = specifyUnityVersion.Text;
+            assetsManager.Game = Studio.Game;
+
+            InvokeUpdate(miscToolStripMenuItem, true);
+        }
+
+        private async void buildMapToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            miscToolStripMenuItem.DropDown.Visible = false;
+            InvokeUpdate(miscToolStripMenuItem, false);
+
+            var input = MapNameComboBox.Text;
+            var selectedText = MapNameComboBox.SelectedText;
+            var name = "";
+
+            if (!string.IsNullOrEmpty(selectedText))
+            {
+                name = selectedText;
+            }
+            else if (!string.IsNullOrEmpty(input))
+            {
+                if (input.IndexOfAny(Path.GetInvalidFileNameChars()) != -1)
+                {
+                    Logger.Warning("Name has invalid characters !!");
+                    InvokeUpdate(miscToolStripMenuItem, true);
+                    return;
+                }
+
+                name = input;
+            }
+            else
+            {
+                Logger.Error("Map name is empty, please enter any name in ComboBox above");
+                InvokeUpdate(miscToolStripMenuItem, true);
+                return;
+            }
+
+            if (File.Exists(Path.Combine(AssetsHelper.MapName, $"{name}.bin")))
+            {
+                var acceptOverride = MessageBox.Show("Map already exist, Do you want to override it ?", "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (acceptOverride != DialogResult.Yes)
+                {
+                    InvokeUpdate(miscToolStripMenuItem, true);
+                    return;
+                }
+            }
+
+            var version = specifyUnityVersion.Text;
+            var openFolderDialog = new OpenFolderDialog();
+            openFolderDialog.Title = "Select Game Folder";
+            if (openFolderDialog.ShowDialog(this) == DialogResult.OK)
+            {
+                Logger.Info("Scanning for files...");
+                var files = Directory.GetFiles(openFolderDialog.Folder, "*.*", SearchOption.AllDirectories).ToArray();
+                Logger.Info($"Found {files.Length} files");
+                AssetsHelper.SetUnityVersion(version);
+                await Task.Run(() => AssetsHelper.BuildCABMap(files, name, openFolderDialog.Folder, Studio.Game));
+            }
+            InvokeUpdate(miscToolStripMenuItem, true);
+        }
+
+        private async void buildBothToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            miscToolStripMenuItem.DropDown.Visible = false;
+            InvokeUpdate(miscToolStripMenuItem, false);
+
+            var input = MapNameComboBox.Text;
+            var selectedText = MapNameComboBox.SelectedText;
+            var exportListType = (ExportListType)assetMapTypeComboBox.SelectedItem;
+            var name = "";
+
+            if (!string.IsNullOrEmpty(selectedText))
+            {
+                name = selectedText;
+            }
+            else if (!string.IsNullOrEmpty(input))
+            {
+                if (input.IndexOfAny(Path.GetInvalidFileNameChars()) != -1)
+                {
+                    Logger.Warning("Name has invalid characters !!");
+                    InvokeUpdate(miscToolStripMenuItem, true);
+                    return;
+                }
+
+                name = input;
+            }
+            else
+            {
+                Logger.Error("Map name is empty, please enter any name in ComboBox above");
+                InvokeUpdate(miscToolStripMenuItem, true);
+                return;
+            }
+
+            if (File.Exists(Path.Combine(AssetsHelper.MapName, $"{name}.bin")))
+            {
+                var acceptOverride = MessageBox.Show("Map already exist, Do you want to override it ?", "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (acceptOverride != DialogResult.Yes)
+                {
+                    InvokeUpdate(miscToolStripMenuItem, true);
+                    return;
+                }
+            }
+
+            var version = specifyUnityVersion.Text;
+            var openFolderDialog = new OpenFolderDialog();
+            openFolderDialog.Title = "Select Game Folder";
+            if (openFolderDialog.ShowDialog(this) == DialogResult.OK)
+            {
+                Logger.Info("Scanning for files...");
+                var files = Directory.GetFiles(openFolderDialog.Folder, "*.*", SearchOption.AllDirectories).ToArray();
+                Logger.Info($"Found {files.Length} files");
+
+                var saveFolderDialog = new OpenFolderDialog();
+                saveFolderDialog.InitialFolder = saveDirectoryBackup;
+                saveFolderDialog.Title = "Select Output Folder";
+                if (saveFolderDialog.ShowDialog(this) == DialogResult.OK)
+                {
+                    if (File.Exists(Path.Combine(saveFolderDialog.Folder, $"{name}{exportListType.GetExtension()}")))
+                    {
+                        var acceptOverride = MessageBox.Show("AssetMap already exist, Do you want to override it ?", "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                        if (acceptOverride != DialogResult.Yes)
+                        {
+                            InvokeUpdate(miscToolStripMenuItem, true);
+                            return;
+                        }
+                    }
+                    saveDirectoryBackup = saveFolderDialog.Folder;
+                    AssetsHelper.SetUnityVersion(version);
+                    await Task.Run(() => AssetsHelper.BuildBoth(files, name, openFolderDialog.Folder, Studio.Game, saveFolderDialog.Folder, exportListType));
+                }
+            }
+            InvokeUpdate(miscToolStripMenuItem, true);
+        }
+
+        private void clearMapToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            miscToolStripMenuItem.DropDown.Visible = false;
+            InvokeUpdate(miscToolStripMenuItem, false);
+
+            var acceptDelete = MessageBox.Show("Map will be deleted, this can't be undone, continue ?", "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            if (acceptDelete != DialogResult.Yes)
+            {
+                InvokeUpdate(miscToolStripMenuItem, true);
+                return;
+            }
+
+            var name = MapNameComboBox.Text.ToString();
+            var path = Path.Combine(AssetsHelper.MapName, $"{name}.bin");
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+                Logger.Info($"{name} deleted successfully !!");
+                MapNameComboBox.SelectedIndexChanged -= new EventHandler(specifyNameComboBox_SelectedIndexChanged);
+                MapNameComboBox.SelectedIndex = 0;
+                MapNameComboBox.SelectedIndexChanged += new EventHandler(specifyNameComboBox_SelectedIndexChanged);
+            }
+
+            InvokeUpdate(miscToolStripMenuItem, true);
+        }
+
+        private void resetToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ResetForm();
+            AssetsHelper.Clear();
+            assetBrowser?.Clear();
+            assetsManager.SpecifyUnityVersion = specifyUnityVersion.Text;
+            assetsManager.Game = Studio.Game;
+        }
+
+        private void enableConsole_CheckedChanged(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.enableConsole = enableConsole.Checked;
+            Properties.Settings.Default.Save();
+
+            var handle = ConsoleHelper.GetConsoleWindow();
+            if (enableConsole.Checked)
+            {
+                Logger.Default = new ConsoleLogger();
+                ConsoleHelper.ShowWindow(handle, ConsoleHelper.SW_SHOW);
+            }
+            else
+            {
+                Logger.Default = logger;
+                ConsoleHelper.ShowWindow(handle, ConsoleHelper.SW_HIDE);
+            }
+        }
+
+        private void enableFileLogging_CheckedChanged(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.enableFileLogging = enableFileLogging.Checked;
+            Properties.Settings.Default.Save();
+
+            Logger.FileLogging = enableFileLogging.Checked;
+        }
+
+        private void enableVerbose_Click(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.enableVerbose = enableVerbose.Checked;
+            Properties.Settings.Default.Save();
+
+            Logger.LogVerbose = enableVerbose.Checked;
+        }
+
+        private void abortStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Logger.Info("Aborting....");
+            assetsManager.tokenSource.Cancel();
+            AssetsHelper.tokenSource.Cancel();
+        }
+
+        private async void loadAIToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (skipContainer.Checked)
+            {
+                Logger.Info("Skip container is enabled, aborting...");
+                return;
+            }
+            miscToolStripMenuItem.DropDown.Visible = false;
+
+            var openFileDialog = new OpenFileDialog() { Multiselect = false, Filter = "Asset Index JSON File|*.json" };
+            if (openFileDialog.ShowDialog(this) == DialogResult.OK)
+            {
+                var path = openFileDialog.FileName;
+                Logger.Info($"Loading AI...");
+                InvokeUpdate(loadAIToolStripMenuItem, false);
+                await Task.Run(() => ResourceIndex.FromFile(path));
+                UpdateContainers();
+                InvokeUpdate(loadAIToolStripMenuItem, true);
+            }
+        }
+
+        private void clearConsoleToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Console.Clear();
+        }
+
+        private async void buildAssetMapToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            miscToolStripMenuItem.DropDown.Visible = false;
+            InvokeUpdate(miscToolStripMenuItem, false);
+
+            var input = assetMapNameTextBox.Text;
+            var exportListType = (ExportListType)assetMapTypeComboBox.SelectedItem;
+            var name = "assets_map";
+
+            if (!string.IsNullOrEmpty(input))
+            {
+                if (input.IndexOfAny(Path.GetInvalidFileNameChars()) != -1)
+                {
+                    Logger.Warning("Name has invalid characters !!");
+                    InvokeUpdate(miscToolStripMenuItem, true);
+                    return;
+                }
+
+                name = input;
+            }
+
+            var version = specifyUnityVersion.Text;
+            var openFolderDialog = new OpenFolderDialog();
+            openFolderDialog.Title = $"Select Game Folder";
+            if (openFolderDialog.ShowDialog(this) == DialogResult.OK)
+            {
+                Logger.Info("Scanning for files...");
+                var files = Directory.GetFiles(openFolderDialog.Folder, "*.*", SearchOption.AllDirectories).ToArray();
+                Logger.Info($"Found {files.Length} files");
+
+                var saveFolderDialog = new OpenFolderDialog();
+                saveFolderDialog.InitialFolder = saveDirectoryBackup;
+                saveFolderDialog.Title = "Select Output Folder";
+                if (saveFolderDialog.ShowDialog(this) == DialogResult.OK)
+                {
+                    if (File.Exists(Path.Combine(saveFolderDialog.Folder, $"{name}{exportListType.GetExtension()}")))
+                    {
+                        var acceptOverride = MessageBox.Show("AssetMap already exist, Do you want to override it ?", "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                        if (acceptOverride != DialogResult.Yes)
+                        {
+                            InvokeUpdate(miscToolStripMenuItem, true);
+                            return;
+                        }
+                    }
+                    saveDirectoryBackup = saveFolderDialog.Folder;
+                    AssetsHelper.SetUnityVersion(version);
+                    await Task.Run(() => AssetsHelper.BuildAssetMap(files, name, Studio.Game, saveFolderDialog.Folder, exportListType));
+                }
+            }
+            InvokeUpdate(miscToolStripMenuItem, true);
+        }
+
+        private void loadAssetMapToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            assetBrowser = new AssetBrowser(this);
+            assetBrowser.Show();
+        }
+
+        private void specifyUnityCNKey_Click(object sender, EventArgs e)
+        {
+            var unitycn = new UnityCNForm();
+            unitycn.Show();
         }
 
         #region FMOD
@@ -1962,10 +2654,10 @@ namespace AssetStudioGUI
         private void InitOpenTK()
         {
             ChangeGLSize(glControl.Size);
-            GL.ClearColor(Color4.Dimgray);
+            GL.ClearColor(System.Drawing.Color.CadetBlue);
             pgmID = GL.CreateProgram();
-            LoadShader("vs", ShaderType.VertexShader, pgmID, out var vsID);
-            LoadShader("fs", ShaderType.FragmentShader, pgmID, out var fsID);
+            LoadShader("vs", ShaderType.VertexShader, pgmID, out int vsID);
+            LoadShader("fs", ShaderType.FragmentShader, pgmID, out int fsID);
             GL.LinkProgram(pgmID);
 
             pgmColorID = GL.CreateProgram();
@@ -1986,7 +2678,7 @@ namespace AssetStudioGUI
             uniformProjMatrix = GL.GetUniformLocation(pgmID, "projMatrix");
         }
 
-        private static void LoadShader(string filename, ShaderType type, ProgramHandle program, out ShaderHandle address)
+        private static void LoadShader(string filename, ShaderType type, int program, out int address)
         {
             address = GL.CreateShader(type);
             var str = (string)Properties.Resources.ResourceManager.GetObject(filename);
@@ -1996,47 +2688,50 @@ namespace AssetStudioGUI
             GL.DeleteShader(address);
         }
 
-        private static void CreateVBO(out BufferHandle vboAddress, Vector3[] data, int address)
+        private static void CreateVBO(out int vboAddress, Vector3[] data, int address)
         {
-            GL.CreateBuffer(out vboAddress);
-            GL.BindBuffer(BufferTargetARB.ArrayBuffer, vboAddress);
-            GL.BufferData(BufferTargetARB.ArrayBuffer,
+            GL.GenBuffers(1, out vboAddress);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, vboAddress);
+            GL.BufferData(BufferTarget.ArrayBuffer,
+                                    (IntPtr)(data.Length * Vector3.SizeInBytes),
                                     data,
-                                    BufferUsageARB.StaticDraw);
-            GL.VertexAttribPointer((uint)address, 3, VertexAttribPointerType.Float, false, 0, 0);
-            GL.EnableVertexAttribArray((uint)address);
+                                    BufferUsageHint.StaticDraw);
+            GL.VertexAttribPointer(address, 3, VertexAttribPointerType.Float, false, 0, 0);
+            GL.EnableVertexAttribArray(address);
         }
 
-        private static void CreateVBO(out BufferHandle vboAddress, Vector4[] data, int address)
+        private static void CreateVBO(out int vboAddress, Vector4[] data, int address)
         {
-            GL.CreateBuffer(out vboAddress);
-            GL.BindBuffer(BufferTargetARB.ArrayBuffer, vboAddress);
-            GL.BufferData(BufferTargetARB.ArrayBuffer,
+            GL.GenBuffers(1, out vboAddress);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, vboAddress);
+            GL.BufferData(BufferTarget.ArrayBuffer,
+                                    (IntPtr)(data.Length * Vector4.SizeInBytes),
                                     data,
-                                    BufferUsageARB.StaticDraw);
-            GL.VertexAttribPointer((uint)address, 4, VertexAttribPointerType.Float, false, 0, 0);
-            GL.EnableVertexAttribArray((uint)address);
+                                    BufferUsageHint.StaticDraw);
+            GL.VertexAttribPointer(address, 4, VertexAttribPointerType.Float, false, 0, 0);
+            GL.EnableVertexAttribArray(address);
         }
 
-        private static void CreateVBO(out BufferHandle vboAddress, Matrix4 data, int address)
+        private static void CreateVBO(out int vboAddress, Matrix4 data, int address)
         {
-            GL.CreateBuffer(out vboAddress);
-            GL.UniformMatrix4f(address, false, data);
+            GL.GenBuffers(1, out vboAddress);
+            GL.UniformMatrix4(address, false, ref data);
         }
 
-        private static void CreateEBO(out BufferHandle address, int[] data)
+        private static void CreateEBO(out int address, int[] data)
         {
-            GL.CreateBuffer(out address);
-            GL.BindBuffer(BufferTargetARB.ElementArrayBuffer, address);
-            GL.BufferData(BufferTargetARB.ElementArrayBuffer,
+            GL.GenBuffers(1, out address);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, address);
+            GL.BufferData(BufferTarget.ElementArrayBuffer,
+                            (IntPtr)(data.Length * sizeof(int)),
                             data,
-                            BufferUsageARB.StaticDraw);
+                            BufferUsageHint.StaticDraw);
         }
 
         private void CreateVAO()
         {
             GL.DeleteVertexArray(vao);
-            GL.CreateVertexArray(out vao);
+            GL.GenVertexArrays(1, out vao);
             GL.BindVertexArray(vao);
             CreateVBO(out var vboPositions, vertexData, attributeVertexPosition);
             if (normalMode == 0)
@@ -2053,8 +2748,8 @@ namespace AssetStudioGUI
             CreateVBO(out var vboViewMatrix, viewMatrixData, uniformViewMatrix);
             CreateVBO(out var vboProjMatrix, projMatrixData, uniformProjMatrix);
             CreateEBO(out var eboElements, indiceData);
-            GL.BindBuffer(BufferTargetARB.ArrayBuffer, BufferHandle.Zero);
-            GL.BindVertexArray(VertexArrayHandle.Zero);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindVertexArray(0);
         }
 
         private void ChangeGLSize(Size size)
@@ -2073,13 +2768,13 @@ namespace AssetStudioGUI
             }
         }
 
-        private void glControl1_Load(object sender, EventArgs e)
+        private void glControl_Load(object sender, EventArgs e)
         {
             InitOpenTK();
             glControlLoaded = true;
         }
 
-        private void glControl1_Paint(object sender, PaintEventArgs e)
+        private void glControl_Paint(object sender, PaintEventArgs e)
         {
             glControl.MakeCurrent();
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
@@ -2089,10 +2784,10 @@ namespace AssetStudioGUI
             if (wireFrameMode == 0 || wireFrameMode == 2)
             {
                 GL.UseProgram(shadeMode == 0 ? pgmID : pgmColorID);
-                GL.UniformMatrix4f(uniformModelMatrix, false, modelMatrixData);
-                GL.UniformMatrix4f(uniformViewMatrix, false, viewMatrixData);
-                GL.UniformMatrix4f(uniformProjMatrix, false, projMatrixData);
-                GL.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Fill);
+                GL.UniformMatrix4(uniformModelMatrix, false, ref modelMatrixData);
+                GL.UniformMatrix4(uniformViewMatrix, false, ref viewMatrixData);
+                GL.UniformMatrix4(uniformProjMatrix, false, ref projMatrixData);
+                GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
                 GL.DrawElements(PrimitiveType.Triangles, indiceData.Length, DrawElementsType.UnsignedInt, 0);
             }
             //Wireframe
@@ -2101,150 +2796,19 @@ namespace AssetStudioGUI
                 GL.Enable(EnableCap.PolygonOffsetLine);
                 GL.PolygonOffset(-1, -1);
                 GL.UseProgram(pgmBlackID);
-                GL.UniformMatrix4f(uniformModelMatrix, false, modelMatrixData);
-                GL.UniformMatrix4f(uniformViewMatrix, false, viewMatrixData);
-                GL.UniformMatrix4f(uniformProjMatrix, false, projMatrixData);
-                GL.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Line);
+                GL.UniformMatrix4(uniformModelMatrix, false, ref modelMatrixData);
+                GL.UniformMatrix4(uniformViewMatrix, false, ref viewMatrixData);
+                GL.UniformMatrix4(uniformProjMatrix, false, ref projMatrixData);
+                GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
                 GL.DrawElements(PrimitiveType.Triangles, indiceData.Length, DrawElementsType.UnsignedInt, 0);
                 GL.Disable(EnableCap.PolygonOffsetLine);
             }
-            GL.BindVertexArray(VertexArrayHandle.Zero);
+            GL.BindVertexArray(0);
             GL.Flush();
             glControl.SwapBuffers();
         }
 
-        private void tabControl2_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (tabControl2.SelectedIndex == 1 && lastSelectedItem != null)
-            {
-                dumpTextBox.Text = DumpAsset(lastSelectedItem.Asset);
-            }
-        }
-
-        private void toolStripMenuItem15_Click(object sender, EventArgs e)
-        {
-            logger.ShowErrorMessage = toolStripMenuItem15.Checked;
-        }
-
-        private async void buildCABMapToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            var openFolderDialog = new OpenFolderDialog();
-            openFolderDialog.Title = $"Select {Studio.Game.Path} Folder";
-            if (openFolderDialog.ShowDialog(this) == DialogResult.OK)
-            {
-                Logger.Info("scanning for files");
-                var files = Directory.GetFiles(openFolderDialog.Folder, $"*{Studio.Game.Extension}", SearchOption.AllDirectories).ToList();
-                Logger.Info(string.Format("found {0} files", files.Count()));
-                await Task.Run(() => CABManager.BuildMap(files, Studio.Game));
-            }
-        }
-
-        private async void buildAssetMapToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            var openFolderDialog = new OpenFolderDialog();
-            openFolderDialog.Title = $"Select {Studio.Game.Path} Folder";
-            if (openFolderDialog.ShowDialog(this) == DialogResult.OK)
-            {
-                Logger.Info("scanning for files");
-                var files = Directory.GetFiles(openFolderDialog.Folder, $"*{Studio.Game.Extension}", SearchOption.AllDirectories).ToList();
-                Logger.Info(string.Format("found {0} files", files.Count()));
-                
-                var saveFolderDialog = new OpenFolderDialog();
-                saveFolderDialog.InitialFolder = saveDirectoryBackup;
-                saveFolderDialog.Title = "Select Output Folder";
-                if (saveFolderDialog.ShowDialog(this) == DialogResult.OK)
-                {
-                    timer.Stop();
-                    saveDirectoryBackup = saveFolderDialog.Folder;
-                    List<AssetEntry> toExportAssets = await Task.Run(() => BuildAssetMap(files));
-                    ExportAssetsMap(saveFolderDialog.Folder, toExportAssets, ExportListType.XML);
-                }
-            }
-        }
-
-        private async void toolStripMenuItem16_DropDownOpening(object sender, EventArgs e)
-        {
-            if (specifyAIVersion.Enabled && await AIVersionManager.FetchVersions())
-            {
-                UpdateVersionList();
-            }
-        }
-
-        private async void toolStripComboBox1_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (specifyAIVersion.SelectedIndex == 0)
-            {
-                return;
-            }
-            optionsToolStripMenuItem.DropDown.Visible = false;
-            var version = specifyAIVersion.SelectedItem.ToString();
-            
-            if (version.Contains(" "))
-            {
-                version = version.Split(' ')[0];
-            }
-
-            Logger.Info($"Loading AI v{version}");
-            SpecifyAIVersionUpdate(false);
-            var path = await AIVersionManager.FetchAI(version);
-            await Task.Run(() => ResourceIndex.FromFile(path));
-            UpdateVersionList();
-            SpecifyAIVersionUpdate(true);
-        }
-
-        private void UpdateVersionList()
-        {
-            var selectedIndex = specifyAIVersion.SelectedIndex;
-            specifyAIVersion.Items.Clear();
-            specifyAIVersion.Items.Add("None");
-
-            var versions = AIVersionManager.GetVersions();
-            foreach (var version in versions)
-            {
-                specifyAIVersion.Items.Add(version.Item1 + (version.Item2 ? " (cached)" : ""));
-            }
-
-            specifyAIVersion.SelectedIndexChanged -= new EventHandler(toolStripComboBox1_SelectedIndexChanged);
-            specifyAIVersion.SelectedIndex = selectedIndex;
-            specifyAIVersion.SelectedIndexChanged += new EventHandler(toolStripComboBox1_SelectedIndexChanged);
-        }
-
-        private void toolStripComboBox2_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            optionsToolStripMenuItem.DropDown.Visible = false;
-            Properties.Settings.Default.selectedGame = specifyGame.SelectedIndex;
-            Properties.Settings.Default.Save();
-
-            Studio.Game = GameManager.GetGame(Properties.Settings.Default.selectedGame);
-            Logger.Info($"Target Game is {Studio.Game.Name}");
-
-            ResetForm();
-            assetsManager.SpecifyUnityVersion = specifyUnityVersion.Text;
-            assetsManager.Game = Studio.Game;
-            CABManager.LoadMap(Studio.Game);
-        }
-
-        private void enableFileLogging_CheckedChanged(object sender, EventArgs e)
-        {
-            Properties.Settings.Default.isFileLogging = enableFileLogging.Checked;
-            Properties.Settings.Default.Save();
-
-            Logger.IsFileLogging = Properties.Settings.Default.isFileLogging;
-        }
-
-        private void SpecifyAIVersionUpdate(bool value)
-        {
-            if (InvokeRequired)
-            {
-                BeginInvoke(new Action(() => { specifyAIVersion.Enabled = value; }));
-            }
-            else
-            {
-                specifyAIVersion.Enabled = value;
-            }
-        }
-
-        private void glControl1_MouseWheel(object sender, MouseEventArgs e)
+        private void glControl_MouseWheel(object sender, MouseEventArgs e)
         {
             if (glControl.Visible)
             {
@@ -2253,7 +2817,7 @@ namespace AssetStudioGUI
             }
         }
 
-        private void glControl1_MouseDown(object sender, MouseEventArgs e)
+        private void glControl_MouseDown(object sender, MouseEventArgs e)
         {
             mdx = e.X;
             mdy = e.Y;
@@ -2267,7 +2831,7 @@ namespace AssetStudioGUI
             }
         }
 
-        private void glControl1_MouseMove(object sender, MouseEventArgs e)
+        private void glControl_MouseMove(object sender, MouseEventArgs e)
         {
             if (lmdown || rmdown)
             {
@@ -2292,7 +2856,7 @@ namespace AssetStudioGUI
             }
         }
 
-        private void glControl1_MouseUp(object sender, MouseEventArgs e)
+        private void glControl_MouseUp(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
             {

@@ -1,9 +1,11 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using static AssetStudio.ImportHelper;
 
 namespace AssetStudio
@@ -11,34 +13,85 @@ namespace AssetStudio
     public class AssetsManager
     {
         public Game Game;
-        public bool ResolveDependancies;
+        public bool Silent = false;
+        public bool SkipProcess = false;
+        public bool ResolveDependencies = false;        
         public string SpecifyUnityVersion;
+        public CancellationTokenSource tokenSource = new CancellationTokenSource();
         public List<SerializedFile> assetsFileList = new List<SerializedFile>();
 
         internal Dictionary<string, int> assetsFileIndexCache = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         internal Dictionary<string, BinaryReader> resourceFileReaders = new Dictionary<string, BinaryReader>(StringComparer.OrdinalIgnoreCase);
 
-        private List<string> importFiles = new List<string>();
-        private HashSet<string> importFilesHash = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        private HashSet<string> assetsFileListHash = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        internal List<string> importFiles = new List<string>();
+        internal HashSet<string> importFilesHash = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        internal HashSet<string> noexistFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        internal HashSet<string> assetsFileListHash = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        public void LoadFiles(string file)
+        {
+            if (Silent)
+            {
+                Logger.Silent = true;
+                Progress.Silent = true;
+            }
+
+            Load(new string[] { file });
+
+            if (Silent)
+            {
+                Logger.Silent = false;
+                Progress.Silent = false;
+            }
+        }
 
         public void LoadFiles(params string[] files)
         {
-            if (ResolveDependancies)
-                files = CABManager.ProcessDependencies(files);
-            Load(files);
+            if (Silent)
+            {
+                Logger.Silent = true;
+                Progress.Silent = true;
+            }
+
+            var path = Path.GetDirectoryName(Path.GetFullPath(files[0]));
+            MergeSplitAssets(path);
+            var toReadFile = ProcessingSplitFiles(files.ToList());
+            if (ResolveDependencies)
+                toReadFile = AssetsHelper.ProcessDependencies(toReadFile);
+            Load(toReadFile);
+
+            if (Silent)
+            {
+                Logger.Silent = false;
+                Progress.Silent = false;
+            }
         }
 
         public void LoadFolder(string path)
         {
-            var files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories).ToArray();
-            Load(files);
+            if (Silent)
+            {
+                Logger.Silent = true;
+                Progress.Silent = true;
+            }
+
+            MergeSplitAssets(path, true);
+            var files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories).ToList();
+            var toReadFile = ProcessingSplitFiles(files);
+            Load(toReadFile);
+
+            if (Silent)
+            {
+                Logger.Silent = false;
+                Progress.Silent = false;
+            }
         }
 
         private void Load(string[] files)
         {
             foreach (var file in files)
             {
+                Logger.Verbose($"caching {file} path and name to filter out duplicates");
                 importFiles.Add(file);
                 importFilesHash.Add(Path.GetFileName(file));
             }
@@ -49,20 +102,30 @@ namespace AssetStudio
             {
                 LoadFile(importFiles[i]);
                 Progress.Report(i + 1, importFiles.Count);
+                if (tokenSource.IsCancellationRequested)
+                {
+                    Logger.Info("Loading files has been aborted !!");
+                    break;
+                }
             }
 
             importFiles.Clear();
             importFilesHash.Clear();
+            noexistFiles.Clear();
             assetsFileListHash.Clear();
-            CABManager.offsets.Clear();
+            AssetsHelper.ClearOffsets();
 
-            ReadAssets();
-            ProcessAssets();
+            if (!SkipProcess)
+            {
+                ReadAssets();
+                ProcessAssets();
+            }
         }
 
         private void LoadFile(string fullName)
         {
-            var reader = new FileReader(fullName, Game);
+            var reader = new FileReader(fullName);
+            reader = reader.PreProcessing(Game);
             LoadFile(reader);
         }
 
@@ -76,9 +139,6 @@ namespace AssetStudio
                 case FileType.BundleFile:
                     LoadBundleFile(reader);
                     break;
-                case FileType.GameFile:
-                    LoadGameFile(reader);
-                    break;
                 case FileType.WebFile:
                     LoadWebFile(reader);
                     break;
@@ -91,6 +151,12 @@ namespace AssetStudio
                 case FileType.ZipFile:
                     LoadZipFile(reader);
                     break;
+                case FileType.BlockFile:
+                    LoadBlockFile(reader);
+                    break;
+                case FileType.BlkFile:
+                    LoadBlkFile(reader);
+                    break;
             }
         }
 
@@ -98,13 +164,46 @@ namespace AssetStudio
         {
             if (!assetsFileListHash.Contains(reader.FileName))
             {
-                Logger.Info($"Loading {reader.FileName}");
+                Logger.Info($"Loading {reader.FullPath}");
                 try
                 {
-                    var assetsFile = new SerializedFile(reader, this, reader.FullPath);
+                    var assetsFile = new SerializedFile(reader, this);
                     CheckStrippedVersion(assetsFile);
                     assetsFileList.Add(assetsFile);
                     assetsFileListHash.Add(assetsFile.fileName);
+
+                    foreach (var sharedFile in assetsFile.m_Externals)
+                    {
+                        Logger.Verbose($"{assetsFile.fileName} needs external file {sharedFile.fileName}, attempting to look it up...");
+                        var sharedFileName = sharedFile.fileName;
+
+                        if (!importFilesHash.Contains(sharedFileName))
+                        {
+                            var sharedFilePath = Path.Combine(Path.GetDirectoryName(reader.FullPath), sharedFileName);
+                            if (!noexistFiles.Contains(sharedFilePath))
+                            {
+                                if (!File.Exists(sharedFilePath))
+                                {
+                                    var findFiles = Directory.GetFiles(Path.GetDirectoryName(reader.FullPath), sharedFileName, SearchOption.AllDirectories);
+                                    if (findFiles.Length > 0)
+                                    {
+                                        Logger.Verbose($"Found {findFiles.Length} matching files, picking first file {findFiles[0]} !!");
+                                        sharedFilePath = findFiles[0];
+                                    }
+                                }
+                                if (File.Exists(sharedFilePath))
+                                {
+                                    importFiles.Add(sharedFilePath);
+                                    importFilesHash.Add(sharedFileName);
+                                }
+                                else
+                                {
+                                    Logger.Verbose("Nothing was found, caching into non existant files to avoid repeated searching !!");
+                                    noexistFiles.Add(sharedFilePath);
+                                }
+                            }
+                        }
+                    }
                 }
                 catch (Exception e)
                 {
@@ -119,14 +218,16 @@ namespace AssetStudio
             }
         }
 
-        private void LoadAssetsFromMemory(FileReader reader, string originalPath, string unityVersion = null)
+        private void LoadAssetsFromMemory(FileReader reader, string originalPath, string unityVersion = null, long originalOffset = 0)
         {
+            Logger.Verbose($"Loading asset file {reader.FileName} with version {unityVersion} from {originalPath} at offset 0x{originalOffset:X8}");
             if (!assetsFileListHash.Contains(reader.FileName))
             {
                 try
                 {
                     var assetsFile = new SerializedFile(reader, this);
                     assetsFile.originalPath = originalPath;
+                    assetsFile.offset = originalOffset;
                     if (!string.IsNullOrEmpty(unityVersion) && assetsFile.header.m_Version < SerializedFileFormatVersion.Unknown_7)
                     {
                         assetsFile.SetVersion(unityVersion);
@@ -145,25 +246,33 @@ namespace AssetStudio
                 Logger.Info($"Skipping {originalPath} ({reader.FileName})");
         }
 
-        private void LoadBundleFile(FileReader reader, string originalPath = null)
+        private void LoadBundleFile(FileReader reader, string originalPath = null, long originalOffset = 0, bool log = true)
         {
-            Logger.Info("Loading " + reader.FullPath);
+            if (log)
+            {
+                Logger.Info("Loading " + reader.FullPath);
+            }
             try
             {
-                var bundleFile = new BundleFile(reader);
-                foreach (var file in bundleFile.FileList)
+                var bundleFile = new BundleFile(reader, Game);
+                foreach (var file in bundleFile.fileList)
                 {
                     var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), file.fileName);
                     var subReader = new FileReader(dummyPath, file.stream);
                     if (subReader.FileType == FileType.AssetsFile)
                     {
-                        LoadAssetsFromMemory(subReader, originalPath ?? reader.FullPath, bundleFile.m_Header.unityRevision);
+                        LoadAssetsFromMemory(subReader, originalPath ?? reader.FullPath, bundleFile.m_Header.unityRevision, originalOffset);
                     }
                     else
                     {
+                        Logger.Verbose("Caching resource stream");
                         resourceFileReaders[file.fileName] = subReader; //TODO
                     }
                 }
+            }
+            catch (InvalidCastException)
+            {
+                Logger.Error($"Game type mismatch, Expected {nameof(Mr0k)} but got {Game.Name} ({Game.GetType().Name}) !!");
             }
             catch (Exception e)
             {
@@ -202,6 +311,7 @@ namespace AssetStudio
                             LoadWebFile(subReader);
                             break;
                         case FileType.ResourceFile:
+                            Logger.Verbose("Caching resource stream");
                             resourceFileReaders[file.fileName] = subReader; //TODO
                             break;
                     }
@@ -225,8 +335,7 @@ namespace AssetStudio
                 using (ZipArchive archive = new ZipArchive(reader.BaseStream, ZipArchiveMode.Read))
                 {
                     List<string> splitFiles = new List<string>();
-                    // register all files before parsing the assets so that the external references can be found
-                    // and find split files
+                    Logger.Verbose("Register all files before parsing the assets so that the external references can be found and find split files");
                     foreach (ZipArchiveEntry entry in archive.Entries)
                     {
                         if (entry.Name.Contains(".split"))
@@ -245,7 +354,7 @@ namespace AssetStudio
                         }
                     }
 
-                    // merge split files and load the result
+                    Logger.Verbose("Merge split files and load the result");
                     foreach (string basePath in splitFiles)
                     {
                         try
@@ -265,6 +374,7 @@ namespace AssetStudio
                             }
                             splitStream.Seek(0, SeekOrigin.Begin);
                             FileReader entryReader = new FileReader(basePath, splitStream);
+                            entryReader = entryReader.PreProcessing(Game);
                             LoadFile(entryReader);
                         }
                         catch (Exception e)
@@ -273,15 +383,14 @@ namespace AssetStudio
                         }
                     }
 
-                    // load all entries
+                    Logger.Verbose("Load all entries");
+                    Logger.Verbose($"Found {archive.Entries.Count} entries"); 
                     foreach (ZipArchiveEntry entry in archive.Entries)
                     {
                         try
                         {
                             string dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), reader.FileName, entry.FullName);
-                            // create a new stream
-                            // - to store the deflated stream in
-                            // - to keep the data for later extraction
+                            Logger.Verbose("Create a new stream to store the deflated stream in and keep the data for later extraction");
                             Stream streamReader = new MemoryStream();
                             using (Stream entryStream = entry.Open())
                             {
@@ -296,6 +405,7 @@ namespace AssetStudio
                                 entryReader.Position = 0;
                                 if (!resourceFileReaders.ContainsKey(entry.Name))
                                 {
+                                    Logger.Verbose("Caching resource file");
                                     resourceFileReaders.Add(entry.Name, entryReader);
                                 }
                             }
@@ -316,37 +426,153 @@ namespace AssetStudio
                 reader.Dispose();
             }
         }
-
-        private void LoadGameFile(FileReader reader)
+        private void LoadBlockFile(FileReader reader)
         {
-            Logger.Info("Loading " + reader.FileName);
+            Logger.Info("Loading " + reader.FullPath);
             try
             {
-                reader.BundlePos = CABManager.offsets.TryGetValue(reader.FullPath, out var list) ? list.ToArray() : Array.Empty<long>();
-                var gameFile = new GameFile(reader);
-                foreach (var bundle in gameFile.Bundles)
+                using var stream = new OffsetStream(reader.BaseStream, 0);
+                foreach (var offset in stream.GetOffsets(reader.FullPath))
                 {
-                    foreach (var file in bundle.Value)
+                    var name = offset.ToString("X8");
+                    Logger.Info($"Loading Block {name}");
+
+                    var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), name);
+                    var subReader = new FileReader(dummyPath, stream, true);
+                    switch (subReader.FileType)
                     {
-                        var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), file.fileName);
-                        var cabReader = new FileReader(dummyPath, file.stream, Game);
-                        if (cabReader.FileType == FileType.AssetsFile)
-                        {
-                            var assetsFile = new SerializedFile(cabReader, this, reader.FullPath);
-                            CheckStrippedVersion(assetsFile);
-                            assetsFileList.Add(assetsFile);
-                            assetsFileListHash.Add(assetsFile.fileName);
-                        }
-                        else
-                        {
-                            resourceFileReaders[file.fileName] = cabReader; //TODO
-                        }
+                        case FileType.ENCRFile:
+                        case FileType.BundleFile:
+                            LoadBundleFile(subReader, reader.FullPath, offset, false);
+                            break;
+                        case FileType.BlbFile:
+                            LoadBlbFile(subReader, reader.FullPath, offset, false);
+                            break;
+                    }
+                }    
+            }
+            catch (Exception e)
+            {
+                Logger.Error($"Error while reading block file {reader.FileName}", e);
+            }
+            finally
+            {
+                reader.Dispose();
+            }
+        }
+        private void LoadBlkFile(FileReader reader)
+        {
+            Logger.Info("Loading " + reader.FullPath);
+            try
+            {
+                using var stream = BlkUtils.Decrypt(reader, (Blk)Game);
+                foreach (var offset in stream.GetOffsets(reader.FullPath))
+                {
+                    var name = offset.ToString("X8");
+                    Logger.Info($"Loading Block {name}");
+
+                    var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), name);
+                    var subReader = new FileReader(dummyPath, stream, true);
+                    switch (subReader.FileType)
+                    {
+                        case FileType.BundleFile:
+                            LoadBundleFile(subReader, reader.FullPath, offset, false);
+                            break;
+                        case FileType.Mhy0File:
+                            LoadMhy0File(subReader, reader.FullPath, offset, false);
+                            break;
+                    }
+                }
+            }
+            catch (InvalidCastException)
+            {
+                Logger.Error($"Game type mismatch, Expected {nameof(Blk)} but got {Game.Name} ({Game.GetType().Name}) !!");
+            }
+            catch (Exception e)
+            {
+                Logger.Error($"Error while reading blk file {reader.FileName}", e);
+            }
+            finally
+            {
+                reader.Dispose();
+            }
+        }
+        private void LoadMhy0File(FileReader reader, string originalPath = null, long originalOffset = 0, bool log = true)
+        {
+            if (log)
+            {
+                Logger.Info("Loading " + reader.FullPath);
+            }
+            try
+            {
+                var mhy0File = new Mhy0File(reader, reader.FullPath, (Mhy0)Game);
+                Logger.Verbose($"mhy0 total size: {mhy0File.TotalSize:X8}");
+                foreach (var file in mhy0File.fileList)
+                {
+                    var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), file.fileName);
+                    var cabReader = new FileReader(dummyPath, file.stream);
+                    if (cabReader.FileType == FileType.AssetsFile)
+                    {
+                        LoadAssetsFromMemory(cabReader, originalPath ?? reader.FullPath, mhy0File.m_Header.unityRevision, originalOffset);
+                    }
+                    else
+                    {
+                        Logger.Verbose("Caching resource stream");
+                        resourceFileReaders[file.fileName] = cabReader; //TODO
+                    }
+                }
+            }
+            catch (InvalidCastException)
+            {
+                Logger.Error($"Game type mismatch, Expected {nameof(Mhy0)} but got {Game.Name} ({Game.GetType().Name}) !!");
+            }
+            catch (Exception e)
+            {
+                var str = $"Error while reading mhy0 file {reader.FullPath}";
+                if (originalPath != null)
+                {
+                    str += $" from {Path.GetFileName(originalPath)}";
+                }
+                Logger.Error(str, e);
+            }
+            finally
+            {
+                reader.Dispose();
+            }
+        }
+        
+        private void LoadBlbFile(FileReader reader, string originalPath = null, long originalOffset = 0, bool log = true)
+        {
+            if (log)
+            {
+                Logger.Info("Loading " + reader.FullPath);
+            }
+            try
+            {
+                var blbFile = new BlbFile(reader, reader.FullPath);
+                foreach (var file in blbFile.fileList)
+                {
+                    var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), file.fileName);
+                    var cabReader = new FileReader(dummyPath, file.stream);
+                    if (cabReader.FileType == FileType.AssetsFile)
+                    {
+                        LoadAssetsFromMemory(cabReader, originalPath ?? reader.FullPath, blbFile.m_Header.unityRevision, originalOffset);
+                    }
+                    else
+                    {
+                        Logger.Verbose("Caching resource stream");
+                        resourceFileReaders[file.fileName] = cabReader; //TODO
                     }
                 }
             }
             catch (Exception e)
             {
-                Logger.Error($"Error while reading file {reader.FileName}", e);
+                var str = $"Error while reading Blb file {reader.FullPath}";
+                if (originalPath != null)
+                {
+                    str += $" from {Path.GetFileName(originalPath)}";
+                }
+                Logger.Error(str, e);
             }
             finally
             {
@@ -368,6 +594,8 @@ namespace AssetStudio
 
         public void Clear()
         {
+            Logger.Verbose("Cleaning up...");
+
             foreach (var assetsFile in assetsFileList)
             {
                 assetsFile.Objects.Clear();
@@ -382,6 +610,12 @@ namespace AssetStudio
             resourceFileReaders.Clear();
 
             assetsFileIndexCache.Clear();
+
+            tokenSource.Dispose();
+            tokenSource = new CancellationTokenSource();
+
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
         }
 
         private void ReadAssets()
@@ -395,109 +629,48 @@ namespace AssetStudio
             {
                 foreach (var objectInfo in assetsFile.m_Objects)
                 {
-                    var objectReader = new ObjectReader(assetsFile.reader, assetsFile, objectInfo);
+                    if (tokenSource.IsCancellationRequested)
+                    {
+                        Logger.Info("Reading assets has been cancelled !!");
+                        return;
+                    }
+                    var objectReader = new ObjectReader(assetsFile.reader, assetsFile, objectInfo, Game);
                     try
                     {
-                        Object obj;
-                        switch (objectReader.type)
+                        Object obj = objectReader.type switch
                         {
-                            case ClassIDType.Animation:
-                                obj = new Animation(objectReader);
-                                break;
-                            case ClassIDType.AnimationClip:
-                                obj = new AnimationClip(objectReader);
-                                break;
-                            case ClassIDType.Animator:
-                                obj = new Animator(objectReader);
-                                break;
-                            case ClassIDType.AnimatorController:
-                                obj = new AnimatorController(objectReader);
-                                break;
-                            case ClassIDType.AnimatorOverrideController:
-                                obj = new AnimatorOverrideController(objectReader);
-                                break;
-                            case ClassIDType.AssetBundle:
-                                obj = new AssetBundle(objectReader);
-                                break;
-                            case ClassIDType.AudioClip:
-                                obj = new AudioClip(objectReader);
-                                break;
-                            case ClassIDType.Avatar:
-                                obj = new Avatar(objectReader);
-                                break;
-                            case ClassIDType.Font:
-                                obj = new Font(objectReader);
-                                break;
-                            case ClassIDType.GameObject:
-                                obj = new GameObject(objectReader);
-                                break;
-                            case ClassIDType.IndexObject:
-                                obj = new IndexObject(objectReader);
-                                break;
-                            case ClassIDType.Material:
-                                obj = new Material(objectReader);
-                                break;
-                            case ClassIDType.Mesh:
-                                obj = new Mesh(objectReader);
-                                break;
-                            case ClassIDType.MeshFilter:
-                                obj = new MeshFilter(objectReader);
-                                break;
-                            case ClassIDType.MeshRenderer:
-                                if (!Renderer.Parsable) continue;
-                                obj = new MeshRenderer(objectReader);
-                                break;
-                            case ClassIDType.MiHoYoBinData:
-                                obj = new MiHoYoBinData(objectReader);
-                                break;
-                            case ClassIDType.MonoBehaviour:
-                                obj = new MonoBehaviour(objectReader);
-                                break;
-                            case ClassIDType.MonoScript:
-                                obj = new MonoScript(objectReader);
-                                break;
-                            case ClassIDType.MovieTexture:
-                                obj = new MovieTexture(objectReader);
-                                break;
-                            case ClassIDType.PlayerSettings:
-                                obj = new PlayerSettings(objectReader);
-                                break;
-                            case ClassIDType.RectTransform:
-                                obj = new RectTransform(objectReader);
-                                break;
-                            case ClassIDType.Shader:
-                                if (!Shader.Parsable) continue;
-                                obj = new Shader(objectReader);
-                                break;
-                            case ClassIDType.SkinnedMeshRenderer:
-                                if (!Renderer.Parsable) continue;
-                                obj = new SkinnedMeshRenderer(objectReader);
-                                break;
-                            case ClassIDType.Sprite:
-                                obj = new Sprite(objectReader);
-                                break;
-                            case ClassIDType.SpriteAtlas:
-                                obj = new SpriteAtlas(objectReader);
-                                break;
-                            case ClassIDType.TextAsset:
-                                obj = new TextAsset(objectReader);
-                                break;
-                            case ClassIDType.Texture2D:
-                                obj = new Texture2D(objectReader);
-                                break;
-                            case ClassIDType.Transform:
-                                obj = new Transform(objectReader);
-                                break;
-                            case ClassIDType.VideoClip:
-                                obj = new VideoClip(objectReader);
-                                break;
-                            case ClassIDType.ResourceManager:
-                                obj = new ResourceManager(objectReader);
-                                break;
-                            default:
-                                obj = new Object(objectReader);
-                                break;
-                        }
+                            ClassIDType.Animation => new Animation(objectReader),
+                            ClassIDType.AnimationClip when AnimationClip.Parsable => new AnimationClip(objectReader),
+                            ClassIDType.Animator => new Animator(objectReader),
+                            ClassIDType.AnimatorController => new AnimatorController(objectReader),
+                            ClassIDType.AnimatorOverrideController => new AnimatorOverrideController(objectReader),
+                            ClassIDType.AssetBundle => new AssetBundle(objectReader),
+                            ClassIDType.AudioClip => new AudioClip(objectReader),
+                            ClassIDType.Avatar => new Avatar(objectReader),
+                            ClassIDType.Font => new Font(objectReader),
+                            ClassIDType.GameObject => new GameObject(objectReader),
+                            ClassIDType.IndexObject => new IndexObject(objectReader),
+                            ClassIDType.Material => new Material(objectReader),
+                            ClassIDType.Mesh => new Mesh(objectReader),
+                            ClassIDType.MeshFilter => new MeshFilter(objectReader),
+                            ClassIDType.MeshRenderer when Renderer.Parsable => new MeshRenderer(objectReader),
+                            ClassIDType.MiHoYoBinData => new MiHoYoBinData(objectReader),
+                            ClassIDType.MonoBehaviour => new MonoBehaviour(objectReader),
+                            ClassIDType.MonoScript => new MonoScript(objectReader),
+                            ClassIDType.MovieTexture => new MovieTexture(objectReader),
+                            ClassIDType.PlayerSettings => new PlayerSettings(objectReader),
+                            ClassIDType.RectTransform => new RectTransform(objectReader),
+                            ClassIDType.Shader when Shader.Parsable => new Shader(objectReader),
+                            ClassIDType.SkinnedMeshRenderer when Renderer.Parsable => new SkinnedMeshRenderer(objectReader),
+                            ClassIDType.Sprite => new Sprite(objectReader),
+                            ClassIDType.SpriteAtlas => new SpriteAtlas(objectReader),
+                            ClassIDType.TextAsset => new TextAsset(objectReader),
+                            ClassIDType.Texture2D => new Texture2D(objectReader),
+                            ClassIDType.Transform => new Transform(objectReader),
+                            ClassIDType.VideoClip => new VideoClip(objectReader),
+                            ClassIDType.ResourceManager => new ResourceManager(objectReader),
+                            _ => new Object(objectReader),
+                        };
                         assetsFile.AddObject(obj);
                     }
                     catch (Exception e)
@@ -525,8 +698,14 @@ namespace AssetStudio
             {
                 foreach (var obj in assetsFile.Objects)
                 {
+                    if (tokenSource.IsCancellationRequested)
+                    {
+                        Logger.Info("Processing assets has been cancelled !!");
+                        return;
+                    }
                     if (obj is GameObject m_GameObject)
                     {
+                        Logger.Verbose($"GameObject with {m_GameObject.m_PathID} in file {m_GameObject.assetsFile.fileName} has {m_GameObject.m_Components.Length} components, Attempting to fetch them...");
                         foreach (var pptr in m_GameObject.m_Components)
                         {
                             if (pptr.TryGet(out var m_Component))
@@ -534,37 +713,45 @@ namespace AssetStudio
                                 switch (m_Component)
                                 {
                                     case Transform m_Transform:
+                                        Logger.Verbose($"Fetched Transform component with {m_Transform.m_PathID} in file {m_Transform.assetsFile.fileName}, assigning to GameObject components...");
                                         m_GameObject.m_Transform = m_Transform;
-                                        break;
+                                            break;
                                     case MeshRenderer m_MeshRenderer:
+                                        Logger.Verbose($"Fetched MeshRenderer component with {m_MeshRenderer.m_PathID} in file {m_MeshRenderer.assetsFile.fileName}, assigning to GameObject components...");
                                         m_GameObject.m_MeshRenderer = m_MeshRenderer;
-                                        break;
+                                            break;
                                     case MeshFilter m_MeshFilter:
+                                        Logger.Verbose($"Fetched MeshFilter component with {m_MeshFilter.m_PathID} in file {m_MeshFilter.assetsFile.fileName}, assigning to GameObject components...");
                                         m_GameObject.m_MeshFilter = m_MeshFilter;
-                                        break;
+                                            break;
                                     case SkinnedMeshRenderer m_SkinnedMeshRenderer:
+                                        Logger.Verbose($"Fetched SkinnedMeshRenderer component with {m_SkinnedMeshRenderer.m_PathID} in file {m_SkinnedMeshRenderer.assetsFile.fileName}, assigning to GameObject components...");
                                         m_GameObject.m_SkinnedMeshRenderer = m_SkinnedMeshRenderer;
-                                        break;
+                                            break;
                                     case Animator m_Animator:
+                                        Logger.Verbose($"Fetched Animator component with {m_Animator.m_PathID} in file {m_Animator.assetsFile.fileName}, assigning to GameObject components...");
                                         m_GameObject.m_Animator = m_Animator;
-                                        break;
+                                            break;
                                     case Animation m_Animation:
+                                        Logger.Verbose($"Fetched Animation component with {m_Animation.m_PathID} in file {m_Animation.assetsFile.fileName}, assigning to GameObject components...");
                                         m_GameObject.m_Animation = m_Animation;
-                                        break;
+                                            break;
                                 }
                             }
                         }
                     }
                     else if (obj is SpriteAtlas m_SpriteAtlas)
-                    {   
+                    {
                         if (m_SpriteAtlas.m_RenderDataMap.Count > 0)
                         {
+                            Logger.Verbose($"SpriteAtlas with {m_SpriteAtlas.m_PathID} in file {m_SpriteAtlas.assetsFile.fileName} has {m_SpriteAtlas.m_PackedSprites.Length} packed sprites, Attempting to fetch them...");
                             foreach (var m_PackedSprite in m_SpriteAtlas.m_PackedSprites)
                             {
                                 if (m_PackedSprite.TryGet(out var m_Sprite))
                                 {
                                     if (m_Sprite.m_SpriteAtlas.IsNull)
                                     {
+                                        Logger.Verbose($"Fetched Sprite with {m_Sprite.m_PathID} in file {m_Sprite.assetsFile.fileName}, assigning to parent SpriteAtlas...");
                                         m_Sprite.m_SpriteAtlas.Set(m_SpriteAtlas);
                                     }
                                     else
@@ -572,6 +759,7 @@ namespace AssetStudio
                                         m_Sprite.m_SpriteAtlas.TryGet(out var m_SpriteAtlaOld);
                                         if (m_SpriteAtlaOld.m_IsVariant)
                                         {
+                                            Logger.Verbose($"Fetched Sprite with {m_Sprite.m_PathID} in file {m_Sprite.assetsFile.fileName} has a variant of the origianl SpriteAtlas, disposing of the variant and assinging to the parent SpriteAtlas...");
                                             m_Sprite.m_SpriteAtlas.Set(m_SpriteAtlas);
                                         }
                                     }

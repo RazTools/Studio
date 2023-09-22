@@ -16,10 +16,10 @@ namespace AssetStudio
 			return new YAMLScalarNode(sb.ToString(), true);
 		}
 
-        public static YAMLNode ExportYAML<T>(this T[][] _this)
+        public static YAMLNode ExportYAML<T>(this T[][] _this, int[] version)
 			where T : IYAMLExportable
 		{
-            return ((IEnumerable<IEnumerable<T>>)_this).ExportYAML();
+            return ((IEnumerable<IEnumerable<T>>)_this).ExportYAML(version);
         }
     }
 }

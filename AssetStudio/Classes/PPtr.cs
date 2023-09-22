@@ -1,15 +1,23 @@
 ﻿using System;
+using System.IO;
+using System.Collections.Generic;
 
 namespace AssetStudio
 {
-    public sealed class PPtr<T> : IYAMLExportable
-        where T : Object 
+    public sealed class PPtr<T> : IYAMLExportable where T : Object
     {
         public int m_FileID;
         public long m_PathID;
 
         private SerializedFile assetsFile;
         private int index = -2; //-2 - Prepare, -1 - Missing
+
+        public PPtr(int m_FileID,  long m_PathID, SerializedFile assetsFile)
+        {
+            this.m_FileID = m_FileID;
+            this.m_PathID = m_PathID;
+            this.assetsFile = assetsFile;
+        }
 
         public PPtr(ObjectReader reader)
         {
@@ -18,14 +26,7 @@ namespace AssetStudio
             assetsFile = reader.assetsFile;
         }
 
-        public PPtr(int fileID, long pathID, SerializedFile assetsFile)
-        {
-            m_FileID = fileID;
-            m_PathID = pathID;
-            this.assetsFile = assetsFile;
-        }
-
-        public YAMLNode ExportYAML()
+        public YAMLNode ExportYAML(int[] version)
         {
             var node = new YAMLMappingNode();
             node.Style = MappingStyle.Flow;
@@ -142,7 +143,7 @@ namespace AssetStudio
             m_PathID = m_Object.m_PathID;
         }
 
-        public PPtr<T2> CastTo<T2>() where T2 : Object
+        public PPtr<T2> Cast<T2>() where T2 : Object
         {
             return new PPtr<T2>(m_FileID, m_PathID, assetsFile);
         }

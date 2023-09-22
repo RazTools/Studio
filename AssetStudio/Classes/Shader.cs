@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -9,7 +10,7 @@ namespace AssetStudio
     {
         public byte[] bytes;
 
-        public Hash128(BinaryReader reader)
+        public Hash128(EndianBinaryReader reader)
         {
             bytes = reader.ReadBytes(16);
         }
@@ -20,7 +21,7 @@ namespace AssetStudio
         public MatrixParameter[] m_MatrixParams;
         public VectorParameter[] m_VectorParams;
 
-        public StructParameter(BinaryReader reader)
+        public StructParameter(EndianBinaryReader reader)
         {
             var m_NameIndex = reader.ReadInt32();
             var m_Index = reader.ReadInt32();
@@ -48,7 +49,7 @@ namespace AssetStudio
         public uint sampler;
         public int bindPoint;
 
-        public SamplerParameter(BinaryReader reader)
+        public SamplerParameter(EndianBinaryReader reader)
         {
             sampler = reader.ReadUInt32();
             bindPoint = reader.ReadInt32();
@@ -71,7 +72,7 @@ namespace AssetStudio
         public string m_DefaultName;
         public TextureDimension m_TexDim;
 
-        public SerializedTextureProperty(BinaryReader reader)
+        public SerializedTextureProperty(EndianBinaryReader reader)
         {
             m_DefaultName = reader.ReadAlignedString();
             m_TexDim = (TextureDimension)reader.ReadInt32();
@@ -98,7 +99,7 @@ namespace AssetStudio
         public float[] m_DefValue;
         public SerializedTextureProperty m_DefTexture;
 
-        public SerializedProperty(BinaryReader reader)
+        public SerializedProperty(EndianBinaryReader reader)
         {
             m_Name = reader.ReadAlignedString();
             m_Description = reader.ReadAlignedString();
@@ -114,7 +115,7 @@ namespace AssetStudio
     {
         public SerializedProperty[] m_Props;
 
-        public SerializedProperties(BinaryReader reader)
+        public SerializedProperties(EndianBinaryReader reader)
         {
             int numProps = reader.ReadInt32();
             m_Props = new SerializedProperty[numProps];
@@ -130,7 +131,7 @@ namespace AssetStudio
         public float val;
         public string name;
 
-        public SerializedShaderFloatValue(BinaryReader reader)
+        public SerializedShaderFloatValue(EndianBinaryReader reader)
         {
             val = reader.ReadSingle();
             name = reader.ReadAlignedString();
@@ -147,7 +148,7 @@ namespace AssetStudio
         public SerializedShaderFloatValue blendOpAlpha;
         public SerializedShaderFloatValue colMask;
 
-        public SerializedShaderRTBlendState(BinaryReader reader)
+        public SerializedShaderRTBlendState(EndianBinaryReader reader)
         {
             srcBlend = new SerializedShaderFloatValue(reader);
             destBlend = new SerializedShaderFloatValue(reader);
@@ -166,7 +167,7 @@ namespace AssetStudio
         public SerializedShaderFloatValue zFail;
         public SerializedShaderFloatValue comp;
 
-        public SerializedStencilOp(BinaryReader reader)
+        public SerializedStencilOp(EndianBinaryReader reader)
         {
             pass = new SerializedShaderFloatValue(reader);
             fail = new SerializedShaderFloatValue(reader);
@@ -183,7 +184,7 @@ namespace AssetStudio
         public SerializedShaderFloatValue w;
         public string name;
 
-        public SerializedShaderVectorValue(BinaryReader reader)
+        public SerializedShaderVectorValue(EndianBinaryReader reader)
         {
             x = new SerializedShaderFloatValue(reader);
             y = new SerializedShaderFloatValue(reader);
@@ -281,7 +282,7 @@ namespace AssetStudio
         public sbyte source;
         public sbyte target;
 
-        public ShaderBindChannel(BinaryReader reader)
+        public ShaderBindChannel(EndianBinaryReader reader)
         {
             source = reader.ReadSByte();
             target = reader.ReadSByte();
@@ -293,7 +294,7 @@ namespace AssetStudio
         public ShaderBindChannel[] m_Channels;
         public uint m_SourceMap;
 
-        public ParserBindChannels(BinaryReader reader)
+        public ParserBindChannels(EndianBinaryReader reader)
         {
             int numChannels = reader.ReadInt32();
             m_Channels = new ShaderBindChannel[numChannels];
@@ -315,7 +316,7 @@ namespace AssetStudio
         public sbyte m_Type;
         public sbyte m_Dim;
 
-        public VectorParameter(BinaryReader reader)
+        public VectorParameter(EndianBinaryReader reader)
         {
             m_NameIndex = reader.ReadInt32();
             m_Index = reader.ReadInt32();
@@ -334,7 +335,7 @@ namespace AssetStudio
         public sbyte m_Type;
         public sbyte m_RowCount;
 
-        public MatrixParameter(BinaryReader reader)
+        public MatrixParameter(EndianBinaryReader reader)
         {
             m_NameIndex = reader.ReadInt32();
             m_Index = reader.ReadInt32();
@@ -428,6 +429,7 @@ namespace AssetStudio
 
             if ((version[0] == 2020 && version[1] > 3) ||
                (version[0] == 2020 && version[1] == 3 && version[2] >= 2) || //2020.3.2f1 and up
+               (version[0] > 2021) ||
                (version[0] == 2021 && version[1] > 1) ||
                (version[0] == 2021 && version[1] == 1 && version[2] >= 4)) //2021.1.4f1 and up
             {
@@ -443,7 +445,7 @@ namespace AssetStudio
         public int m_Index;
         public int m_OriginalIndex;
 
-        public UAVParameter(BinaryReader reader)
+        public UAVParameter(EndianBinaryReader reader)
         {
             m_NameIndex = reader.ReadInt32();
             m_Index = reader.ReadInt32();
@@ -576,6 +578,9 @@ namespace AssetStudio
         public UAVParameter[] m_UAVParams;
         public SamplerParameter[] m_Samplers;
 
+        public static bool HasGlobalLocalKeywordIndices(SerializedType type) => type.Match("E99740711222CD922E9A6F92FF1EB07A", "450A058C218DAF000647948F2F59DA6D");
+        public static bool HasInstancedStructuredBuffers(SerializedType type) => type.Match("E99740711222CD922E9A6F92FF1EB07A");
+
         public SerializedSubProgram(ObjectReader reader)
         {
             var version = reader.version;
@@ -583,7 +588,7 @@ namespace AssetStudio
             m_BlobIndex = reader.ReadUInt32();
             m_Channels = new ParserBindChannels(reader);
 
-            if ((version[0] >= 2019 && version[0] < 2021) || (version[0] == 2021 && version[1] < 2)) //2019 ~2021.1
+            if ((version[0] >= 2019 && version[0] < 2021) || (version[0] == 2021 && version[1] < 2) || HasGlobalLocalKeywordIndices(reader.serializedType)) //2019 ~2021.1
             {
                 var m_GlobalKeywordIndices = reader.ReadUInt16Array();
                 reader.AlignStream();
@@ -616,6 +621,7 @@ namespace AssetStudio
 
             if ((version[0] == 2020 && version[1] > 3) ||
                (version[0] == 2020 && version[1] == 3 && version[2] >= 2) || //2020.3.2f1 and up
+               (version[0] > 2021) ||
                (version[0] == 2021 && version[1] > 1) ||
                (version[0] == 2021 && version[1] == 1 && version[2] >= 1)) //2021.1.1f1 and up
             {
@@ -694,6 +700,16 @@ namespace AssetStudio
                     var m_ShaderRequirements = reader.ReadInt32();
                 }
             }
+
+            if (HasInstancedStructuredBuffers(reader.serializedType))
+            {
+                int numInstancedStructuredBuffers = reader.ReadInt32();
+                var m_InstancedStructuredBuffers = new ConstantBuffer[numInstancedStructuredBuffers];
+                for (int i = 0; i < numInstancedStructuredBuffers; i++)
+                {
+                    m_InstancedStructuredBuffers[i] = new ConstantBuffer(reader);
+                }
+            }
         }
     }
 
@@ -701,6 +717,7 @@ namespace AssetStudio
     {
         public SerializedSubProgram[] m_SubPrograms;
         public SerializedProgramParameters m_CommonParameters;
+        public ushort[] m_SerializedKeywordStateMask;
 
         public SerializedProgram(ObjectReader reader)
         {
@@ -715,10 +732,17 @@ namespace AssetStudio
 
             if ((version[0] == 2020 && version[1] > 3) ||
                (version[0] == 2020 && version[1] == 3 && version[2] >= 2) || //2020.3.2f1 and up
+               (version[0] > 2021) ||
                (version[0] == 2021 && version[1] > 1) ||
-               (version[0] == 2021 && version[1] == 1 && version[2] >= 1)) //2021.1.4f1 and up
+               (version[0] == 2021 && version[1] == 1 && version[2] >= 1)) //2021.1.1f1 and up
             {
                 m_CommonParameters = new SerializedProgramParameters(reader);
+            }
+
+            if (version[0] > 2022 || (version[0] == 2022 && version[1] >= 1)) //2022.1 and up
+            {
+                m_SerializedKeywordStateMask = reader.ReadUInt16Array();
+                reader.AlignStream();
             }
         }
     }
@@ -806,7 +830,7 @@ namespace AssetStudio
             m_Name = reader.ReadAlignedString();
             m_TextureName = reader.ReadAlignedString();
             m_Tags = new SerializedTagMap(reader);
-            if (version[0] > 2021 || (version[0] == 2021 && version[1] >= 2)) //2021.2 and up
+            if (version[0] == 2021 && version[1] >= 2) //2021.2 ~2021.x
             {
                 m_SerializedKeywordStateMask = reader.ReadUInt16Array();
                 reader.AlignStream();
@@ -818,7 +842,7 @@ namespace AssetStudio
     {
         public KeyValuePair<string, string>[] tags;
 
-        public SerializedTagMap(BinaryReader reader)
+        public SerializedTagMap(EndianBinaryReader reader)
         {
             int numTags = reader.ReadInt32();
             tags = new KeyValuePair<string, string>[numTags];
@@ -854,7 +878,7 @@ namespace AssetStudio
         public string from;
         public string to;
 
-        public SerializedShaderDependency(BinaryReader reader)
+        public SerializedShaderDependency(EndianBinaryReader reader)
         {
             from = reader.ReadAlignedString();
             to = reader.ReadAlignedString();
@@ -866,7 +890,7 @@ namespace AssetStudio
         public string customEditorName;
         public string renderPipelineType;
 
-        public SerializedCustomEditorForRenderPipeline(BinaryReader reader)
+        public SerializedCustomEditorForRenderPipeline(EndianBinaryReader reader)
         {
             customEditorName = reader.ReadAlignedString();
             renderPipelineType = reader.ReadAlignedString();
@@ -965,6 +989,7 @@ namespace AssetStudio
     public class Shader : NamedObject
     {
         public static bool Parsable;
+
         public byte[] m_Script;
         //5.3 - 5.4
         public uint decompressedSize;
@@ -996,22 +1021,22 @@ namespace AssetStudio
                     decompressedLengths = reader.ReadUInt32Array().Select(x => new[] { x }).ToArray();
                 }
                 compressedBlob = reader.ReadUInt8Array();
-                if (reader.Game.Name == "GI" || reader.Game.Name == "GI_CB2" || reader.Game.Name == "GI_CB3")
+                reader.AlignStream();
+                if (reader.Game.Type.IsGISubGroup())
                 {
-                    if (BitConverter.ToInt32(compressedBlob, 0) == -1)
-                        compressedBlob = reader.ReadUInt8Array();
+                    if (BinaryPrimitives.ReadInt32LittleEndian(compressedBlob) == -1)
+                    {
+                        compressedBlob = reader.ReadUInt8Array(); //blobDataBlocks
+                        reader.AlignStream();
+                    }
                 }
-                else
-                {
-                    reader.AlignStream();
-                }
-                
+
                 var m_DependenciesCount = reader.ReadInt32();
                 for (int i = 0; i < m_DependenciesCount; i++)
                 {
                     new PPtr<Shader>(reader);
                 }
-                
+
                 if (version[0] >= 2018)
                 {
                     var m_NonModifiableTexturesCount = reader.ReadInt32();
@@ -1021,7 +1046,7 @@ namespace AssetStudio
                         new PPtr<Texture>(reader);
                     }
                 }
-                
+
                 var m_ShaderIsBaked = reader.ReadBoolean();
                 reader.AlignStream();
             }
