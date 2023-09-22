@@ -79,6 +79,17 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ContentWithTargetPath Include="Libraries\x86\acldb.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<TargetPath>x86\acldb.dll</TargetPath>
+		</ContentWithTargetPath>
+		<ContentWithTargetPath Include="Libraries\x64\acldb.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<TargetPath>x64\acldb.dll</TargetPath>
+		</ContentWithTargetPath>
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="OpenTK" Version="4.8.0" />
 		<Reference Include="OpenTK.WinForms">

@@ -899,7 +899,7 @@ namespace AssetStudio
                     var aclCount = m_ACLClip.m_CurveCount;
                     if (!m_ACLClip.m_ClipData.IsNullOrEmpty() && !Game.Type.IsSRGroup())
                     {
-                        m_ACLClip.Process(out var values, out var times);
+                        m_ACLClip.Process(Game, out var values, out var times);
                         for (int frameIndex = 0; frameIndex < times.Length; frameIndex++)
                         {
                             var time = times[frameIndex];
@@ -940,7 +940,7 @@ namespace AssetStudio
                     }
                     if (!m_ACLClip.m_ClipData.IsNullOrEmpty() && Game.Type.IsSRGroup())
                     {
-                        m_ACLClip.ProcessSR(out var values, out var times);
+                        m_ACLClip.Process(Game, out var values, out var times);
                         for (int frameIndex = 0; frameIndex < times.Length; frameIndex++)
                         {
                             var time = times[frameIndex];

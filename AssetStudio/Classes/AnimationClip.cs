@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace AssetStudio
 {
-    public class Keyframe<T>
+    public class Keyframe<T> : IYAMLExportable where T : IYAMLExportable
     {
         public float time;
         public T value;
@@ -16,6 +16,16 @@ namespace AssetStudio
         public T inWeight;
         public T outWeight;
 
+        public Keyframe(float time, T value, T inSlope, T outSlope, T weight)
+        {
+            this.time = time;
+            this.value = value;
+            this.inSlope = inSlope;
+            this.outSlope = outSlope;
+            weightedMode = 0;
+            inWeight = weight;
+            outWeight = weight;
+        }
 
         public Keyframe(ObjectReader reader, Func<T> readerFunc)
         {
@@ -30,23 +40,61 @@ namespace AssetStudio
                 outWeight = readerFunc();
             }
         }
+
+        public YAMLNode ExportYAML(int[] version)
+        {
+            var node = new YAMLMappingNode();
+            node.AddSerializedVersion(ToSerializedVersion(version));
+            node.Add(nameof(time), time);
+            node.Add(nameof(value), value.ExportYAML(version));
+            node.Add(nameof(inSlope), inSlope.ExportYAML(version));
+            node.Add(nameof(outSlope), outSlope.ExportYAML(version));
+            if (version[0] >= 2018) //2018 and up
+            {
+                node.Add(nameof(weightedMode), weightedMode);
+                node.Add(nameof(inWeight), inWeight.ExportYAML(version));
+                node.Add(nameof(outWeight), outWeight.ExportYAML(version));
+            }
+            return node;
+        }
+
+        private int ToSerializedVersion(int[] version)
+        {
+            if (version[0] >= 2018) //2018 and up
+            {
+                return 3;
+            }
+            else if (version[0] > 5 || (version[0] == 5 && version[1] >= 5))
+            {
+                return 2;
+            }
+            return 1;
+        }
     }
 
-    public class AnimationCurve<T>
+    public class AnimationCurve<T> : IYAMLExportable where T : IYAMLExportable
     {
-        public Keyframe<T>[] m_Curve;
+        public List<Keyframe<T>> m_Curve;
         public int m_PreInfinity;
         public int m_PostInfinity;
         public int m_RotationOrder;
+
+        public AnimationCurve()
+        {
+            m_PreInfinity = 2;
+            m_PostInfinity = 2;
+            m_RotationOrder = 4;
+            m_Curve = new List<Keyframe<T>>();
+        }
 
         public AnimationCurve(ObjectReader reader, Func<T> readerFunc)
         {
             var version = reader.version;
             int numCurves = reader.ReadInt32();
-            m_Curve = new Keyframe<T>[numCurves];
+            m_Curve = new List<Keyframe<T>>(numCurves);
             for (int i = 0; i < numCurves; i++)
             {
-                m_Curve[i] = new Keyframe<T>(reader, readerFunc);
+                m_Curve.Add(new Keyframe<T>(reader, readerFunc));
             }
 
             m_PreInfinity = reader.ReadInt32();
@@ -56,21 +104,76 @@ namespace AssetStudio
                 m_RotationOrder = reader.ReadInt32();
             }
         }
+
+        public YAMLNode ExportYAML(int[] version)
+        {
+            var node = new YAMLMappingNode();
+            node.AddSerializedVersion(ToSerializedVersion(version));
+            node.Add(nameof(m_Curve), m_Curve.ExportYAML(version));
+            node.Add(nameof(m_PreInfinity), m_PreInfinity);
+            node.Add(nameof(m_PostInfinity), m_PostInfinity);
+            if (version[0] > 5 || (version[0] == 5 && version[1] >= 3))//5.3 and up
+            {
+                node.Add(nameof(m_RotationOrder), m_RotationOrder);
+            }
+            return node;
+        }
+
+        private int ToSerializedVersion(int[] version)
+        {
+            if (version[0] > 2 || (version[0] == 2 && version[1] >= 1))
+            {
+                return 2;
+            }
+            return 1;
+        }
     }
 
-    public class QuaternionCurve
+    public class QuaternionCurve : IYAMLExportable
     {
         public AnimationCurve<Quaternion> curve;
         public string path;
+
+        public QuaternionCurve(string path)
+        {
+            curve = new AnimationCurve<Quaternion>();
+            this.path = path;
+        }
 
         public QuaternionCurve(ObjectReader reader)
         {
             curve = new AnimationCurve<Quaternion>(reader, reader.ReadQuaternion);
             path = reader.ReadAlignedString();
         }
+
+        public YAMLNode ExportYAML(int[] version)
+        {
+            YAMLMappingNode node = new YAMLMappingNode();
+            node.Add(nameof(curve), curve.ExportYAML(version));
+            node.Add(nameof(path), path);
+            return node;
+        }
+        public override bool Equals(object obj)
+        {
+            if (obj is QuaternionCurve quaternionCurve)
+            {
+                return path == quaternionCurve.path;
+            }
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            int hash = 199;
+            unchecked
+            {
+                hash = 617 + hash * path.GetHashCode();
+            }
+            return hash;
+        }
     }
 
-    public class PackedFloatVector
+    public class PackedFloatVector : IYAMLExportable
     {
         public uint m_NumItems;
         public float m_Range;
@@ -90,6 +193,17 @@ namespace AssetStudio
 
             m_BitSize = reader.ReadByte();
             reader.AlignStream();
+        }
+
+        public YAMLNode ExportYAML(int[] version)
+        {
+            var node = new YAMLMappingNode();
+            node.Add(nameof(m_NumItems), m_NumItems);
+            node.Add(nameof(m_Range), m_Range);
+            node.Add(nameof(m_Start), m_Start);
+            node.Add(nameof(m_Data), m_Data.ExportYAML());
+            node.Add(nameof(m_BitSize), m_BitSize);
+            return node;
         }
 
         public float[] UnpackFloats(int itemCountInChunk, int chunkStride, int start = 0, int numChunks = -1)
@@ -131,7 +245,7 @@ namespace AssetStudio
         }
     }
 
-    public class PackedIntVector
+    public class PackedIntVector : IYAMLExportable
     {
         public uint m_NumItems;
         public byte[] m_Data;
@@ -147,6 +261,14 @@ namespace AssetStudio
 
             m_BitSize = reader.ReadByte();
             reader.AlignStream();
+        }
+        public YAMLNode ExportYAML(int[] version)
+        {
+            var node = new YAMLMappingNode();
+            node.Add(nameof(m_NumItems), m_NumItems);
+            node.Add(nameof(m_Data), m_Data.ExportYAML());
+            node.Add(nameof(m_BitSize), m_BitSize);
+            return node;
         }
 
         public int[] UnpackInts()
@@ -176,7 +298,7 @@ namespace AssetStudio
         }
     }
 
-    public class PackedQuatVector
+    public class PackedQuatVector : IYAMLExportable
     {
         public uint m_NumItems;
         public byte[] m_Data;
@@ -189,6 +311,14 @@ namespace AssetStudio
             m_Data = reader.ReadBytes(numData);
 
             reader.AlignStream();
+        }
+
+        public YAMLNode ExportYAML(int[] version)
+        {
+            var node = new YAMLMappingNode();
+            node.Add(nameof(m_NumItems), m_NumItems);
+            node.Add(nameof(m_Data), m_Data.ExportYAML());
+            return node;
         }
 
         public Quaternion[] UnpackQuats()
@@ -256,7 +386,7 @@ namespace AssetStudio
         }
     }
 
-    public class CompressedAnimationCurve
+    public class CompressedAnimationCurve : IYAMLExportable
     {
         public string m_Path;
         public PackedIntVector m_Times;
@@ -274,68 +404,174 @@ namespace AssetStudio
             m_PreInfinity = reader.ReadInt32();
             m_PostInfinity = reader.ReadInt32();
         }
+
+        public YAMLNode ExportYAML(int[] version)
+        {
+            var node = new YAMLMappingNode();
+            node.Add(nameof(m_Path), m_Path);
+            node.Add(nameof(m_Times), m_Times.ExportYAML(version));
+            node.Add(nameof(m_Values), m_Values.ExportYAML(version));
+            node.Add(nameof(m_Slopes), m_Slopes.ExportYAML(version));
+            node.Add(nameof(m_PreInfinity), m_PreInfinity);
+            node.Add(nameof(m_PostInfinity), m_PostInfinity);
+            return node;
+        }
     }
 
-    public class Vector3Curve
+    public class Vector3Curve : IYAMLExportable
     {
         public AnimationCurve<Vector3> curve;
         public string path;
+
+        public Vector3Curve(string path)
+        {
+            curve = new AnimationCurve<Vector3>();
+            this.path = path;
+        }
 
         public Vector3Curve(ObjectReader reader)
         {
             curve = new AnimationCurve<Vector3>(reader, reader.ReadVector3);
             path = reader.ReadAlignedString();
         }
+
+        public YAMLNode ExportYAML(int[] version)
+        {
+            YAMLMappingNode node = new YAMLMappingNode();
+            node.Add(nameof(curve), curve.ExportYAML(version));
+            node.Add(nameof(path), path);
+            return node;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is Vector3Curve vector3Curve)
+            {
+                return path == vector3Curve.path;
+            }
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            int hash = 577;
+            unchecked
+            {
+                hash = 419 + hash * path.GetHashCode();
+            }
+            return hash;
+        }
     }
 
-    public class FloatCurve
+    public class FloatCurve : IYAMLExportable
     {
-        public AnimationCurve<float> curve;
+        public AnimationCurve<Float> curve;
         public string attribute;
         public string path;
         public ClassIDType classID;
         public PPtr<MonoScript> script;
 
+        public FloatCurve(string path, string attribute, ClassIDType classID, PPtr<MonoScript> script)
+        {
+            curve = new AnimationCurve<Float>();
+            this.attribute = attribute;
+            this.path = path;
+            this.classID = classID;
+            this.script = script;
+        }
 
         public FloatCurve(ObjectReader reader)
         {
-            curve = new AnimationCurve<float>(reader, reader.ReadSingle);
+            curve = new AnimationCurve<Float>(reader, reader.ReadFloat);
             attribute = reader.ReadAlignedString();
             path = reader.ReadAlignedString();
             classID = (ClassIDType)reader.ReadInt32();
             script = new PPtr<MonoScript>(reader);
         }
+
+        public YAMLNode ExportYAML(int[] version)
+        {
+            YAMLMappingNode node = new YAMLMappingNode();
+            node.Add(nameof(curve), curve.ExportYAML(version));
+            node.Add(nameof(attribute), attribute);
+            node.Add(nameof(path), path);
+            node.Add(nameof(classID), (int)classID);
+            if (version[0] >= 2)
+            {
+                node.Add(nameof(script), script.ExportYAML(version));
+            }
+            return node;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is FloatCurve floatCurve)
+            {
+                return attribute == floatCurve.attribute && path == floatCurve.path && classID == floatCurve.classID;
+            }
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            int hash = 17;
+            unchecked
+            {
+                hash = hash * 23 + path.GetHashCode();
+            }
+            return hash;
+        }
     }
 
-    public class PPtrKeyframe
+    public class PPtrKeyframe : IYAMLExportable
     {
         public float time;
         public PPtr<Object> value;
 
+        public PPtrKeyframe(float time, PPtr<Object> value)
+        {
+            this.time = time;
+            this.value = value;
+        }
 
         public PPtrKeyframe(ObjectReader reader)
         {
             time = reader.ReadSingle();
             value = new PPtr<Object>(reader);
         }
+        public YAMLNode ExportYAML(int[] version)
+        {
+            var node = new YAMLMappingNode();
+            node.Add(nameof(time), time);
+            node.Add(nameof(value), value.ExportYAML(version));
+            return node;
+        }
     }
 
-    public class PPtrCurve
+    public class PPtrCurve : IYAMLExportable
     {
-        public PPtrKeyframe[] curve;
+        public List<PPtrKeyframe> curve;
         public string attribute;
         public string path;
         public int classID;
         public PPtr<MonoScript> script;
 
+        public PPtrCurve(string path, string attribute, ClassIDType classID, PPtr<MonoScript> script)
+        {
+            curve = new List<PPtrKeyframe>();
+            this.attribute = attribute;
+            this.path = path;
+            this.classID = (int)classID;
+            this.script = script;
+        }
 
         public PPtrCurve(ObjectReader reader)
         {
             int numCurves = reader.ReadInt32();
-            curve = new PPtrKeyframe[numCurves];
+            curve = new List<PPtrKeyframe>(numCurves);
             for (int i = 0; i < numCurves; i++)
             {
-                curve[i] = new PPtrKeyframe(reader);
+                curve.Add(new PPtrKeyframe(reader));
             }
 
             attribute = reader.ReadAlignedString();
@@ -343,9 +579,42 @@ namespace AssetStudio
             classID = reader.ReadInt32();
             script = new PPtr<MonoScript>(reader);
         }
+
+        public YAMLNode ExportYAML(int[] version)
+        {
+            YAMLMappingNode node = new YAMLMappingNode();
+            node.Add(nameof(curve), curve.ExportYAML(version));
+            node.Add(nameof(attribute), attribute);
+            node.Add(nameof(path), path);
+            node.Add(nameof(classID), ((int)classID).ToString());
+            node.Add(nameof(script), script.ExportYAML(version));
+            return node;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is PPtrCurve pptrCurve)
+            {
+                return this == pptrCurve;
+            }
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            int hash = 113;
+            unchecked
+            {
+                hash = hash + 457 * attribute.GetHashCode();
+                hash = hash * 433 + path.GetHashCode();
+                hash = hash * 223 + classID.GetHashCode();
+                hash = hash * 911 + script.GetHashCode();
+            }
+            return hash;
+        }
     }
 
-    public class AABB
+    public class AABB : IYAMLExportable
     {
         public Vector3 m_Center;
         public Vector3 m_Extent;
@@ -355,55 +624,64 @@ namespace AssetStudio
             m_Center = reader.ReadVector3();
             m_Extent = reader.ReadVector3();
         }
-    }
 
-    public class xform
-    {
-        public Vector3 t;
-        public Quaternion q;
-        public Vector3 s;
-
-        public xform(ObjectReader reader)
+        public YAMLNode ExportYAML(int[] version)
         {
-            var version = reader.version;
-            t = version[0] > 5 || (version[0] == 5 && version[1] >= 4) ? reader.ReadVector3() : (Vector3)reader.ReadVector4();//5.4 and up
-            q = reader.ReadQuaternion();
-            s = version[0] > 5 || (version[0] == 5 && version[1] >= 4) ? reader.ReadVector3() : (Vector3)reader.ReadVector4();//5.4 and up
+            var node = new YAMLMappingNode();
+            node.Add(nameof(m_Center), m_Center.ExportYAML(version));
+            node.Add(nameof(m_Extent), m_Extent.ExportYAML(version));
+            return node;
         }
     }
 
     public class HandPose
     {
-        public xform m_GrabX;
+        public XForm m_GrabX;
         public float[] m_DoFArray;
         public float m_Override;
         public float m_CloseOpen;
         public float m_InOut;
         public float m_Grab;
+        public HandPose() { }
 
         public HandPose(ObjectReader reader)
         {
-            m_GrabX = new xform(reader);
+            m_GrabX = reader.ReadXForm(reader.version);
             m_DoFArray = reader.ReadSingleArray();
             m_Override = reader.ReadSingle();
             m_CloseOpen = reader.ReadSingle();
             m_InOut = reader.ReadSingle();
             m_Grab = reader.ReadSingle();
         }
+
+        public static HandPose ParseGI(ObjectReader reader)
+        {
+            var handPose = new HandPose();
+
+            handPose.m_GrabX = reader.ReadXForm(reader.version, true);
+            handPose.m_DoFArray = reader.ReadSingleArray(20);
+            handPose.m_Override = reader.ReadSingle();
+            handPose.m_CloseOpen = reader.ReadSingle();
+            handPose.m_InOut = reader.ReadSingle();
+            handPose.m_Grab = reader.ReadSingle();
+
+            return handPose;
+        }
     }
 
     public class HumanGoal
     {
-        public xform m_X;
+        public XForm m_X;
         public float m_WeightT;
         public float m_WeightR;
         public Vector3 m_HintT;
         public float m_HintWeightT;
+        public HumanGoal() { }
 
         public HumanGoal(ObjectReader reader)
         {
             var version = reader.version;
-            m_X = new xform(reader);
+            m_X = reader.ReadXForm(reader.version);
             m_WeightT = reader.ReadSingle();
             m_WeightR = reader.ReadSingle();
             if (version[0] >= 5)//5.0 and up
@@ -412,11 +690,28 @@ namespace AssetStudio
                 m_HintWeightT = reader.ReadSingle();
             }
         }
+
+        public static HumanGoal ParseGI(ObjectReader reader)
+        {
+            var humanGoal = new HumanGoal();
+
+            humanGoal.m_X = reader.ReadXForm(reader.version, true);
+            humanGoal.m_WeightT = reader.ReadSingle();
+            humanGoal.m_WeightR = reader.ReadSingle();
+
+            humanGoal.m_HintT = (Vector3)reader.ReadVector4();
+            humanGoal.m_HintWeightT = reader.ReadSingle();
+
+            var m_HintR = (Vector3)reader.ReadVector4();
+            var m_HintWeightR = reader.ReadSingle();
+
+            return humanGoal;
+        }
     }
 
     public class HumanPose
     {
-        public xform m_RootX;
+        public XForm m_RootX;
         public Vector3 m_LookAtPosition;
         public Vector4 m_LookAtWeight;
         public HumanGoal[] m_GoalArray;
@@ -424,11 +719,12 @@ namespace AssetStudio
         public HandPose m_RightHandPose;
         public float[] m_DoFArray;
         public Vector3[] m_TDoFArray;
+        public HumanPose() { }
 
         public HumanPose(ObjectReader reader)
         {
             var version = reader.version;
-            m_RootX = new xform(reader);
+            m_RootX = reader.ReadXForm(reader.version);
             m_LookAtPosition = version[0] > 5 || (version[0] == 5 && version[1] >= 4) ? reader.ReadVector3() : (Vector3)reader.ReadVector4();//5.4 and up
             m_LookAtWeight = reader.ReadVector4();
 
@@ -454,11 +750,43 @@ namespace AssetStudio
                 }
             }
         }
+
+        public static HumanPose ParseGI(ObjectReader reader)
+        {
+            var version = reader.version;
+            var humanPose = new HumanPose();
+
+            humanPose.m_RootX = reader.ReadXForm(version, true);
+            humanPose.m_LookAtPosition = (Vector3)reader.ReadVector4();
+            humanPose.m_LookAtWeight = reader.ReadVector4();
+
+            humanPose.m_GoalArray = new HumanGoal[4];
+            for (int i = 0; i < 4; i++)
+            {
+                humanPose.m_GoalArray[i] = HumanGoal.ParseGI(reader);
+            }
+
+            humanPose.m_LeftHandPose = HandPose.ParseGI(reader);
+            humanPose.m_RightHandPose = HandPose.ParseGI(reader);
+
+            humanPose.m_DoFArray = reader.ReadSingleArray(0x37);
+
+            humanPose.m_TDoFArray = new Vector3[0x15];
+            for (int i = 0; i < 0x15; i++)
+            {
+                humanPose.m_TDoFArray[i] = (Vector3)reader.ReadVector4();
+            }
+
+            reader.Position += 4;
+
+            return humanPose;
+        }
     }
 
     public class ACLClip
     {
         public byte[] m_ClipData;
+        public byte[] m_DatabaseData;
 
         public uint m_CurveCount;
         public uint m_ConstCurveCount;
@@ -468,6 +796,7 @@ namespace AssetStudio
             m_CurveCount = 0;
             m_ConstCurveCount = 0;
             m_ClipData = Array.Empty<byte>();
+            m_DatabaseData = Array.Empty<byte>();
         }
         public void Read(ObjectReader reader)
         {
@@ -488,17 +817,88 @@ namespace AssetStudio
                 m_ConstCurveCount = reader.ReadUInt32();
             }
         }
+        public void ParseGI(ObjectReader reader)
+        {
+            var aclTracksCount = (int)reader.ReadUInt64();
+            var aclTracksOffset = reader.Position + reader.ReadInt64();
+            var aclTracksCurveCount = reader.ReadUInt32();
+            if (aclTracksOffset > reader.Length)
+            {
+                throw new IOException("Offset outside of range");
+            }
+
+            var pos = reader.Position;
+            reader.Position = aclTracksOffset;
+
+            var tracksBytes = reader.ReadBytes(aclTracksCount);
+            reader.AlignStream();
+
+            using var tracksMS = new MemoryStream();
+            tracksMS.Write(tracksBytes);
+            tracksMS.AlignStream();
+            m_CurveCount = aclTracksCurveCount;
+            m_ClipData = tracksMS.ToArray();
+
+            reader.Position = pos;
+
+            var aclDatabaseCount = reader.ReadInt32();
+            var aclDatabaseOffset = reader.Position + reader.ReadInt64();
+            var aclDatabaseCurveCount = (uint)reader.ReadUInt64();
+            if (aclDatabaseOffset > reader.Length)
+            {
+                throw new IOException("Offset outside of range");
+            }
+
+            pos = reader.Position;
+            reader.Position = aclDatabaseOffset;
+
+            var databaseBytes = reader.ReadBytes(aclDatabaseCount);
+            reader.AlignStream();
+
+            using var databaseMS = new MemoryStream();
+            databaseMS.Write(databaseBytes);
+            databaseMS.AlignStream();
+
+            m_ConstCurveCount = aclDatabaseCurveCount;
+            m_DatabaseData = databaseMS.ToArray();
+
+            reader.Position = pos;
+        }
     }
 
     public class StreamedClip
     {
         public uint[] data;
         public uint curveCount;
+        public StreamedClip() { }
 
         public StreamedClip(ObjectReader reader)
         {
             data = reader.ReadUInt32Array();
             curveCount = reader.ReadUInt32();
+        }
+        public static StreamedClip ParseGI(ObjectReader reader)
+        {
+            var streamedClipCount = (int)reader.ReadUInt64();
+            var streamedClipOffset = reader.Position + reader.ReadInt64();
+            var streamedClipCurveCount = (uint)reader.ReadUInt64();
+            if (streamedClipOffset > reader.Length)
+            {
+                throw new IOException("Offset outside of range");
+            }
+
+            var pos = reader.Position;
+            reader.Position = streamedClipOffset;
+
+            var streamedClip = new StreamedClip()
+            {
+                data = reader.ReadUInt32Array(streamedClipCount),
+                curveCount = streamedClipCurveCount
+            };
+
+            reader.Position = pos;
+
+            return streamedClip;
         }
 
         public class StreamedCurveKey
@@ -595,6 +995,7 @@ namespace AssetStudio
         public float m_SampleRate;
         public float m_BeginTime;
         public float[] m_SampleArray;
+        public DenseClip() { }
 
         public DenseClip(ObjectReader reader)
         {
@@ -604,15 +1005,60 @@ namespace AssetStudio
             m_BeginTime = reader.ReadSingle();
             m_SampleArray = reader.ReadSingleArray();
         }
+        public static DenseClip ParseGI(ObjectReader reader)
+        {
+            var denseClip = new DenseClip();
+
+            denseClip.m_FrameCount = reader.ReadInt32();
+            denseClip.m_CurveCount = reader.ReadUInt32();
+            denseClip.m_SampleRate = reader.ReadSingle();
+            denseClip.m_BeginTime = reader.ReadSingle();
+
+            var denseClipCount = (int)reader.ReadUInt64();
+            var denseClipOffset = reader.Position + reader.ReadInt64();
+            if (denseClipOffset > reader.Length)
+            {
+                throw new IOException("Offset outside of range");
+            }
+
+            var pos = reader.Position;
+            reader.Position = denseClipOffset;
+
+            denseClip.m_SampleArray = reader.ReadSingleArray(denseClipCount);
+
+            reader.Position = pos;
+
+            return denseClip;
+        }
     }
 
     public class ConstantClip
     {
         public float[] data;
+        public ConstantClip() { }
 
         public ConstantClip(ObjectReader reader)
         {
             data = reader.ReadSingleArray();
+        }
+        public static ConstantClip ParseGI(ObjectReader reader)
+        {
+            var constantClipCount = (int)reader.ReadUInt64();
+            var constantClipOffset = reader.Position + reader.ReadInt64();
+            if (constantClipOffset > reader.Length)
+            {
+                throw new IOException("Offset outside of range");
+            }
+
+            var pos = reader.Position;
+            reader.Position = constantClipOffset;
+
+            var constantClip = new ConstantClip();
+            constantClip.data = reader.ReadSingleArray(constantClipCount);
+
+            reader.Position = pos;
+
+            return constantClip;
         }
     }
 
@@ -658,6 +1104,7 @@ namespace AssetStudio
         public DenseClip m_DenseClip;
         public ConstantClip m_ConstantClip;
         public ValueArrayConstant m_Binding;
+        public Clip() { }
 
         public Clip(ObjectReader reader)
         {
@@ -680,6 +1127,27 @@ namespace AssetStudio
             {
                 m_Binding = new ValueArrayConstant(reader);
             }
+        }
+        public static Clip ParseGI(ObjectReader reader)
+        {
+            var clipOffset = reader.Position + reader.ReadInt64();
+            if (clipOffset > reader.Length)
+            {
+                throw new IOException("Offset outside of range");
+            }
+
+            var pos = reader.Position;
+            reader.Position = clipOffset;
+
+            var clip = new Clip();
+            clip.m_StreamedClip = StreamedClip.ParseGI(reader);
+            clip.m_DenseClip = DenseClip.ParseGI(reader);
+            clip.m_ConstantClip = ConstantClip.ParseGI(reader);
+            clip.m_ACLClip.ParseGI(reader);
+
+            reader.Position = pos;
+
+            return clip;
         }
 
         public AnimationClipBindingConstant ConvertValueArrayToGenericBinding()
@@ -739,15 +1207,15 @@ namespace AssetStudio
         }
     }
 
-    public class ClipMuscleConstant
+    public class ClipMuscleConstant : IYAMLExportable
     {
         public HumanPose m_DeltaPose;
-        public xform m_StartX;
-        public xform m_StopX;
-        public xform m_LeftFootStartX;
-        public xform m_RightFootStartX;
-        public xform m_MotionStartX;
-        public xform m_MotionStopX;
+        public XForm m_StartX;
+        public XForm m_StopX;
+        public XForm m_LeftFootStartX;
+        public XForm m_RightFootStartX;
+        public XForm m_MotionStartX;
+        public XForm m_MotionStopX;
         public Vector3 m_AverageSpeed;
         public Clip m_Clip;
         public float m_StartTime;
@@ -770,22 +1238,23 @@ namespace AssetStudio
         public bool m_KeepOriginalPositionY;
         public bool m_KeepOriginalPositionXZ;
         public bool m_HeightFromFeet;
+        public ClipMuscleConstant() { }
 
         public ClipMuscleConstant(ObjectReader reader)
         {
             var version = reader.version;
             m_DeltaPose = new HumanPose(reader);
-            m_StartX = new xform(reader);
+            m_StartX = reader.ReadXForm(reader.version);
             if (version[0] > 5 || (version[0] == 5 && version[1] >= 5))//5.5 and up
             {
-                m_StopX = new xform(reader);
+                m_StopX = reader.ReadXForm(reader.version);
             }
-            m_LeftFootStartX = new xform(reader);
-            m_RightFootStartX = new xform(reader);
+            m_LeftFootStartX = reader.ReadXForm(reader.version);
+            m_RightFootStartX = reader.ReadXForm(reader.version);
             if (version[0] < 5)//5.0 down
             {
-                m_MotionStartX = new xform(reader);
-                m_MotionStopX = new xform(reader);
+                m_MotionStartX = reader.ReadXForm(reader.version);
+                m_MotionStopX = reader.ReadXForm(reader.version);
             }
             m_AverageSpeed = version[0] > 5 || (version[0] == 5 && version[1] >= 4) ? reader.ReadVector3() : (Vector3)reader.ReadVector4();//5.4 and up
             m_Clip = new Clip(reader);
@@ -831,10 +1300,115 @@ namespace AssetStudio
             m_HeightFromFeet = reader.ReadBoolean();
             reader.AlignStream();
         }
+        public static ClipMuscleConstant ParseGI(ObjectReader reader)
+        {
+            var version = reader.version;
+            var clipMuscleConstant = new ClipMuscleConstant();
+
+            clipMuscleConstant.m_DeltaPose = HumanPose.ParseGI(reader);
+            clipMuscleConstant.m_StartX = reader.ReadXForm(version, true);
+            clipMuscleConstant.m_StopX = reader.ReadXForm(version, true);
+            clipMuscleConstant.m_LeftFootStartX = reader.ReadXForm(version, true);
+            clipMuscleConstant.m_RightFootStartX = reader.ReadXForm(version, true);
+
+            clipMuscleConstant.m_AverageSpeed = (Vector3)reader.ReadVector4();
+
+            clipMuscleConstant.m_Clip = Clip.ParseGI(reader);
+
+            clipMuscleConstant.m_StartTime = reader.ReadSingle();
+            clipMuscleConstant.m_StopTime = reader.ReadSingle();
+            clipMuscleConstant.m_OrientationOffsetY = reader.ReadSingle();
+            clipMuscleConstant.m_Level = reader.ReadSingle();
+            clipMuscleConstant.m_CycleOffset = reader.ReadSingle();
+            clipMuscleConstant.m_AverageAngularSpeed = reader.ReadSingle();
+
+            clipMuscleConstant.m_IndexArray = reader.ReadInt16Array(0xC8).Select(x => (int)x).ToArray();
+
+            var valueArrayDeltaCount = (int)reader.ReadUInt64();
+            var valueArrayDeltaOffset = reader.Position + reader.ReadInt64();
+
+            if (valueArrayDeltaOffset > reader.Length)
+            {
+                throw new IOException("Offset outside of range");
+            }
+
+            var valueArrayReferencePoseCount = (int)reader.ReadUInt64();
+            var valueArrayReferencePoseOffset = reader.Position + reader.ReadInt64();
+
+            if (valueArrayReferencePoseOffset > reader.Length)
+            {
+                throw new IOException("Offset outside of range");
+            }
+
+            clipMuscleConstant.m_Mirror = reader.ReadBoolean();
+            clipMuscleConstant.m_LoopTime = reader.ReadBoolean();
+            clipMuscleConstant.m_LoopBlend = reader.ReadBoolean();
+            clipMuscleConstant.m_LoopBlendOrientation = reader.ReadBoolean();
+            clipMuscleConstant.m_LoopBlendPositionY = reader.ReadBoolean();
+            clipMuscleConstant.m_LoopBlendPositionXZ = reader.ReadBoolean();
+            clipMuscleConstant.m_StartAtOrigin = reader.ReadBoolean();
+            clipMuscleConstant.m_KeepOriginalOrientation = reader.ReadBoolean();
+            clipMuscleConstant.m_KeepOriginalPositionY = reader.ReadBoolean();
+            clipMuscleConstant.m_KeepOriginalPositionXZ = reader.ReadBoolean();
+            clipMuscleConstant.m_HeightFromFeet = reader.ReadBoolean();
+            reader.AlignStream();
+
+            if (valueArrayDeltaCount > 0)
+            {
+                reader.Position = valueArrayDeltaOffset;
+                clipMuscleConstant.m_ValueArrayDelta = new ValueDelta[valueArrayDeltaCount];
+                for (int i = 0; i < valueArrayDeltaCount; i++)
+                {
+                    clipMuscleConstant.m_ValueArrayDelta[i] = new ValueDelta(reader);
+                }
+            }
+
+            if (valueArrayReferencePoseCount > 0)
+            {
+                reader.Position = valueArrayReferencePoseOffset;
+                clipMuscleConstant.m_ValueArrayReferencePose = reader.ReadSingleArray(valueArrayReferencePoseCount);
+            }
+
+            return clipMuscleConstant;
+        }
+        public YAMLNode ExportYAML(int[] version)
+        {
+            var node = new YAMLMappingNode();
+            node.AddSerializedVersion(ToSerializedVersion(version));
+            node.Add(nameof(m_StartTime), m_StartTime);
+            node.Add(nameof(m_StopTime), m_StopTime);
+            node.Add(nameof(m_OrientationOffsetY), m_OrientationOffsetY);
+            node.Add(nameof(m_Level), m_Level);
+            node.Add(nameof(m_CycleOffset), m_CycleOffset);
+            node.Add(nameof(m_LoopTime), m_LoopTime);
+            node.Add(nameof(m_LoopBlend), m_LoopBlend);
+            node.Add(nameof(m_LoopBlendOrientation), m_LoopBlendOrientation);
+            node.Add(nameof(m_LoopBlendPositionY), m_LoopBlendPositionY);
+            node.Add(nameof(m_LoopBlendPositionXZ), m_LoopBlendPositionXZ);
+            node.Add(nameof(m_KeepOriginalOrientation), m_KeepOriginalOrientation);
+            node.Add(nameof(m_KeepOriginalPositionY), m_KeepOriginalPositionY);
+            node.Add(nameof(m_KeepOriginalPositionXZ), m_KeepOriginalPositionXZ);
+            node.Add(nameof(m_HeightFromFeet), m_HeightFromFeet);
+            node.Add(nameof(m_Mirror), m_Mirror);
+            return node;
+        }
+        private int ToSerializedVersion(int[] version)
+        {
+            if (version[0] > 5 || (version[0] == 5 && version[1] >= 6))
+            {
+                return 3;
+            }
+            else if (version[0] > 4 || (version[0] == 4 && version[1] >= 3))
+            {
+                return 2;
+            }
+            return 1;
+        }
     }
 
-    public class GenericBinding
+    public class GenericBinding : IYAMLExportable
     {
+        public int[] version;
         public uint path;
         public uint attribute;
         public PPtr<Object> script;
@@ -847,7 +1421,7 @@ namespace AssetStudio
 
         public GenericBinding(ObjectReader reader)
         {
-            var version = reader.version;
+            version = reader.version;
             path = reader.ReadUInt32();
             attribute = reader.ReadUInt32();
             script = new PPtr<Object>(reader);
@@ -867,9 +1441,21 @@ namespace AssetStudio
             }
             reader.AlignStream();
         }
+
+        public YAMLNode ExportYAML(int[] version)
+        {
+            var node = new YAMLMappingNode();
+            node.Add(nameof(path), path);
+            node.Add(nameof(attribute), attribute);
+            node.Add(nameof(script), script.ExportYAML(version));
+            node.Add("classID", ((int)typeID).ToString());
+            node.Add(nameof(customType), customType);
+            node.Add(nameof(isPPtrCurve), isPPtrCurve);
+            return node;
+        }
     }
 
-    public class AnimationClipBindingConstant
+    public class AnimationClipBindingConstant : IYAMLExportable
     {
         public GenericBinding[] genericBindings;
         public PPtr<Object>[] pptrCurveMapping;
@@ -891,6 +1477,14 @@ namespace AssetStudio
             {
                 pptrCurveMapping[i] = new PPtr<Object>(reader);
             }
+        }
+
+        public YAMLNode ExportYAML(int[] version)
+        {
+            var node = new YAMLMappingNode();
+            node.Add(nameof(genericBindings), genericBindings.ExportYAML(version));
+            node.Add(nameof(pptrCurveMapping), pptrCurveMapping.ExportYAML(version));
+            return node;
         }
 
         public GenericBinding FindBinding(int index)
@@ -929,7 +1523,7 @@ namespace AssetStudio
         }
     }
 
-    public class AnimationEvent
+    public class AnimationEvent : IYAMLExportable
     {
         public float time;
         public string functionName;
@@ -953,6 +1547,19 @@ namespace AssetStudio
                 intParameter = reader.ReadInt32();
             }
             messageOptions = reader.ReadInt32();
+        }
+
+        public YAMLNode ExportYAML(int[] version)
+        {
+            var node = new YAMLMappingNode();
+            node.Add(nameof(time), time);
+            node.Add(nameof(functionName), functionName);
+            node.Add(nameof(data), data);
+            node.Add(nameof(objectReferenceParameter), objectReferenceParameter.ExportYAML(version));
+            node.Add(nameof(floatParameter), floatParameter);
+            node.Add(nameof(intParameter), intParameter);
+            node.Add(nameof(messageOptions), messageOptions);
+            return node;
         }
     }
 
@@ -985,7 +1592,9 @@ namespace AssetStudio
         public ClipMuscleConstant m_MuscleClip;
         public AnimationClipBindingConstant m_ClipBindingConstant;
         public AnimationEvent[] m_Events;
+        public StreamingInfo m_StreamData;
 
+        private bool hasStreamingInfo = false;
 
         public AnimationClip(ObjectReader reader) : base(reader)
         {
@@ -1072,8 +1681,26 @@ namespace AssetStudio
             }
             if (version[0] >= 4)//4.0 and up
             {
-                m_MuscleClipSize = reader.ReadUInt32();
-                m_MuscleClip = new ClipMuscleConstant(reader);
+                if (reader.Game.Type.IsGI())
+                {
+                    var muscleClipSize = reader.ReadInt32();
+                    if (muscleClipSize < 0)
+                    {
+                        hasStreamingInfo = true;
+                        m_MuscleClipSize = reader.ReadUInt32();
+                        m_MuscleClip = ClipMuscleConstant.ParseGI(reader);
+                    }
+                    else
+                    {
+                        m_MuscleClipSize = (uint)muscleClipSize;
+                        m_MuscleClip = new ClipMuscleConstant(reader);
+                    }
+                }
+                else
+                {
+                    m_MuscleClipSize = reader.ReadUInt32();
+                    m_MuscleClip = new ClipMuscleConstant(reader);
+                }
             }
             if (reader.Game.Type.IsSRGroup())
             {
@@ -1105,6 +1732,21 @@ namespace AssetStudio
             if (version[0] >= 2017) //2017 and up
             {
                 reader.AlignStream();
+            }
+            if (hasStreamingInfo)
+            {
+                m_StreamData = new StreamingInfo(reader);
+                if (!string.IsNullOrEmpty(m_StreamData?.path))
+                {
+                    var resourceReader = new ResourceReader(m_StreamData.path, assetsFile, m_StreamData.offset, m_StreamData.size);
+                    var ms = new MemoryStream();
+                    ms.Write(m_MuscleClip.m_Clip.m_ACLClip.m_DatabaseData);
+
+                    ms.Write(resourceReader.GetData());
+                    ms.AlignStream();
+
+                    m_MuscleClip.m_Clip.m_ACLClip.m_DatabaseData = ms.ToArray();
+                }
             }
         }
     }

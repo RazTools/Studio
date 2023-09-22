@@ -297,6 +297,7 @@ namespace AssetStudio
 
     public class MeshBlendShape
     {
+        public string name;
         public uint firstVertex;
         public uint vertexCount;
         public bool hasNormals;
@@ -308,7 +309,7 @@ namespace AssetStudio
 
             if (version[0] == 4 && version[1] < 3) //4.3 down
             {
-                var name = reader.ReadAlignedString();
+                name = reader.ReadAlignedString();
             }
             firstVertex = reader.ReadUInt32();
             vertexCount = reader.ReadUInt32();

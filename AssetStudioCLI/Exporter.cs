@@ -316,6 +316,16 @@ namespace AssetStudioCLI
             return false;
         }
 
+        public static bool ExportAnimationClip(AssetItem item, string exportPath)
+        {
+            if (!TryExportFile(exportPath, item, ".anim", out var exportFullPath))
+                return false;
+            var m_AnimationClip = (AnimationClip)item.Asset;
+            var str = m_AnimationClip.Convert();
+            File.WriteAllText(exportFullPath, str);
+            return true;
+        }
+
         public static bool ExportAnimator(AssetItem item, string exportPath, List<AssetItem> animationList = null)
         {
             var exportFullPath = Path.Combine(exportPath, item.Text, item.Text + ".fbx");
@@ -415,7 +425,7 @@ namespace AssetStudioCLI
                 case ClassIDType.Animator:
                     return ExportAnimator(item, exportPath);
                 case ClassIDType.AnimationClip:
-                    return false;
+                    return ExportAnimationClip(item, exportPath);
                 case ClassIDType.MiHoYoBinData:
                     return ExportMiHoYoBinData(item, exportPath);
                 default:

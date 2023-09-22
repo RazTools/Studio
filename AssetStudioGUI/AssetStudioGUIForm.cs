@@ -835,8 +835,8 @@ namespace AssetStudioGUI
                         //StatusStripUpdate("Can be exported to FBX file.");
                         PreviewAnimator(m_Animator);
                         break;
-                    case AnimationClip _:
-                        StatusStripUpdate("Can be exported with Animator or Objects");
+                    case AnimationClip m_AnimationClip:
+                        PreviewAnimationClip(m_AnimationClip);
                         break;
                     case MiHoYoBinData m_MiHoYoBinData:
                         PreviewText(m_MiHoYoBinData.AsString);
@@ -1287,6 +1287,12 @@ namespace AssetStudioGUI
         {
             var model = new ModelConverter(m_Animator, Properties.Settings.Default.convertType, Studio.Game, false, Array.Empty<AnimationClip>());
             PreviewModel(model);
+        }
+        
+        private void PreviewAnimationClip(AnimationClip clip)
+        {
+            var str = clip.Convert();
+            PreviewText(str.Replace("\n", "\r\n"));
         }
 
         private void PreviewModel(ModelConverter model)

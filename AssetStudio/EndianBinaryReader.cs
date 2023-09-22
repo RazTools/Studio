@@ -184,6 +184,20 @@ namespace AssetStudio
             return new Matrix4x4(ReadSingleArray(16));
         }
 
+        public XForm ReadXForm(int[] version, bool isVector4 = false)
+        {
+            var t = (version[0] > 5 || (version[0] == 5 && version[1] >= 4)) && !isVector4 ? ReadVector3() : (Vector3)ReadVector4();//5.4 and up
+            var q = ReadQuaternion();
+            var s = (version[0] > 5 || (version[0] == 5 && version[1] >= 4)) && !isVector4 ? ReadVector3() : (Vector3)ReadVector4();//5.4 and up
+            
+            return new XForm(t, q, s);
+        }
+
+        public Float ReadFloat()
+        {
+            return new Float(ReadSingle());
+        }
+
         public int ReadMhy0Int()
         {
             var buffer = ReadBytes(6);
@@ -222,6 +236,16 @@ namespace AssetStudio
         public byte[] ReadUInt8Array()
         {
             return ReadBytes(ReadInt32());
+        }
+
+        public short[] ReadInt16Array()
+        {
+            return ReadArray(ReadInt16, ReadInt32());
+        }
+
+        public short[] ReadInt16Array(int length)
+        {
+            return ReadArray(ReadInt16, length);
         }
 
         public ushort[] ReadUInt16Array()

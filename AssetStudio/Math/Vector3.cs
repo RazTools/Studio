@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 namespace AssetStudio
 {
     [StructLayout(LayoutKind.Sequential, Pack = 4)]
-    public struct Vector3 : IEquatable<Vector3>
+    public struct Vector3 : IEquatable<Vector3>, IYAMLExportable
     {
         public float X;
         public float Y;
@@ -85,6 +85,16 @@ namespace AssetStudio
         public float LengthSquared()
         {
             return X * X + Y * Y + Z * Z;
+        }
+
+        public YAMLNode ExportYAML(int[] version)
+        {
+            var node = new YAMLMappingNode();
+            node.Style = MappingStyle.Flow;
+            node.Add("x", X);
+            node.Add("y", Y);
+            node.Add("z", Z);
+            return node;
         }
 
         public static Vector3 Zero => new Vector3();
