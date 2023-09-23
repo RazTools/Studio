@@ -798,5 +798,43 @@ namespace AssetStudio
 
             return new FileReader(reader.FullPath, ms);
         }
+        
+        public static FileReader DecryptProjectSekai(FileReader reader)
+        {
+            Logger.Verbose($"Attempting to decrypt file {reader.FileName} with Project Sekai encryption");
+
+            var key = new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00 };
+
+            reader.Endian = EndianType.LittleEndian;
+            var version = reader.ReadUInt32();
+
+            if (version != 0x10 && version != 0x20)
+            {
+                reader.Endian = EndianType.BigEndian;
+                reader.Position = 0;
+                return reader;
+            }
+
+            MemoryStream ms = new MemoryStream();
+            if (version == 0x10)
+            {
+                var buffer = (stackalloc byte[8]);
+                for (int i = 0; i < 0x10; i++)
+                {
+                    var read = reader.Read(buffer);
+                    for (int j = 0; j < key.Length; j++)
+                    {
+                        buffer[j] ^= key[j];
+                    }
+                    ms.Write(buffer[..read]);
+                }
+            }
+
+            ms.Write(reader.ReadBytes((int)reader.Remaining));
+
+            Logger.Verbose("Decrypted Project Sekai file successfully !!");
+            ms.Position = 0;
+            return new FileReader(reader.FullPath, ms);
+        }
     }
 }

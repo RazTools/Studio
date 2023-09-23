@@ -200,6 +200,9 @@ namespace AssetStudio
                     case GameType.AliceGearAegis:
                         reader = DecryptAliceGearAegis(reader);
                         break;
+                    case GameType.ProjectSekai:
+                        reader = DecryptProjectSekai(reader);
+                        break;
                 }
             }
             if (reader.FileType == FileType.BundleFile && game.Type.IsBlockFile() || reader.FileType == FileType.ENCRFile || reader.FileType == FileType.BlbFile)
