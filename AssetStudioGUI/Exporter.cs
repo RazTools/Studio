@@ -321,6 +321,8 @@ namespace AssetStudioGUI
                 return false;
             var m_AnimationClip = (AnimationClip)item.Asset;
             var str = m_AnimationClip.Convert();
+            if (string.IsNullOrEmpty(str))
+                return false;
             File.WriteAllText(exportFullPath, str);
             return true;
         }

@@ -1690,7 +1690,7 @@ namespace AssetStudio
                         m_MuscleClipSize = reader.ReadUInt32();
                         m_MuscleClip = ClipMuscleConstant.ParseGI(reader);
                     }
-                    else
+                    else if (muscleClipSize > 0)
                     {
                         m_MuscleClipSize = (uint)muscleClipSize;
                         m_MuscleClip = new ClipMuscleConstant(reader);

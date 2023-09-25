@@ -1292,6 +1292,8 @@ namespace AssetStudioGUI
         private void PreviewAnimationClip(AnimationClip clip)
         {
             var str = clip.Convert();
+            if (string.IsNullOrEmpty(str))
+                str = "Legacy animation is not supported";
             PreviewText(str.Replace("\n", "\r\n"));
         }
 

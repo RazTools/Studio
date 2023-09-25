@@ -144,6 +144,10 @@ namespace AssetStudio
         }
         public static string Convert(this AnimationClip clip)
         {
+            if (clip.m_Legacy || clip.m_MuscleClip == null)
+            {
+                return string.Empty;
+            }
             var converter = AnimationClipConverter.Process(clip);
             clip.m_RotationCurves = converter.Rotations.Union(clip.m_RotationCurves).ToArray();
             clip.m_EulerCurves = converter.Eulers.Union(clip.m_EulerCurves).ToArray();
