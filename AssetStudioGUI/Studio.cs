@@ -680,10 +680,11 @@ namespace AssetStudioGUI
         {
             ThreadPool.QueueUserWorkItem(state =>
             {
-                var count = nodes.Cast<TreeNode>().Sum(x => x.Nodes.Count);
+                var exportNodes = GetNodes(nodes);
+                var count = exportNodes.Cast<TreeNode>().Sum(x => x.Nodes.Count);
                 int k = 0;
                 Progress.Reset();
-                foreach (TreeNode node in nodes)
+                foreach (TreeNode node in exportNodes)
                 {
                     //遍历一级子节点
                     foreach (GameObjectTreeNode j in node.Nodes)
@@ -699,6 +700,10 @@ namespace AssetStudioGUI
                         }
                         //处理非法文件名
                         var filename = FixFileName(j.Text);
+                        if (node.Parent != null) 
+                        {
+                            filename = Path.Combine(FixFileName(node.Parent.Text), filename);
+                        }
                         //每个文件存放在单独的文件夹
                         var targetPath = $"{savePath}{filename}{Path.DirectorySeparatorChar}";
                         //重名文件处理
@@ -734,6 +739,25 @@ namespace AssetStudioGUI
                     OpenFolderInExplorer(savePath);
                 }
                 StatusStripUpdate("Finished");
+
+                IEnumerable<TreeNode> GetNodes(TreeNodeCollection nodes)
+                {
+                    foreach(TreeNode node in nodes)
+                    {
+                        var subNodes = node.Nodes.OfType<TreeNode>().ToArray();
+                        if (subNodes.Length == 0)
+                        {
+                            yield return node;
+                        }
+                        else
+                        {
+                            foreach (TreeNode subNode in subNodes)
+                            {
+                                yield return subNode;
+                            }
+                        }
+                    }
+                }
             });
         }
 
