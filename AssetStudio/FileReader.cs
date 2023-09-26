@@ -203,6 +203,9 @@ namespace AssetStudio
                     case GameType.ProjectSekai:
                         reader = DecryptProjectSekai(reader);
                         break;
+                    case GameType.CodenameJump:
+                        reader = DecryptCodenameJump(reader);
+                        break;
                 }
             }
             if (reader.FileType == FileType.BundleFile && game.Type.IsBlockFile() || reader.FileType == FileType.ENCRFile || reader.FileType == FileType.BlbFile)
