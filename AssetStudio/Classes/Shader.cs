@@ -1002,6 +1002,8 @@ namespace AssetStudio
         public uint[][] decompressedLengths;
         public byte[] compressedBlob;
 
+        public override string Name => m_ParsedForm?.m_Name ?? m_Name;
+
         public Shader(ObjectReader reader) : base(reader)
         {
             if (version[0] == 5 && version[1] >= 5 || version[0] > 5) //5.5 and up

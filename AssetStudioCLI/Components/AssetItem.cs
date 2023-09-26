@@ -17,8 +17,8 @@ namespace AssetStudioCLI
 
         public AssetItem(Object asset)
         {
-            Text = "";
             Asset = asset;
+            Text = asset.Name;
             SourceFile = asset.assetsFile;
             Type = asset.type;
             TypeString = Type.ToString();

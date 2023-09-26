@@ -11,6 +11,8 @@ namespace AssetStudio
         public PPtr<RuntimeAnimatorController> m_Controller;
         public bool m_HasTransformHierarchy = true;
 
+        public override string Name => m_GameObject.Name;
+
         public Animator(ObjectReader reader) : base(reader)
         {
             m_Avatar = new PPtr<Avatar>(reader);

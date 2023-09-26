@@ -19,6 +19,8 @@ namespace AssetStudio
         public int Count;
         public KeyValuePair<string, Index>[] AssetMap;
 
+        public override string Name => "IndexObject";
+
         public IndexObject(ObjectReader reader) : base(reader)
         {
             Count = reader.ReadInt32();

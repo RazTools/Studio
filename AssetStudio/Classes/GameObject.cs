@@ -19,6 +19,7 @@ namespace AssetStudio
         public Animator m_Animator;
         public Animation m_Animation;
 
+        public override string Name => m_Name;
         public GameObject(ObjectReader reader) : base(reader)
         {
             int m_Component_size = reader.ReadInt32();

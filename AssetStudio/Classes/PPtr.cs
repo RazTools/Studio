@@ -11,6 +11,8 @@ namespace AssetStudio
 
         private SerializedFile assetsFile;
         private int index = -2; //-2 - Prepare, -1 - Missing
+        
+        public string Name => TryGet(out var obj) ? obj.Name : string.Empty;
 
         public PPtr(int m_FileID,  long m_PathID, SerializedFile assetsFile)
         {

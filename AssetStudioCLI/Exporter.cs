@@ -430,6 +430,8 @@ namespace AssetStudioCLI
                     return ExportAnimationClip(item, exportPath);
                 case ClassIDType.MiHoYoBinData:
                     return ExportMiHoYoBinData(item, exportPath);
+                case ClassIDType.Material:
+                    return ExportJSONFile(item, exportPath);
                 default:
                     return ExportRawFile(item, exportPath);
             }

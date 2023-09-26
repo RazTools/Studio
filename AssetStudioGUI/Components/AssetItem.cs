@@ -19,6 +19,7 @@ namespace AssetStudioGUI
         public AssetItem(Object asset)
         {
             Asset = asset;
+            Text = asset.Name;
             SourceFile = asset.assetsFile;
             Type = asset.type;
             TypeString = Type.ToString();

@@ -11,6 +11,8 @@ namespace AssetStudio
         public string m_Namespace;
         public string m_AssemblyName;
 
+        public override string Name => string.IsNullOrEmpty(m_Name) ? m_ClassName : m_Name;
+
         public MonoScript(ObjectReader reader) : base(reader)
         {
             if (version[0] > 3 || (version[0] == 3 && version[1] >= 4)) //3.4 and up

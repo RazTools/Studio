@@ -265,56 +265,19 @@ namespace AssetStudioGUI
                     var exportable = false;
                     switch (asset)
                     {
-                        case GameObject m_GameObject:
-                            assetItem.Text = m_GameObject.m_Name;
-                            break;
                         case Texture2D m_Texture2D:
                             if (!string.IsNullOrEmpty(m_Texture2D.m_StreamData?.path))
                                 assetItem.FullSize = asset.byteSize + m_Texture2D.m_StreamData.size;
-                            assetItem.Text = m_Texture2D.m_Name;
                             exportable = true;
                             break;
                         case AudioClip m_AudioClip:
                             if (!string.IsNullOrEmpty(m_AudioClip.m_Source))
                                 assetItem.FullSize = asset.byteSize + m_AudioClip.m_Size;
-                            assetItem.Text = m_AudioClip.m_Name;
                             exportable = true;
                             break;
                         case VideoClip m_VideoClip:
                             if (!string.IsNullOrEmpty(m_VideoClip.m_OriginalPath))
                                 assetItem.FullSize = asset.byteSize + (long)m_VideoClip.m_ExternalResources.m_Size;
-                            assetItem.Text = m_VideoClip.m_Name;
-                            exportable = true;
-                            break;
-                        case Shader m_Shader:
-                            assetItem.Text = m_Shader.m_ParsedForm?.m_Name ?? m_Shader.m_Name;
-                            exportable = true;
-                            break;
-                        case Mesh _:
-                        case TextAsset _:
-                        case AnimationClip _:
-                        case Font _:
-                        case MovieTexture _:
-                        case Sprite _:
-                            assetItem.Text = ((NamedObject)asset).m_Name;
-                            exportable = true;
-                            break;
-                        case Animator m_Animator:
-                            if (m_Animator.m_GameObject.TryGet(out var gameObject))
-                            {
-                                assetItem.Text = gameObject.m_Name;
-                            }
-                            exportable = true;
-                            break;
-                        case MonoBehaviour m_MonoBehaviour:
-                            if (m_MonoBehaviour.m_Name == "" && m_MonoBehaviour.m_Script.TryGet(out var m_Script))
-                            {
-                                assetItem.Text = m_Script.m_ClassName;
-                            }
-                            else
-                            {
-                                assetItem.Text = m_MonoBehaviour.m_Name;
-                            }
                             exportable = true;
                             break;
                         case PlayerSettings m_PlayerSettings:
@@ -334,26 +297,31 @@ namespace AssetStudioGUI
                                     }
                                 }
                             }
-                            assetItem.Text = m_AssetBundle.m_Name;
                             break;
                         case IndexObject m_IndexObject:
                             foreach(var index in m_IndexObject.AssetMap)
                             {
                                 mihoyoBinDataNames.Add((index.Value.Object, index.Key));
                             }
-                            assetItem.Text = "IndexObject";
-                            break;
-                        case MiHoYoBinData m_MiHoYoBinData:
-                            exportable = true;
                             break;
                         case ResourceManager m_ResourceManager:
-                                foreach (var m_Container in m_ResourceManager.m_Container)
-                                {
-                                    containers.Add((m_Container.Value, m_Container.Key));
-                                }
+                            foreach (var m_Container in m_ResourceManager.m_Container)
+                            {
+                                containers.Add((m_Container.Value, m_Container.Key));
+                            }
                             break;
-                        case NamedObject m_NamedObject:
-                            assetItem.Text = m_NamedObject.m_Name;
+                        case Mesh _:
+                        case TextAsset _:
+                        case AnimationClip _ when AnimationClip.Parsable:
+                        case Font _:
+                        case MovieTexture _:
+                        case Sprite _:
+                        case Material _:
+                        case MiHoYoBinData _:
+                        case Shader _ when Shader.Parsable:
+                        case Animator _:
+                        case MonoBehaviour _:
+                            exportable = true;
                             break;
                     }
                     if (assetItem.Text == "")
