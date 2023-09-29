@@ -869,5 +869,34 @@ namespace AssetStudio
             ms.Position = 0;
             return new FileReader(reader.FullPath, ms);
         }
+        
+        public static FileReader DecryptGirlsFrontline(FileReader reader)
+        {
+            Logger.Verbose($"Attempting to decrypt file {reader.FileName} with Girls Frontline encryption");
+
+            var originalHeader = new byte[] { 0x55, 0x6E, 0x69, 0x74, 0x79, 0x46, 0x53, 0x00, 0x00, 0x00, 0x00, 0x07, 0x35, 0x2E, 0x78, 0x2E };
+
+            MemoryStream ms = new();
+            var key = reader.ReadBytes(0x10);
+            for (int i = 0; i < key.Length; i++)
+            {
+                var b = (byte)(key[i] ^ originalHeader[i]);
+                key[i] = b != originalHeader[i] ? b : originalHeader[i];
+            }
+
+            var data = reader.ReadBytes((int)reader.Remaining);
+            var size = Math.Min(data.Length, 0x8000);
+            for (int i = 0; i < size; i++)
+            {
+                data[i] ^= key[i % key.Length];
+            }
+
+            Logger.Verbose("Decrypted Girls Frontline file successfully !!");
+            
+            ms.Write(originalHeader);
+            ms.Write(data);
+            ms.Position = 0;
+            return new FileReader(reader.FullPath, ms);
+        }
     }
 }

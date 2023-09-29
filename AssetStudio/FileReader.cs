@@ -206,6 +206,9 @@ namespace AssetStudio
                     case GameType.CodenameJump:
                         reader = DecryptCodenameJump(reader);
                         break;
+                    case GameType.GirlsFrontline:
+                        reader = DecryptGirlsFrontline(reader);
+                        break;
                 }
             }
             if (reader.FileType == FileType.BundleFile && game.Type.IsBlockFile() || reader.FileType == FileType.ENCRFile || reader.FileType == FileType.BlbFile)

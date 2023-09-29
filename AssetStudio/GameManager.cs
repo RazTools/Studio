@@ -39,6 +39,7 @@ namespace AssetStudio
             Games.Add(index++, new Game(GameType.AliceGearAegis));
             Games.Add(index++, new Game(GameType.ProjectSekai));
             Games.Add(index++, new Game(GameType.CodenameJump));
+            Games.Add(index++, new Game(GameType.GirlsFrontline));
         }
         public static Game GetGame(GameType gameType) => GetGame((int)gameType);
         public static Game GetGame(int index)
@@ -148,7 +149,8 @@ namespace AssetStudio
         ImaginaryFest,
         AliceGearAegis,
         ProjectSekai,
-        CodenameJump
+        CodenameJump,
+        GirlsFrontline
     }
 
     public static class GameTypes
