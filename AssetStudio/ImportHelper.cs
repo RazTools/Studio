@@ -876,7 +876,6 @@ namespace AssetStudio
 
             var originalHeader = new byte[] { 0x55, 0x6E, 0x69, 0x74, 0x79, 0x46, 0x53, 0x00, 0x00, 0x00, 0x00, 0x07, 0x35, 0x2E, 0x78, 0x2E };
 
-            MemoryStream ms = new();
             var key = reader.ReadBytes(0x10);
             for (int i = 0; i < key.Length; i++)
             {
@@ -884,6 +883,7 @@ namespace AssetStudio
                 key[i] = b != originalHeader[i] ? b : originalHeader[i];
             }
 
+            reader.Position = 0;
             var data = reader.ReadBytes((int)reader.Remaining);
             var size = Math.Min(data.Length, 0x8000);
             for (int i = 0; i < size; i++)
@@ -892,8 +892,8 @@ namespace AssetStudio
             }
 
             Logger.Verbose("Decrypted Girls Frontline file successfully !!");
-            
-            ms.Write(originalHeader);
+
+            MemoryStream ms = new();
             ms.Write(data);
             ms.Position = 0;
             return new FileReader(reader.FullPath, ms);
