@@ -23,37 +23,37 @@ jobs:
         run: nuget restore
 
       - name: Build .Net6
-        run: msbuild /t:AssetStudioGUI:publish /p:Configuration=Release /p:TargetFramework=net6.0-windows /p:SelfContained=false /verbosity:minimal
+        run: msbuild /t:AssetStudio.GUI:publish /p:Configuration=Release /p:TargetFramework=net6.0-windows /p:SelfContained=false /verbosity:minimal
 
       - name: Build .Net7
-        run: msbuild /t:AssetStudioGUI:publish /p:Configuration=Release /p:TargetFramework=net7.0-windows /p:SelfContained=false /verbosity:minimal
+        run: msbuild /t:AssetStudio.GUI:publish /p:Configuration=Release /p:TargetFramework=net7.0-windows /p:SelfContained=false /verbosity:minimal
 
       - name: Build .Net6 CLI
-        run: msbuild /t:AssetStudioCLI:publish /p:Configuration=Release /p:TargetFramework=net6.0-windows /p:SelfContained=false /verbosity:minimal
+        run: msbuild /t:AssetStudio.CLI:publish /p:Configuration=Release /p:TargetFramework=net6.0-windows /p:SelfContained=false /verbosity:minimal
 
       - name: Build .Net7 CLI
-        run: msbuild /t:AssetStudioCLI:publish /p:Configuration=Release /p:TargetFramework=net7.0-windows /p:SelfContained=false /verbosity:minimal
+        run: msbuild /t:AssetStudio.CLI:publish /p:Configuration=Release /p:TargetFramework=net7.0-windows /p:SelfContained=false /verbosity:minimal
 
       - name: Upload .Net6 Artifact
         uses: actions/upload-artifact@v3
         with:
           name: net6.0-${{ github.sha }}
-          path: AssetStudioGUI/bin/Release/net6.0-windows/publish
+          path: AssetStudio.GUI/bin/Release/net6.0-windows/publish
 
       - name: Upload .Net7 Artifact
         uses: actions/upload-artifact@v3
         with:
           name: net7.0-${{ github.sha }}
-          path: AssetStudioGUI/bin/Release/net7.0-windows/publish
+          path: AssetStudio.GUI/bin/Release/net7.0-windows/publish
 
       - name: Upload .Net6 CLI Artifact
         uses: actions/upload-artifact@v3
         with:
           name: net6.0-${{ github.sha }}
-          path: AssetStudioGUI/bin/Release/net6.0-windows/publish
+          path: AssetStudio.GUI/bin/Release/net6.0-windows/publish
 
       - name: Upload .Net7 CLI Artifact
         uses: actions/upload-artifact@v3
         with:
           name: net7.0-${{ github.sha }}
-          path: AssetStudioGUI/bin/Release/net7.0-windows/publish
+          path: AssetStudio.GUI/bin/Release/net7.0-windows/publish
