@@ -195,10 +195,6 @@ namespace AssetStudio.GUI
             }
             else
             {
-                if (paths.Length == 1 && File.Exists(paths[0]) && Path.GetExtension(paths[0]) == ".txt")
-                {
-                    paths = File.ReadAllLines(paths[0]);
-                }
                 await Task.Run(() => assetsManager.LoadFiles(paths));
             }
             BuildAssetStructures();
