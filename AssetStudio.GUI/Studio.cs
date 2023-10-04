@@ -265,20 +265,21 @@ namespace AssetStudio.GUI
                         case Texture2D m_Texture2D:
                             if (!string.IsNullOrEmpty(m_Texture2D.m_StreamData?.path))
                                 assetItem.FullSize = asset.byteSize + m_Texture2D.m_StreamData.size;
-                            exportable = true;
+                            exportable = AssetsManager.TypesInfo[ClassIDType.Texture2D].Item2;
                             break;
                         case AudioClip m_AudioClip:
                             if (!string.IsNullOrEmpty(m_AudioClip.m_Source))
                                 assetItem.FullSize = asset.byteSize + m_AudioClip.m_Size;
-                            exportable = true;
+                            exportable = AssetsManager.TypesInfo[ClassIDType.AudioClip].Item2;
                             break;
                         case VideoClip m_VideoClip:
                             if (!string.IsNullOrEmpty(m_VideoClip.m_OriginalPath))
                                 assetItem.FullSize = asset.byteSize + (long)m_VideoClip.m_ExternalResources.m_Size;
-                            exportable = true;
+                            exportable = AssetsManager.TypesInfo[ClassIDType.VideoClip].Item2;
                             break;
                         case PlayerSettings m_PlayerSettings:
                             productName = m_PlayerSettings.productName;
+                            exportable = AssetsManager.TypesInfo[ClassIDType.PlayerSettings].Item2;
                             break;
                         case AssetBundle m_AssetBundle:
                             if (!SkipContainer)
@@ -294,31 +295,46 @@ namespace AssetStudio.GUI
                                     }
                                 }
                             }
+                            exportable = AssetsManager.TypesInfo[ClassIDType.AssetBundle].Item2;
                             break;
                         case IndexObject m_IndexObject:
                             foreach(var index in m_IndexObject.AssetMap)
                             {
                                 mihoyoBinDataNames.Add((index.Value.Object, index.Key));
                             }
+                            exportable = AssetsManager.TypesInfo[ClassIDType.IndexObject].Item2;
                             break;
                         case ResourceManager m_ResourceManager:
                             foreach (var m_Container in m_ResourceManager.m_Container)
                             {
                                 containers.Add((m_Container.Value, m_Container.Key));
                             }
+                            exportable = AssetsManager.TypesInfo[ClassIDType.ResourceManager].Item2;
                             break;
                         case Mesh _:
                         case TextAsset _:
-                        case AnimationClip _ when AnimationClip.Parsable:
+                        case AnimationClip _:
                         case Font _:
                         case MovieTexture _:
                         case Sprite _:
                         case Material _:
                         case MiHoYoBinData _:
-                        case Shader _ when Shader.Parsable:
+                        case Shader _:
                         case Animator _:
                         case MonoBehaviour _:
-                            exportable = true;
+                        case Animation _:
+                        case AnimatorController _:
+                        case AnimatorOverrideController _:
+                        case Avatar _:
+                        case GameObject _:
+                        case MeshFilter _:
+                        case MeshRenderer _:
+                        case MonoScript _:
+                        case RectTransform _:
+                        case SkinnedMeshRenderer _:
+                        case SpriteAtlas _:
+                        case Transform _:
+                            exportable = AssetsManager.TypesInfo[assetItem.Type].Item2;
                             break;
                     }
                     if (assetItem.Text == "")

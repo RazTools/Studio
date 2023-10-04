@@ -1,8 +1,8 @@
 ﻿using System.Windows.Forms;
 
-namespace AssetStudio.GUI
+namespace AssetStudio
 {
-    partial class AssetBrowser
+    public partial class AssetBrowser
     {
         /// <summary>
         /// Required designer variable.

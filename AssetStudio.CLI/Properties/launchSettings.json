@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "AssetStudio.CLI": {
+      "commandName": "Project",
+      "commandLineArgs": "\"D:\\Games\\PGR\\PGR_Data\\StreamingAssets\\resource\" \"F:\\output\" --game UnityCN --filters \"F:\\Test\\filters.txt\" "
+    }
+  }
+}

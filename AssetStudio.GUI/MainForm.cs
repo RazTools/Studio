@@ -110,9 +110,6 @@ namespace AssetStudio.GUI
             MiHoYoBinData.Encrypted = Properties.Settings.Default.encrypted;
             MiHoYoBinData.Key = Properties.Settings.Default.key;
             AssetsHelper.Minimal = Properties.Settings.Default.minimalAssetMap;
-            Renderer.Parsable = !Properties.Settings.Default.disableRenderer;
-            Shader.Parsable = !Properties.Settings.Default.disableShader;
-            AnimationClip.Parsable = !Properties.Settings.Default.disableAnimationClip;
         }
 
         private void InitializeLogger()
@@ -466,7 +463,7 @@ namespace AssetStudio.GUI
                             }
                             else
                             {
-                                previewPanel.BackgroundImage = Properties.Resources.preview;
+                                previewPanel.BackgroundImage = Resources.Resources.preview;
                                 previewPanel.BackgroundImageLayout = ImageLayout.Center;
                             }
                         }
@@ -726,7 +723,7 @@ namespace AssetStudio.GUI
 
         private void selectAsset(object sender, ListViewItemSelectionChangedEventArgs e)
         {
-            previewPanel.BackgroundImage = Properties.Resources.preview;
+            previewPanel.BackgroundImage = Resources.Resources.preview;
             previewPanel.BackgroundImageLayout = ImageLayout.Center;
             classTextBox.Visible = false;
             assetInfoLabel.Visible = false;
@@ -1273,12 +1270,12 @@ namespace AssetStudio.GUI
 
         private void PreviewGameObject(GameObject m_GameObject)
         {
-            var model = new ModelConverter(m_GameObject, Properties.Settings.Default.convertType, Studio.Game, false, Array.Empty<AnimationClip>());
+            var model = new ModelConverter(m_GameObject, Studio.Game, Array.Empty<AnimationClip>());
             PreviewModel(model);
         }
         private void PreviewAnimator(Animator m_Animator)
         {
-            var model = new ModelConverter(m_Animator, Properties.Settings.Default.convertType, Studio.Game, false, Array.Empty<AnimationClip>());
+            var model = new ModelConverter(m_Animator, Studio.Game, Array.Empty<AnimationClip>());
             PreviewModel(model);
         }
         
@@ -1437,7 +1434,7 @@ namespace AssetStudio.GUI
             assetListView.Items.Clear();
             classesListView.Items.Clear();
             classesListView.Groups.Clear();
-            previewPanel.BackgroundImage = Properties.Resources.preview;
+            previewPanel.BackgroundImage = Resources.Resources.preview;
             imageTexture?.Dispose();
             imageTexture = null;
             previewPanel.BackgroundImageLayout = ImageLayout.Center;
@@ -2365,13 +2362,13 @@ namespace AssetStudio.GUI
 
         private void loadAssetMapToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            assetBrowser = new AssetBrowser(this);
+            assetBrowser = new AssetBrowser(LoadPaths);
             assetBrowser.Show();
         }
 
         private void specifyUnityCNKey_Click(object sender, EventArgs e)
         {
-            var unitycn = new UnityCNForm();
+            var unitycn = new UnityCNForm(ref Studio.Game);
             unitycn.Show();
         }
 
@@ -2676,7 +2673,7 @@ namespace AssetStudio.GUI
         private static void LoadShader(string filename, ShaderType type, int program, out int address)
         {
             address = GL.CreateShader(type);
-            var str = (string)Properties.Resources.ResourceManager.GetObject(filename);
+            var str = (string)Resources.Resources.ResourceManager.GetObject(filename);
             GL.ShaderSource(address, str);
             GL.CompileShader(address);
             GL.AttachShader(program, address);

@@ -988,8 +988,6 @@ namespace AssetStudio
 
     public class Shader : NamedObject
     {
-        public static bool Parsable;
-
         public byte[] m_Script;
         //5.3 - 5.4
         public uint decompressedSize;

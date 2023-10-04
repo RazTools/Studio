@@ -5,17 +5,16 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using AssetStudio;
 
-namespace AssetStudio.GUI
+namespace AssetStudio
 {
-    partial class AssetBrowser : Form
+    public partial class AssetBrowser : Form
     {
-        private readonly MainForm _parent;
-        public AssetBrowser(MainForm form)
+        private readonly Action<string[]> LoadFiles;
+        public AssetBrowser(Action<string[]> loadFiles)
         {
             InitializeComponent();
-            _parent = form;
+            LoadFiles = loadFiles;
             FormClosing += AssetBrowser_FormClosing;
         }
 
@@ -51,7 +50,7 @@ namespace AssetStudio.GUI
             if (files.Count != 0 && !files.Any(string.IsNullOrEmpty))
             {
                 Logger.Info("Loading...");
-                _parent.Invoke(() => _parent.LoadPaths(files.ToArray()));
+                LoadFiles(files.ToArray());
             }
         }
         private void searchTextBox_KeyPress(object sender, KeyPressEventArgs e)

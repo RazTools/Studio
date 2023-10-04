@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using AssetStudio.CLI.Properties;
 using static AssetStudio.CLI.Studio;
 
 namespace AssetStudio.CLI 
@@ -16,6 +15,12 @@ namespace AssetStudio.CLI
         {
             try
             {
+                if (o.ExportOptions)
+                {
+                    var exportOpt = new ExportOptions() { StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen };
+                    exportOpt.ShowDialog();
+                }
+
                 var game = GameManager.GetGame(o.GameName);
 
                 if (game == null)
@@ -27,6 +32,14 @@ namespace AssetStudio.CLI
 
                 if (game.Type.IsUnityCN())
                 {
+                    if (o.KeyIndex == -1)
+                    {
+                        var unityCNForm = new UnityCNForm(ref game) { StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen };
+                        if (unityCNForm.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                        {
+                            o.KeyIndex = Properties.Settings.Default.selectedUnityCNKey;
+                        }
+                    }
                     if (!UnityCNManager.TryGetEntry(o.KeyIndex, out var unityCN))
                     {
                         Console.WriteLine("Invalid key index !!");
@@ -41,24 +54,22 @@ namespace AssetStudio.CLI
                 Studio.Game = game;
                 Logger.LogVerbose = o.Verbose;
                 Logger.Default = new ConsoleLogger();
-                Logger.FileLogging = Settings.Default.enableFileLogging;
-                AssetsHelper.Minimal = Settings.Default.minimalAssetMap;
-                Shader.Parsable = !Settings.Default.disableShader;
-                Renderer.Parsable = !Settings.Default.disableRenderer;
-                AnimationClip.Parsable = !Settings.Default.disableAnimationClip;
+                Logger.FileLogging = Properties.Settings.Default.enableFileLogging;
+                AssetsHelper.Minimal = Properties.Settings.Default.minimalAssetMap;
                 AssetsHelper.SetUnityVersion(o.UnityVersion);
+                MiHoYoBinData.Encrypted = Properties.Settings.Default.encrypted;
+                MiHoYoBinData.Key = Properties.Settings.Default.key;
 
                 assetsManager.Silent = o.Silent;
                 assetsManager.Game = game;
                 assetsManager.SpecifyUnityVersion = o.UnityVersion;
-                ModelOnly = o.Model;
-                o.Output.Create();
-
-                if (o.Key != default)
+                if (o.Model)
                 {
-                    MiHoYoBinData.Encrypted = true;
-                    MiHoYoBinData.Key = o.Key;
+                    AssetsManager.TypesInfo[ClassIDType.GameObject] = (true, true);
+                    AssetsManager.TypesInfo[ClassIDType.Texture2D] = (true, false);
+                    AssetsManager.TypesInfo[ClassIDType.Animator] = (true, false);
                 }
+                o.Output.Create();
 
                 if (o.AIFile != null && game.Type.IsGISubGroup())
                 {
@@ -68,6 +79,18 @@ namespace AssetStudio.CLI
                 if (o.DummyDllFolder != null)
                 {
                     assemblyLoader.Load(o.DummyDllFolder.FullName);
+                }
+
+                if (o.AssetBrowser)
+                {
+                    var thread = new Thread(() => {
+                        var assetBrowser = new AssetBrowser(LoadFiles) { StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen };
+                        assetBrowser.ShowDialog();
+                    });
+                    thread.SetApartmentState(ApartmentState.STA);
+                    thread.Start();
+                    thread.Join();
+                    return;
                 }
 
                 Logger.Info("Scanning for files...");
@@ -90,41 +113,45 @@ namespace AssetStudio.CLI
                         throw new Exception("Unable to build AssetMap with input_path as a file !!");
                     }
                     var resetEvent = new ManualResetEvent(false);
-                    AssetsHelper.BuildAssetMap(files, o.MapName, game, o.Output.FullName, o.MapType, resetEvent, o.TypeFilter, o.NameFilter, o.ContainerFilter);
+                    AssetsHelper.BuildAssetMap(files, o.MapName, game, o.Output.FullName, o.MapType, resetEvent, o.Filter);
                     resetEvent.WaitOne();
                 }
                 if (o.MapOp.HasFlag(MapOpType.Both))
                 {
                     var resetEvent = new ManualResetEvent(false);
-                    AssetsHelper.BuildBoth(files, o.MapName, o.Input.FullName, game, o.Output.FullName, o.MapType, resetEvent, o.TypeFilter, o.NameFilter, o.ContainerFilter);
+                    AssetsHelper.BuildBoth(files, o.MapName, o.Input.FullName, game, o.Output.FullName, o.MapType, resetEvent, o.Filter);
                     resetEvent.WaitOne();
                 }
                 if (o.MapOp.Equals(MapOpType.None) || o.MapOp.HasFlag(MapOpType.Load))
                 {
-                    var i = 0;
-
                     var path = Path.GetDirectoryName(Path.GetFullPath(files[0]));
                     ImportHelper.MergeSplitAssets(path);
                     var toReadFile = ImportHelper.ProcessingSplitFiles(files.ToList());
-
-                    var fileList = new List<string>(toReadFile);
-                    foreach (var file in fileList)
-                    {
-                        assetsManager.LoadFiles(file);
-                        if (assetsManager.assetsFileList.Count > 0)
-                        {
-                            BuildAssetData(o.TypeFilter, o.NameFilter, o.ContainerFilter, ref i);
-                            ExportAssets(o.Output.FullName, exportableAssets, o.GroupAssetsType);
-                        }
-                        exportableAssets.Clear();
-                        assetsManager.Clear();
-                    }
+                    LoadFiles(toReadFile);
                 }
             }
             catch (Exception e)
             {
                 Console.WriteLine(e);
             }
+
+            void LoadFiles(string[] files)
+            {
+                var i = 0;
+                foreach (var file in files)
+                {
+                    assetsManager.LoadFiles(file);
+                    if (assetsManager.assetsFileList.Count > 0)
+                    {
+                        BuildAssetData(o.Filter, ref i);
+                        ExportAssets(o.Output.FullName, exportableAssets, o.GroupAssetsType);
+                    }
+                    exportableAssets.Clear();
+                    assetsManager.Clear();
+                }
+            }
         }
+
+        
     }
 }

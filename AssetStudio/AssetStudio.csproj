@@ -13,12 +13,22 @@
 	<PackageReference Include="K4os.Compression.LZ4" Version="1.3.6" />
 	<PackageReference Include="MessagePack" Version="2.6.100-alpha" />
 	<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+	<PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0-rc.1.23419.4" />
 	<PackageReference Include="ZstdSharp.Port" Version="0.7.2" />
   </ItemGroup>
 
   <ItemGroup>
-  	<None Update="Keys.json">
-  		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    <Compile Update="Properties\Settings.Designer.cs">
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+  	<None Update="Properties\Settings.settings">
+  	  <Generator>PublicSettingsSingleFileGenerator</Generator>
+  	  <LastGenOutput>Settings.Designer.cs</LastGenOutput>
   	</None>
   </ItemGroup>
 	

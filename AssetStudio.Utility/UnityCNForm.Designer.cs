@@ -1,4 +1,4 @@
-﻿namespace AssetStudio.GUI
+﻿namespace AssetStudio
 {
     partial class UnityCNForm
     {

@@ -33,7 +33,6 @@ namespace AssetStudio.CLI
     internal static class Studio
     {
         public static Game Game;
-        public static bool ModelOnly = false;
         public static bool SkipContainer = false;
         public static AssetsManager assetsManager = new AssetsManager() { ResolveDependencies = false };
         public static AssemblyLoader assemblyLoader = new AssemblyLoader();
@@ -235,7 +234,7 @@ namespace AssetStudio.CLI
             }
         }
 
-        public static void BuildAssetData(ClassIDType[] typeFilters, Regex[] nameFilters, Regex[] containerFilters, ref int i)
+        public static void BuildAssetData(Regex[] filters, ref int i)
         {
             var objectAssetItemDic = new Dictionary<Object, AssetItem>();
             var mihoyoBinDataNames = new List<(PPtr<Object>, string)>();
@@ -244,7 +243,7 @@ namespace AssetStudio.CLI
             {
                 foreach (var asset in assetsFile.Objects)
                 {
-                    ProcessAssetData(asset, typeFilters, nameFilters, objectAssetItemDic, mihoyoBinDataNames, containers, ref i);
+                    ProcessAssetData(asset, filters, objectAssetItemDic, mihoyoBinDataNames, containers, ref i);
                 }
             }
             foreach ((var pptr, var name) in mihoyoBinDataNames)
@@ -267,13 +266,10 @@ namespace AssetStudio.CLI
                     if (pptr.TryGet(out var obj))
                     {
                         var item = objectAssetItemDic[obj];
-                        if (containerFilters.IsNullOrEmpty() || containerFilters.Any(x => x.IsMatch(container)))
+                        item.Container = container;
+                        if (!exportableAssets.Contains(item) && filters.IsNullOrEmpty() || filters.Any(x => x.IsMatch(container)))
                         {
-                            item.Container = container;
-                        }
-                        else
-                        {
-                            exportableAssets.Remove(item);
+                            exportableAssets.Add(item);
                         }
                     }
                 }
@@ -285,7 +281,7 @@ namespace AssetStudio.CLI
             }
         }
 
-        public static void ProcessAssetData(Object asset, ClassIDType[] typeFilters, Regex[] nameFilters, Dictionary<Object, AssetItem> objectAssetItemDic, List<(PPtr<Object>, string)> mihoyoBinDataNames, List<(PPtr<Object>, string)> containers, ref int i) 
+        public static void ProcessAssetData(Object asset, Regex[] filters, Dictionary<Object, AssetItem> objectAssetItemDic, List<(PPtr<Object>, string)> mihoyoBinDataNames, List<(PPtr<Object>, string)> containers, ref int i) 
         {
             var assetItem = new AssetItem(asset);
             objectAssetItemDic.Add(asset, assetItem);
@@ -294,25 +290,25 @@ namespace AssetStudio.CLI
             switch (asset)
             {
                 case GameObject m_GameObject:
-                    exportable = ModelOnly && m_GameObject.HasModel();
+                    exportable = m_GameObject.HasModel() && AssetsManager.TypesInfo[ClassIDType.GameObject].Item2;
                     break;
                 case Texture2D m_Texture2D:
                     if (!string.IsNullOrEmpty(m_Texture2D.m_StreamData?.path))
                         assetItem.FullSize = asset.byteSize + m_Texture2D.m_StreamData.size;
-                    exportable = !ModelOnly;
+                    exportable = AssetsManager.TypesInfo[ClassIDType.Texture2D].Item2;
                     break;
                 case AudioClip m_AudioClip:
                     if (!string.IsNullOrEmpty(m_AudioClip.m_Source))
                         assetItem.FullSize = asset.byteSize + m_AudioClip.m_Size;
-                    exportable = !ModelOnly;
+                    exportable = AssetsManager.TypesInfo[ClassIDType.AudioClip].Item2;
                     break;
                 case VideoClip m_VideoClip:
                     if (!string.IsNullOrEmpty(m_VideoClip.m_OriginalPath))
                         assetItem.FullSize = asset.byteSize + (long)m_VideoClip.m_ExternalResources.m_Size;
-                    exportable = !ModelOnly;
+                    exportable = AssetsManager.TypesInfo[ClassIDType.VideoClip].Item2;
                     break;
                 case MonoBehaviour m_MonoBehaviour:
-                    exportable = !ModelOnly && assemblyLoader.Loaded;
+                    exportable = assemblyLoader.Loaded && AssetsManager.TypesInfo[ClassIDType.MonoBehaviour].Item2;
                     break;
                 case AssetBundle m_AssetBundle:
                     foreach (var m_Container in m_AssetBundle.m_Container)
@@ -325,30 +321,44 @@ namespace AssetStudio.CLI
                             containers.Add((m_AssetBundle.m_PreloadTable[k], m_Container.Key));
                         }
                     }
+                    exportable = AssetsManager.TypesInfo[ClassIDType.AssetBundle].Item2;
                     break;
                 case IndexObject m_IndexObject:
                     foreach (var index in m_IndexObject.AssetMap)
                     {
                         mihoyoBinDataNames.Add((index.Value.Object, index.Key));
                     }
+                    exportable = AssetsManager.TypesInfo[ClassIDType.IndexObject].Item2;
                     break;
                 case ResourceManager m_ResourceManager:
                     foreach (var m_Container in m_ResourceManager.m_Container)
                     {
                         containers.Add((m_Container.Value, m_Container.Key));
                     }
+                    exportable = AssetsManager.TypesInfo[ClassIDType.ResourceManager].Item2;
                     break;
                 case Mesh _:
                 case TextAsset _:
-                case AnimationClip _ when AnimationClip.Parsable:
+                case AnimationClip _:
                 case Font _:
                 case MovieTexture _:
                 case Sprite _:
                 case Material _:
                 case MiHoYoBinData _:
-                case Shader _ when Shader.Parsable:
+                case Shader _:
                 case Animator _:
-                    exportable = !ModelOnly;
+                case Animation _:
+                case AnimatorController _:
+                case AnimatorOverrideController _:
+                case Avatar _:
+                case MeshFilter _:
+                case MeshRenderer _:
+                case MonoScript _:
+                case RectTransform _:
+                case SkinnedMeshRenderer _:
+                case SpriteAtlas _:
+                case Transform _:
+                    exportable = AssetsManager.TypesInfo[assetItem.Type].Item2;
                     break;
             }
             if (assetItem.Text == "")
@@ -356,9 +366,8 @@ namespace AssetStudio.CLI
                 assetItem.Text = assetItem.TypeString + assetItem.UniqueID;
             }
             
-            var isMatchRegex = nameFilters.IsNullOrEmpty() || nameFilters.Any(x => x.IsMatch(assetItem.Text));
-            var isFilteredType = typeFilters.IsNullOrEmpty() || typeFilters.Contains(assetItem.Type);
-            if (isMatchRegex && isFilteredType && exportable)
+            var isMatchRegex = filters.IsNullOrEmpty() || filters.Any(x => x.IsMatch(assetItem.Text));
+            if (isMatchRegex && exportable)
             {
                 exportableAssets.Add(assetItem);
             }

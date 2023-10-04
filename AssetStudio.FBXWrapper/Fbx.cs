@@ -27,8 +27,7 @@ namespace AssetStudio
         public static class Exporter
         {
 
-            public static void Export(string path, IImported imported, bool eulerFilter, float filterPrecision,
-                bool allNodes, bool skins, bool animation, bool blendShape, bool castToBone, float boneSize, bool exportAllUvsAsDiffuseMaps, bool exportUV0UV1, float scaleFactor, int versionIndex, bool isAscii)
+            public static void Export(string path, IImported imported)
             {
                 var file = new FileInfo(path);
                 var dir = file.Directory;
@@ -43,10 +42,10 @@ namespace AssetStudio
 
                 var name = Path.GetFileName(path);
 
-                using (var exporter = new FbxExporter(name, imported, allNodes, skins, castToBone, boneSize, exportAllUvsAsDiffuseMaps, exportUV0UV1, scaleFactor, versionIndex, isAscii))
+                using (var exporter = new FbxExporter(name, imported))
                 {
                     exporter.Initialize();
-                    exporter.ExportAll(blendShape, animation, eulerFilter, filterPrecision);
+                    exporter.ExportAll();
                 }
 
                 Directory.SetCurrentDirectory(currentDir);

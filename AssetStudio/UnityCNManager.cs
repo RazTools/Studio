@@ -8,14 +8,11 @@ namespace AssetStudio
 {
     public static class UnityCNManager
     {
-        public const string KeysFileName = "Keys.json";
-
         private static List<UnityCN.Entry> Entries = new List<UnityCN.Entry>();
 
         static UnityCNManager()
         {
-            var str = File.ReadAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, KeysFileName));
-            Entries = JsonConvert.DeserializeObject<List<UnityCN.Entry>>(str);
+            Entries = JsonConvert.DeserializeObject<List<UnityCN.Entry>>(Properties.Settings.Default.keys);
         }
 
         public static void SaveEntries(List<UnityCN.Entry> entries)
@@ -24,7 +21,7 @@ namespace AssetStudio
             Entries.AddRange(entries);
 
             var str = JsonConvert.SerializeObject(Entries);
-            File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, KeysFileName), str);
+            Properties.Settings.Default.keys = str;
         }
 
         public static void SetKey(int index)

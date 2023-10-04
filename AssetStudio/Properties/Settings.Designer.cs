@@ -8,12 +8,12 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace AssetStudio.GUI.Properties {
+namespace AssetStudio.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.8.0.0")]
-    internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
+    public sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
         
@@ -109,10 +109,10 @@ namespace AssetStudio.GUI.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Png")]
-        public global::AssetStudio.ImageFormat convertType {
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int convertType {
             get {
-                return ((global::AssetStudio.ImageFormat)(this["convertType"]));
+                return ((int)(this["convertType"]));
             }
             set {
                 this["convertType"] = value;
@@ -169,13 +169,25 @@ namespace AssetStudio.GUI.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool exportAnimations {
             get {
                 return ((bool)(this["exportAnimations"]));
             }
             set {
                 this["exportAnimations"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool collectAnimations {
+            get {
+                return ((bool)(this["collectAnimations"]));
+            }
+            set {
+                this["collectAnimations"] = value;
             }
         }
         
@@ -217,7 +229,7 @@ namespace AssetStudio.GUI.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        [global::System.Configuration.DefaultSettingValueAttribute("100")]
         public decimal scaleFactor {
             get {
                 return ((decimal)(this["scaleFactor"]));
@@ -265,13 +277,13 @@ namespace AssetStudio.GUI.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool exportAllUvsAsDiffuseMaps {
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool encrypted {
             get {
-                return ((bool)(this["exportAllUvsAsDiffuseMaps"]));
+                return ((bool)(this["encrypted"]));
             }
             set {
-                this["exportAllUvsAsDiffuseMaps"] = value;
+                this["encrypted"] = value;
             }
         }
         
@@ -301,18 +313,6 @@ namespace AssetStudio.GUI.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
-        public bool encrypted {
-            get {
-                return ((bool)(this["encrypted"]));
-            }
-            set {
-                this["encrypted"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("0")]
         public int selectedGame {
             get {
@@ -320,6 +320,18 @@ namespace AssetStudio.GUI.Properties {
             }
             set {
                 this["selectedGame"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int selectedUnityCNKey {
+            get {
+                return ((int)(this["selectedUnityCNKey"]));
+            }
+            set {
+                this["selectedUnityCNKey"] = value;
             }
         }
         
@@ -349,13 +361,13 @@ namespace AssetStudio.GUI.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
-        public bool collectAnimations {
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string selectedCABMapName {
             get {
-                return ((bool)(this["collectAnimations"]));
+                return ((string)(this["selectedCABMapName"]));
             }
             set {
-                this["collectAnimations"] = value;
+                this["selectedCABMapName"] = value;
             }
         }
         
@@ -368,42 +380,6 @@ namespace AssetStudio.GUI.Properties {
             }
             set {
                 this["skipContainer"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool exportUV0UV1 {
-            get {
-                return ((bool)(this["exportUV0UV1"]));
-            }
-            set {
-                this["exportUV0UV1"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool disableShader {
-            get {
-                return ((bool)(this["disableShader"]));
-            }
-            set {
-                this["disableShader"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool disableRenderer {
-            get {
-                return ((bool)(this["disableRenderer"]));
-            }
-            set {
-                this["disableRenderer"] = value;
             }
         }
         
@@ -433,7 +409,7 @@ namespace AssetStudio.GUI.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool enableModelPreview {
             get {
                 return ((bool)(this["enableModelPreview"]));
@@ -445,43 +421,7 @@ namespace AssetStudio.GUI.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("0")]
-        public int selectedUnityCNKey {
-            get {
-                return ((int)(this["selectedUnityCNKey"]));
-            }
-            set {
-                this["selectedUnityCNKey"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string selectedCABMapName {
-            get {
-                return ((string)(this["selectedCABMapName"]));
-            }
-            set {
-                this["selectedCABMapName"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool disableAnimationClip {
-            get {
-                return ((bool)(this["disableAnimationClip"]));
-            }
-            set {
-                this["disableAnimationClip"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool enableFileLogging {
             get {
                 return ((bool)(this["enableFileLogging"]));
@@ -500,6 +440,117 @@ namespace AssetStudio.GUI.Properties {
             }
             set {
                 this["enableVerbose"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("{\r\n    \"Animation\": {\r\n        \"Item1\": true,\r\n        \"Item2\": false\r\n    },\r\n  " +
+            "  \"AnimationClip\": {\r\n        \"Item1\": true,\r\n        \"Item2\": true\r\n    },\r\n   " +
+            " \"Animator\": {\r\n        \"Item1\": true,\r\n        \"Item2\": true\r\n    },\r\n    \"Anim" +
+            "atorController\": {\r\n        \"Item1\": true,\r\n        \"Item2\": false\r\n    },\r\n    " +
+            "\"AnimatorOverrideController\": {\r\n        \"Item1\": true,\r\n        \"Item2\": false\r" +
+            "\n    },\r\n    \"AssetBundle\": {\r\n        \"Item1\": true,\r\n        \"Item2\": false\r\n " +
+            "   },\r\n    \"AudioClip\": {\r\n        \"Item1\": true,\r\n        \"Item2\": true\r\n    }," +
+            "\r\n    \"Avatar\": {\r\n        \"Item1\": true,\r\n        \"Item2\": false\r\n    },\r\n    \"" +
+            "Font\": {\r\n        \"Item1\": true,\r\n        \"Item2\": true\r\n    },\r\n    \"GameObject" +
+            "\": {\r\n        \"Item1\": true,\r\n        \"Item2\": false\r\n    },\r\n    \"IndexObject\":" +
+            " {\r\n        \"Item1\": true,\r\n        \"Item2\": false\r\n    },\r\n    \"Material\": {\r\n " +
+            "       \"Item1\": true,\r\n        \"Item2\": true\r\n    },\r\n    \"Mesh\": {\r\n        \"It" +
+            "em1\": true,\r\n        \"Item2\": true\r\n    },\r\n    \"MeshFilter\": {\r\n        \"Item1\"" +
+            ": true,\r\n        \"Item2\": false\r\n    },\r\n    \"MeshRenderer\": {\r\n        \"Item1\":" +
+            " true,\r\n        \"Item2\": false\r\n    },\r\n    \"MiHoYoBinData\": {\r\n        \"Item1\":" +
+            " true,\r\n        \"Item2\": true\r\n    },\r\n    \"MonoBehaviour\": {\r\n        \"Item1\": " +
+            "true,\r\n        \"Item2\": true\r\n    },\r\n    \"MonoScript\": {\r\n        \"Item1\": true" +
+            ",\r\n        \"Item2\": false\r\n    },\r\n    \"MovieTexture\": {\r\n        \"Item1\": true," +
+            "\r\n        \"Item2\": false\r\n    },\r\n    \"PlayerSettings\": {\r\n        \"Item1\": true" +
+            ",\r\n        \"Item2\": false\r\n    },\r\n    \"RectTransform\": {\r\n        \"Item1\": true" +
+            ",\r\n        \"Item2\": false\r\n    },\r\n    \"Shader\": {\r\n        \"Item1\": true,\r\n    " +
+            "    \"Item2\": true\r\n    },\r\n    \"SkinnedMeshRenderer\": {\r\n        \"Item1\": true,\r" +
+            "\n        \"Item2\": false\r\n    },\r\n    \"Sprite\": {\r\n        \"Item1\": true,\r\n      " +
+            "  \"Item2\": true\r\n    },\r\n    \"SpriteAtlas\": {\r\n        \"Item1\": true,\r\n        \"" +
+            "Item2\": false\r\n    },\r\n    \"TextAsset\": {\r\n        \"Item1\": true,\r\n        \"Item" +
+            "2\": true\r\n    },\r\n    \"Texture2D\": {\r\n        \"Item1\": true,\r\n        \"Item2\": t" +
+            "rue\r\n    },\r\n    \"Transform\": {\r\n        \"Item1\": true,\r\n        \"Item2\": false\r" +
+            "\n    },\r\n    \"VideoClip\": {\r\n        \"Item1\": true,\r\n        \"Item2\": true\r\n    " +
+            "},\r\n    \"ResourceManager\": {\r\n        \"Item1\": true,\r\n        \"Item2\": false\r\n  " +
+            "  }\r\n}")]
+        public string types {
+            get {
+                return ((string)(this["types"]));
+            }
+            set {
+                this["types"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("[{\r\n        \"Name\": \"PGR GLB/KR\",\r\n        \"Key\": \"6B75726F6B75726F6B75726F6B7572" +
+            "6F\"\r\n    }, {\r\n        \"Name\": \"PGR CN/JP/TW\",\r\n        \"Key\": \"7935585076714C4F" +
+            "72436F6B57524961\"\r\n    }, {\r\n        \"Name\": \"Archeland/Kalpa of Universe\",\r\n   " +
+            "     \"Key\": \"426C61636B4A61636B50726F6A656374\"\r\n    }, {\r\n        \"Name\": \"Arche" +
+            "land 1.1.14\",\r\n        \"Key\": \"50726F6A65637441726368654C616E64\"\r\n    }, {\r\n    " +
+            "    \"Name\": \"Neural Cloud\",\r\n        \"Key\": \"31636162383436663532393031633965\"\r\n" +
+            "    }, {\r\n        \"Name\": \"Higan: Eruthyll\",\r\n        \"Key\": \"45317832633361346C" +
+            "35693662377572\"\r\n    }, {\r\n        \"Name\": \"White Chord\",\r\n        \"Key\": \"79756" +
+            "C6F6E6731383638676E6F6C7579\"\r\n    }, {\r\n        \"Name\": \"Mecharashi\",\r\n        \"" +
+            "Key\": \"33384338334631333245374637413041\"\r\n    }, {\r\n        \"Name\": \"Castlevania" +
+            ": Moon Night Fantasy\",\r\n        \"Key\": \"31323334353637383132333435363738\"\r\n    }" +
+            ", {\r\n        \"Name\": \"Huā Yì Shān Xīn Zhī Yuè\",\r\n        \"Key\": \"494E484A6E68647" +
+            "970716B3534377864\"\r\n    }, {\r\n        \"Name\": \"Doula Continent\",\r\n        \"Key\":" +
+            " \"52346366773339474644326661785756\"\r\n    }, {\r\n        \"Name\": \"Bless Global\",\r\n" +
+            "        \"Key\": \"6C6F6E67747567616D652E796A66623F\"\r\n    }, {\r\n        \"Name\": \"St" +
+            "arside\",\r\n        \"Key\": \"41394A3542384D4A50554D3539464B57\"\r\n    }, {\r\n        \"" +
+            "Name\": \"Resonance Soltice\",\r\n        \"Key\": \"5265736F6E616E63655265626F726E52\"\r\n" +
+            "    }, {\r\n        \"Name\": \"Oblivion Override\",\r\n        \"Key\": \"7179666D6F6F6E32" +
+            "3331323433343532\"\r\n    }, {\r\n        \"Name\": \"Dawnlands\",\r\n        \"Key\": \"636F6" +
+            "465737339353237636F64657373\"\r\n    }, {\r\n        \"Name\": \"BB\",\r\n        \"Key\": \"5" +
+            "F6C4E3F3A3F233F3F3F3F663F1A3F3F\"\r\n    }, {\r\n        \"Name\": \"Dynasty Legends 2\"," +
+            "\r\n        \"Key\": \"746169686567616D6573323032323032\"\r\n    }, {\r\n        \"Name\": \"" +
+            "Evernight CN\",\r\n        \"Key\": \"68687878747478736868787874747873\"\r\n    }, {\r\n   " +
+            "     \"Name\": \"Xintianlong Babu\",\r\n        \"Key\": \"613235626231333463633264643332" +
+            "65\"\r\n    }, {\r\n        \"Name\": \"Frostpunk: Beyond the Ice\",\r\n        \"Key\": \"736" +
+            "8756978696E673838383838383838\"\r\n    }\r\n]")]
+        public string keys {
+            get {
+                return ((string)(this["keys"]));
+            }
+            set {
+                this["keys"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute(@"<ArrayOfBoolean xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+	<boolean>true</boolean>
+	<boolean>true</boolean>
+	<boolean>false</boolean>
+	<boolean>false</boolean>
+	<boolean>false</boolean>
+	<boolean>false</boolean>
+	<boolean>false</boolean>
+	<boolean>false</boolean>
+</ArrayOfBoolean>")]
+        public bool[] uvExport {
+            get {
+                return ((bool[])(this["uvExport"]));
+            }
+            set {
+                this["uvExport"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("{}")]
+        public string texs {
+            get {
+                return ((string)(this["texs"]));
+            }
+            set {
+                this["texs"] = value;
             }
         }
     }

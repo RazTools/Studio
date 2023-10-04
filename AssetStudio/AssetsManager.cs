@@ -6,12 +6,15 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using Newtonsoft.Json;
 using static AssetStudio.ImportHelper;
 
 namespace AssetStudio
 {
     public class AssetsManager
     {
+        public static Dictionary<ClassIDType, (bool, bool)> TypesInfo;
+
         public Game Game;
         public bool Silent = false;
         public bool SkipProcess = false;
@@ -27,6 +30,11 @@ namespace AssetStudio
         internal HashSet<string> importFilesHash = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         internal HashSet<string> noexistFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         internal HashSet<string> assetsFileListHash = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        static AssetsManager()
+        {
+            TypesInfo = JsonConvert.DeserializeObject<Dictionary<ClassIDType, (bool, bool)>>(Properties.Settings.Default.types);
+        }
 
         public void LoadFiles(string file)
         {
@@ -639,36 +647,36 @@ namespace AssetStudio
                     {
                         Object obj = objectReader.type switch
                         {
-                            ClassIDType.Animation => new Animation(objectReader),
-                            ClassIDType.AnimationClip when AnimationClip.Parsable => new AnimationClip(objectReader),
-                            ClassIDType.Animator => new Animator(objectReader),
-                            ClassIDType.AnimatorController => new AnimatorController(objectReader),
-                            ClassIDType.AnimatorOverrideController => new AnimatorOverrideController(objectReader),
-                            ClassIDType.AssetBundle => new AssetBundle(objectReader),
-                            ClassIDType.AudioClip => new AudioClip(objectReader),
-                            ClassIDType.Avatar => new Avatar(objectReader),
-                            ClassIDType.Font => new Font(objectReader),
-                            ClassIDType.GameObject => new GameObject(objectReader),
-                            ClassIDType.IndexObject => new IndexObject(objectReader),
-                            ClassIDType.Material => new Material(objectReader),
-                            ClassIDType.Mesh => new Mesh(objectReader),
-                            ClassIDType.MeshFilter => new MeshFilter(objectReader),
-                            ClassIDType.MeshRenderer when Renderer.Parsable => new MeshRenderer(objectReader),
-                            ClassIDType.MiHoYoBinData => new MiHoYoBinData(objectReader),
-                            ClassIDType.MonoBehaviour => new MonoBehaviour(objectReader),
-                            ClassIDType.MonoScript => new MonoScript(objectReader),
-                            ClassIDType.MovieTexture => new MovieTexture(objectReader),
-                            ClassIDType.PlayerSettings => new PlayerSettings(objectReader),
-                            ClassIDType.RectTransform => new RectTransform(objectReader),
-                            ClassIDType.Shader when Shader.Parsable => new Shader(objectReader),
-                            ClassIDType.SkinnedMeshRenderer when Renderer.Parsable => new SkinnedMeshRenderer(objectReader),
-                            ClassIDType.Sprite => new Sprite(objectReader),
-                            ClassIDType.SpriteAtlas => new SpriteAtlas(objectReader),
-                            ClassIDType.TextAsset => new TextAsset(objectReader),
-                            ClassIDType.Texture2D => new Texture2D(objectReader),
-                            ClassIDType.Transform => new Transform(objectReader),
-                            ClassIDType.VideoClip => new VideoClip(objectReader),
-                            ClassIDType.ResourceManager => new ResourceManager(objectReader),
+                            ClassIDType.Animation when TypesInfo[ClassIDType.Animation].Item1 => new Animation(objectReader),
+                            ClassIDType.AnimationClip when TypesInfo[ClassIDType.AnimationClip].Item1 => new AnimationClip(objectReader),
+                            ClassIDType.Animator when TypesInfo[ClassIDType.Animator].Item1 => new Animator(objectReader),
+                            ClassIDType.AnimatorController when TypesInfo[ClassIDType.AnimatorController].Item1 => new AnimatorController(objectReader),
+                            ClassIDType.AnimatorOverrideController when TypesInfo[ClassIDType.AnimatorOverrideController].Item1 => new AnimatorOverrideController(objectReader),
+                            ClassIDType.AssetBundle when TypesInfo[ClassIDType.AssetBundle].Item1 => new AssetBundle(objectReader),
+                            ClassIDType.AudioClip when TypesInfo[ClassIDType.AudioClip].Item1 => new AudioClip(objectReader),
+                            ClassIDType.Avatar when TypesInfo[ClassIDType.Avatar].Item1 => new Avatar(objectReader),
+                            ClassIDType.Font when TypesInfo[ClassIDType.Font].Item1 => new Font(objectReader),
+                            ClassIDType.GameObject when TypesInfo[ClassIDType.GameObject].Item1 => new GameObject(objectReader),
+                            ClassIDType.IndexObject when TypesInfo[ClassIDType.IndexObject].Item1 => new IndexObject(objectReader),
+                            ClassIDType.Material when TypesInfo[ClassIDType.Material].Item1 => new Material(objectReader),
+                            ClassIDType.Mesh when TypesInfo[ClassIDType.Mesh].Item1 => new Mesh(objectReader),
+                            ClassIDType.MeshFilter when TypesInfo[ClassIDType.MeshFilter].Item1 => new MeshFilter(objectReader),
+                            ClassIDType.MeshRenderer when TypesInfo[ClassIDType.MeshRenderer].Item1 => new MeshRenderer(objectReader),
+                            ClassIDType.MiHoYoBinData when TypesInfo[ClassIDType.MiHoYoBinData].Item1 => new MiHoYoBinData(objectReader),
+                            ClassIDType.MonoBehaviour when TypesInfo[ClassIDType.MonoBehaviour].Item1 => new MonoBehaviour(objectReader),
+                            ClassIDType.MonoScript when TypesInfo[ClassIDType.MonoScript].Item1 => new MonoScript(objectReader),
+                            ClassIDType.MovieTexture when TypesInfo[ClassIDType.MovieTexture].Item1 => new MovieTexture(objectReader),
+                            ClassIDType.PlayerSettings when TypesInfo[ClassIDType.PlayerSettings].Item1 => new PlayerSettings(objectReader),
+                            ClassIDType.RectTransform when TypesInfo[ClassIDType.RectTransform].Item1 => new RectTransform(objectReader),
+                            ClassIDType.Shader when TypesInfo[ClassIDType.Shader].Item1 => new Shader(objectReader),
+                            ClassIDType.SkinnedMeshRenderer when TypesInfo[ClassIDType.SkinnedMeshRenderer].Item1 => new SkinnedMeshRenderer(objectReader),
+                            ClassIDType.Sprite when TypesInfo[ClassIDType.Sprite].Item1 => new Sprite(objectReader),
+                            ClassIDType.SpriteAtlas when TypesInfo[ClassIDType.SpriteAtlas].Item1 => new SpriteAtlas(objectReader),
+                            ClassIDType.TextAsset when TypesInfo[ClassIDType.TextAsset].Item1 => new TextAsset(objectReader),
+                            ClassIDType.Texture2D when TypesInfo[ClassIDType.Texture2D].Item1 => new Texture2D(objectReader),
+                            ClassIDType.Transform when TypesInfo[ClassIDType.Transform].Item1 => new Transform(objectReader),
+                            ClassIDType.VideoClip when TypesInfo[ClassIDType.VideoClip].Item1 => new VideoClip(objectReader),
+                            ClassIDType.ResourceManager when TypesInfo[ClassIDType.ResourceManager].Item1 => new ResourceManager(objectReader),
                             _ => new Object(objectReader),
                         };
                         assetsFile.AddObject(obj);

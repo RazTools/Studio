@@ -174,12 +174,12 @@ namespace AssetStudio.FbxInterop
             AsFbxPrepareMaterials(_pContext, materialCount, textureCount);
         }
 
-        internal void ExportMeshFromFrame(ImportedFrame rootFrame, ImportedFrame meshFrame, List<ImportedMesh> meshList, List<ImportedMaterial> materialList, List<ImportedTexture> textureList, bool exportSkins, bool exportAllUvsAsDiffuseMaps, bool exportUV0UV1)
+        internal void ExportMeshFromFrame(ImportedFrame rootFrame, ImportedFrame meshFrame, List<ImportedMesh> meshList, List<ImportedMaterial> materialList, List<ImportedTexture> textureList, bool exportSkins)
         {
             var meshNode = _frameToNode[meshFrame];
             var mesh = ImportedHelpers.FindMesh(meshFrame.Path, meshList);
 
-            ExportMesh(rootFrame, materialList, textureList, meshNode, mesh, exportSkins, exportAllUvsAsDiffuseMaps, exportUV0UV1);
+            ExportMesh(rootFrame, materialList, textureList, meshNode, mesh, exportSkins);
         }
 
         private IntPtr ExportTexture(ImportedTexture texture)
@@ -208,7 +208,7 @@ namespace AssetStudio.FbxInterop
             return pTex;
         }
 
-        private void ExportMesh(ImportedFrame rootFrame, List<ImportedMaterial> materialList, List<ImportedTexture> textureList, IntPtr frameNode, ImportedMesh importedMesh, bool exportSkins, bool exportAllUvsAsDiffuseMaps, bool exportUV0UV1)
+        private void ExportMesh(ImportedFrame rootFrame, List<ImportedMaterial> materialList, List<ImportedTexture> textureList, IntPtr frameNode, ImportedMesh importedMesh, bool exportSkins)
         {
             var boneList = importedMesh.BoneList;
             var totalBoneCount = 0;
@@ -254,38 +254,17 @@ namespace AssetStudio.FbxInterop
                     AsFbxMeshCreateElementNormal(mesh);
                 }
 
-                if (exportUV0UV1)
+                for (int i = 0; i < importedMesh.hasUV.Length; i++)
                 {
-                    if (importedMesh.hasUV[0])
-                    {
-                        AsFbxMeshCreateDiffuseUV(mesh, 0);
-                    }
-                    if (importedMesh.hasUV[1])
-                    {
-                        if (exportAllUvsAsDiffuseMaps)
-                        {
-                            AsFbxMeshCreateDiffuseUV(mesh, 1);
-                        }
-                        else
-                        {
-                            AsFbxMeshCreateNormalMapUV(mesh, 1);
-                        }
-                    }
-                }
-                else
-                {
-                    for (int i = 0; i < importedMesh.hasUV.Length; i++)
-                    {
-                        if (!importedMesh.hasUV[i]) { continue; }
+                    if (!importedMesh.hasUV[i]) { continue; }
 
-                        if (i == 1 && !exportAllUvsAsDiffuseMaps)
-                        {
-                            AsFbxMeshCreateNormalMapUV(mesh, 1);
-                        }
-                        else
-                        {
-                            AsFbxMeshCreateDiffuseUV(mesh, i);
-                        }
+                    if (i == 1)
+                    {
+                        AsFbxMeshCreateNormalMapUV(mesh, 1);
+                    }
+                    else
+                    {
+                        AsFbxMeshCreateDiffuseUV(mesh, i);
                     }
                 }
 
@@ -389,8 +368,7 @@ namespace AssetStudio.FbxInterop
                         AsFbxMeshElementNormalAdd(mesh, 0, normal.X, normal.Y, normal.Z);
                     }
 
-                    var uvSize = exportUV0UV1 ? 2 : importedMesh.hasUV.Length;
-                    for (var uvIndex = 0; uvIndex < uvSize; uvIndex += 1)
+                    for (var uvIndex = 0; uvIndex < importedMesh.hasUV.Length; uvIndex += 1)
                     {
                         if (importedMesh.hasUV[uvIndex])
                         {

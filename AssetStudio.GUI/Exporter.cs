@@ -14,7 +14,7 @@ namespace AssetStudio.GUI
             var m_Texture2D = (Texture2D)item.Asset;
             if (Properties.Settings.Default.convertTexture)
             {
-                var type = Properties.Settings.Default.convertType;
+                var type = (ImageFormat)Properties.Settings.Default.convertType;
                 if (!TryExportFile(exportPath, item, "." + type.ToString().ToLower(), out var exportFullPath))
                     return false;
                 var image = m_Texture2D.ConvertToImage(true);
@@ -271,7 +271,7 @@ namespace AssetStudio.GUI
 
         public static bool ExportSprite(AssetItem item, string exportPath)
         {
-            var type = Properties.Settings.Default.convertType;
+            var type = (ImageFormat)Properties.Settings.Default.convertType;
             if (!TryExportFile(exportPath, item, "." + type.ToString().ToLower(), out var exportFullPath))
                 return false;
             var image = ((Sprite)item.Asset).GetImage();
@@ -335,9 +335,9 @@ namespace AssetStudio.GUI
             }
             var m_Animator = (Animator)item.Asset;
             var convert = animationList != null
-                ? new ModelConverter(m_Animator, Properties.Settings.Default.convertType, Studio.Game, Properties.Settings.Default.collectAnimations, animationList.Select(x => (AnimationClip)x.Asset).ToArray())
-                : new ModelConverter(m_Animator, Properties.Settings.Default.convertType, Studio.Game, Properties.Settings.Default.collectAnimations);
-            ExportFbx(convert, exportFullPath);
+                ? new ModelConverter(m_Animator, Studio.Game, animationList.Select(x => (AnimationClip)x.Asset).ToArray())
+                : new ModelConverter(m_Animator, Studio.Game);
+            Fbx.Exporter.Export(exportFullPath, convert);
             return true;
         }
 
@@ -356,38 +356,19 @@ namespace AssetStudio.GUI
         public static void ExportGameObject(GameObject gameObject, string exportPath, List<AssetItem> animationList = null)
         {
             var convert = animationList != null
-                ? new ModelConverter(gameObject, Properties.Settings.Default.convertType, Studio.Game, Properties.Settings.Default.collectAnimations, animationList.Select(x => (AnimationClip)x.Asset).ToArray())
-                : new ModelConverter(gameObject, Properties.Settings.Default.convertType, Studio.Game, Properties.Settings.Default.collectAnimations);
+                ? new ModelConverter(gameObject, Studio.Game, animationList.Select(x => (AnimationClip)x.Asset).ToArray())
+                : new ModelConverter(gameObject, Studio.Game);
             exportPath = exportPath + FixFileName(gameObject.m_Name) + ".fbx";
-            ExportFbx(convert, exportPath);
+            Fbx.Exporter.Export(exportPath, convert);
         }
 
         public static void ExportGameObjectMerge(List<GameObject> gameObject, string exportPath, List<AssetItem> animationList = null)
         {
             var rootName = Path.GetFileNameWithoutExtension(exportPath);
             var convert = animationList != null
-                ? new ModelConverter(rootName, gameObject, Properties.Settings.Default.convertType, Studio.Game, Properties.Settings.Default.collectAnimations, animationList.Select(x => (AnimationClip)x.Asset).ToArray())
-                : new ModelConverter(rootName, gameObject, Properties.Settings.Default.convertType, Studio.Game, Properties.Settings.Default.collectAnimations);
-            ExportFbx(convert, exportPath);
-        }
-
-        private static void ExportFbx(IImported convert, string exportPath)
-        {
-            var eulerFilter = Properties.Settings.Default.eulerFilter;
-            var filterPrecision = (float)Properties.Settings.Default.filterPrecision;
-            var exportAllNodes = Properties.Settings.Default.exportAllNodes;
-            var exportSkins = Properties.Settings.Default.exportSkins;
-            var exportAnimations = Properties.Settings.Default.exportAnimations;
-            var exportBlendShape = Properties.Settings.Default.exportBlendShape;
-            var castToBone = Properties.Settings.Default.castToBone;
-            var boneSize = (int)Properties.Settings.Default.boneSize;
-            var exportAllUvsAsDiffuseMaps = Properties.Settings.Default.exportAllUvsAsDiffuseMaps;
-            var exportUV0UV1 = Properties.Settings.Default.exportUV0UV1;
-            var scaleFactor = (float)Properties.Settings.Default.scaleFactor;
-            var fbxVersion = Properties.Settings.Default.fbxVersion;
-            var fbxFormat = Properties.Settings.Default.fbxFormat;
-            ModelExporter.ExportFbx(exportPath, convert, eulerFilter, filterPrecision,
-                exportAllNodes, exportSkins, exportAnimations, exportBlendShape, castToBone, boneSize, exportAllUvsAsDiffuseMaps, exportUV0UV1, scaleFactor, fbxVersion, fbxFormat == 1);
+                ? new ModelConverter(rootName, gameObject, Studio.Game, animationList.Select(x => (AnimationClip)x.Asset).ToArray())
+                : new ModelConverter(rootName, gameObject, Studio.Game);
+            Fbx.Exporter.Export(exportPath, convert);
         }
 
         public static bool ExportDumpFile(AssetItem item, string exportPath)

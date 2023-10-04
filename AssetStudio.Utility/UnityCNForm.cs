@@ -4,14 +4,16 @@ using System.Collections.Generic;
 using AssetStudio;
 using System.Linq;
 
-namespace AssetStudio.GUI
+namespace AssetStudio
 {
     public partial class UnityCNForm : Form
     {
-        public UnityCNForm()
+        private Game game;
+        public UnityCNForm(ref Game game)
         {
             InitializeComponent();
 
+            this.game = game;
             var keys = UnityCNManager.GetEntries();
 
             for (int i = 0; i < keys.Length; i++)
@@ -66,7 +68,7 @@ namespace AssetStudio.GUI
             }
             UnityCNManager.SaveEntries(keys.Reverse<UnityCN.Entry>().ToList());
 
-            if (Studio.Game.Type.IsUnityCN())
+            if (game.Type.IsUnityCN())
             {
                 UnityCNManager.SetKey(specifyUnityCNList.CurrentRow.Index);
             }

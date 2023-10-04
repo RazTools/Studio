@@ -13,19 +13,11 @@
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0-preview.5.23280.8" />
   </ItemGroup>
 
   <ItemGroup>
 	<ProjectReference Include="..\AssetStudio.Utility\AssetStudio.Utility.csproj" />
     <ProjectReference Include="..\AssetStudio\AssetStudio.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Update="Settings.cs">
-      <DesignTimeSharedInput>True</DesignTimeSharedInput>
-      <AutoGen>True</AutoGen>
-    </Compile>
   </ItemGroup>
 
   <Target Name="CopyExtraFiles" AfterTargets="AfterBuild">

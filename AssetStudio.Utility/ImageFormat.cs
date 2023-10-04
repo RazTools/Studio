@@ -2,9 +2,9 @@
 {
     public enum ImageFormat
     {
+        Tga,
         Jpeg,
         Png,
         Bmp,
-        Tga
     }
 }

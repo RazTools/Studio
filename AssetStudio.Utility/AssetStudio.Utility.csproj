@@ -1,13 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0;net7.0</TargetFrameworks>
+    <TargetFrameworks>net6.0-windows;net7.0-windows</TargetFrameworks>
     <Version>1.00.00</Version>
     <AssemblyVersion>1.00.00</AssemblyVersion>
     <FileVersion>1.00.00</FileVersion>
     <Copyright>Copyright © Perfare 2018-2022</Copyright>
     <DebugType>embedded</DebugType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputType>Library</OutputType>
+    <UseWindowsForms>True</UseWindowsForms>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,6 +23,18 @@
     <ProjectReference Include="..\AssetStudio.PInvoke\AssetStudio.PInvoke.csproj" />
     <ProjectReference Include="..\AssetStudio.FBXWrapper\AssetStudio.FBXWrapper.csproj" />
     <ProjectReference Include="..\AssetStudio\AssetStudio.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="AssetBrowser.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="ExportOptions.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="UnityCNForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
   </ItemGroup>
 
 </Project>

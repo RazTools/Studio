@@ -1036,7 +1036,7 @@ namespace AssetStudio.GUI
             // previewPanel
             // 
             previewPanel.BackColor = System.Drawing.SystemColors.ControlDark;
-            previewPanel.BackgroundImage = Properties.Resources.preview;
+            previewPanel.BackgroundImage = Resources.Resources.preview;
             previewPanel.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
             previewPanel.Controls.Add(assetInfoLabel);
             previewPanel.Controls.Add(FMODpanel);
@@ -1350,7 +1350,7 @@ namespace AssetStudio.GUI
             ClientSize = new System.Drawing.Size(1264, 681);
             Controls.Add(splitContainer1);
             Controls.Add(menuStrip1);
-            Icon = Properties.Resources._as;
+            Icon = Resources.Resources._as;
             KeyPreview = true;
             MainMenuStrip = menuStrip1;
             MinimumSize = new System.Drawing.Size(620, 372);

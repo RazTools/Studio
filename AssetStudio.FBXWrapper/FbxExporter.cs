@@ -15,27 +15,31 @@ namespace AssetStudio.FbxInterop
         private readonly bool _exportSkins;
         private readonly bool _castToBone;
         private readonly float _boneSize;
-        private readonly bool _exportAllUvsAsDiffuseMaps;
-        private readonly bool _exportUV0UV1;
         private readonly float _scaleFactor;
         private readonly int _versionIndex;
         private readonly bool _isAscii;
+        private readonly bool _blendshape;
+        private readonly bool _animation;
+        private readonly bool _eulerFilter;
+        private readonly float _filterPrecision;
 
-        internal FbxExporter(string fileName, IImported imported, bool allNodes, bool exportSkins, bool castToBone, float boneSize, bool exportAllUvsAsDiffuseMaps, bool exportUV0UV1, float scaleFactor, int versionIndex, bool isAscii)
+        internal FbxExporter(string fileName, IImported imported)
         {
             _context = new FbxExporterContext();
 
             _fileName = fileName;
             _imported = imported;
-            _allNodes = allNodes;
-            _exportSkins = exportSkins;
-            _castToBone = castToBone;
-            _boneSize = boneSize;
-            _exportAllUvsAsDiffuseMaps = exportAllUvsAsDiffuseMaps;
-            _exportUV0UV1 = exportUV0UV1;
-            _scaleFactor = scaleFactor;
-            _versionIndex = versionIndex;
-            _isAscii = isAscii;
+            _allNodes = Properties.Settings.Default.exportAllNodes;
+            _exportSkins = Properties.Settings.Default.exportSkins;
+            _castToBone = Properties.Settings.Default.castToBone;
+            _boneSize = (float)Properties.Settings.Default.boneSize;
+            _scaleFactor = (float)Properties.Settings.Default.scaleFactor;
+            _versionIndex = Properties.Settings.Default.fbxVersion;
+            _isAscii = Properties.Settings.Default.fbxFormat == 1;
+            _blendshape = Properties.Settings.Default.exportBlendShape;
+            _animation = Properties.Settings.Default.exportAnimations;
+            _eulerFilter = Properties.Settings.Default.eulerFilter;
+            _filterPrecision = (float)Properties.Settings.Default.filterPrecision;
         }
 
         ~FbxExporter()
@@ -80,7 +84,7 @@ namespace AssetStudio.FbxInterop
             }
         }
 
-        internal void ExportAll(bool blendShape, bool animation, bool eulerFilter, float filterPrecision)
+        internal void ExportAll()
         {
             var meshFrames = new List<ImportedFrame>();
 
@@ -101,14 +105,14 @@ namespace AssetStudio.FbxInterop
 
 
 
-            if (blendShape)
+            if (_blendshape)
             {
                 ExportMorphs();
             }
 
-            if (animation)
+            if (_animation)
             {
-                ExportAnimations(eulerFilter, filterPrecision);
+                ExportAnimations(_eulerFilter, _filterPrecision);
             }
 
             ExportScene();
@@ -175,7 +179,7 @@ namespace AssetStudio.FbxInterop
         {
             foreach (var meshFrame in meshFrames)
             {
-                _context.ExportMeshFromFrame(rootFrame, meshFrame, _imported.MeshList, _imported.MaterialList, _imported.TextureList, _exportSkins, _exportAllUvsAsDiffuseMaps, _exportUV0UV1);
+                _context.ExportMeshFromFrame(rootFrame, meshFrame, _imported.MeshList, _imported.MaterialList, _imported.TextureList, _exportSkins);
             }
         }
 

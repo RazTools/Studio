@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using System.Text;
 using MessagePack;
+using System.Xml.Linq;
 
 namespace AssetStudio
 {
@@ -287,7 +288,7 @@ namespace AssetStudio
             return true;
         }
 
-        public static void BuildAssetMap(string[] files, string mapName, Game game, string savePath, ExportListType exportListType, ManualResetEvent resetEvent = null, ClassIDType[] typeFilters = null, Regex[] nameFilters = null, Regex[] containerFilters = null)
+        public static void BuildAssetMap(string[] files, string mapName, Game game, string savePath, ExportListType exportListType, ManualResetEvent resetEvent = null, Regex[] filters = null)
         {
             Logger.Info("Building AssetMap...");
             try
@@ -297,7 +298,7 @@ namespace AssetStudio
                 var assets = new List<AssetEntry>();
                 foreach (var file in LoadFiles(files))
                 {
-                    BuildAssetMap(file, assets, typeFilters, nameFilters, containerFilters);
+                    BuildAssetMap(file, assets, filters);
                 }
 
                 UpdateContainers(assets, game);
@@ -311,12 +312,13 @@ namespace AssetStudio
             
         }
 
-        private static void BuildAssetMap(string file, List<AssetEntry> assets, ClassIDType[] typeFilters = null, Regex[] nameFilters = null, Regex[] containerFilters = null)
+        private static void BuildAssetMap(string file, List<AssetEntry> assets, Regex[] filters = null)
         {
             var containers = new List<(PPtr<Object>, string)>();
             var mihoyoBinDataNames = new List<(PPtr<Object>, string)>();
             var objectAssetItemDic = new Dictionary<Object, AssetEntry>();
             var animators = new List<(PPtr<Object>, AssetEntry)>();
+            var monoBehaviours = new List<(PPtr<MonoScript>, AssetEntry)>();
             foreach (var assetsFile in assetsManager.assetsFileList)
             {
                 foreach (var objInfo in assetsFile.m_Objects)
@@ -336,12 +338,12 @@ namespace AssetStudio
                         Container = ""
                     };
 
-                    var exportable = true;
+                    var exportable = false;
                     try
                     {
                         switch (objectReader.type)
                         {
-                            case ClassIDType.AssetBundle:
+                            case ClassIDType.AssetBundle when AssetsManager.TypesInfo[ClassIDType.AssetBundle].Item1:
                                 var assetBundle = new AssetBundle(objectReader);
                                 foreach (var m_Container in assetBundle.m_Container)
                                 {
@@ -354,52 +356,84 @@ namespace AssetStudio
                                     }
                                 }
                                 obj = null;
-                                asset.Name = assetBundle.m_Name;
-                                exportable = !Minimal;
+                                asset.Name = assetBundle.Name;
+                                exportable = AssetsManager.TypesInfo[ClassIDType.AssetBundle].Item2;
                                 break;
-                            case ClassIDType.GameObject:
+                            case ClassIDType.GameObject when AssetsManager.TypesInfo[ClassIDType.GameObject].Item1:
                                 var gameObject = new GameObject(objectReader);
                                 obj = gameObject;
-                                asset.Name = gameObject.m_Name;
-                                exportable = !Minimal;
+                                asset.Name = gameObject.Name;
+                                exportable = AssetsManager.TypesInfo[ClassIDType.GameObject].Item2;
                                 break;
-                            case ClassIDType.Shader when Shader.Parsable:
+                            case ClassIDType.Shader when AssetsManager.TypesInfo[ClassIDType.Shader].Item1:
                                 asset.Name = objectReader.ReadAlignedString();
                                 if (string.IsNullOrEmpty(asset.Name))
                                 {
                                     var m_parsedForm = new SerializedShader(objectReader);
                                     asset.Name = m_parsedForm.m_Name;
                                 }
+                                exportable = AssetsManager.TypesInfo[ClassIDType.Shader].Item2;
                                 break;
-                            case ClassIDType.Animator:
+                            case ClassIDType.Animator when AssetsManager.TypesInfo[ClassIDType.Animator].Item1:
                                 var component = new PPtr<Object>(objectReader);
                                 animators.Add((component, asset));
+                                exportable = AssetsManager.TypesInfo[ClassIDType.Animator].Item2;
                                 break;
-                            case ClassIDType.MiHoYoBinData:
+                            case ClassIDType.MiHoYoBinData when AssetsManager.TypesInfo[ClassIDType.MiHoYoBinData].Item1:
                                 var MiHoYoBinData = new MiHoYoBinData(objectReader);
                                 obj = MiHoYoBinData;
+                                exportable = AssetsManager.TypesInfo[ClassIDType.MiHoYoBinData].Item2;
                                 break;
-                            case ClassIDType.IndexObject:
+                            case ClassIDType.IndexObject when AssetsManager.TypesInfo[ClassIDType.IndexObject].Item1:
                                 var indexObject = new IndexObject(objectReader);
                                 obj = null;
                                 foreach (var index in indexObject.AssetMap)
                                 {
                                     mihoyoBinDataNames.Add((index.Value.Object, index.Key));
                                 }
-                                asset.Name = "IndexObject";
-                                exportable = !Minimal;
+                                asset.Name = indexObject.Name;
+                                exportable = AssetsManager.TypesInfo[ClassIDType.IndexObject].Item2;
                                 break;
-                            case ClassIDType.Font:
-                            case ClassIDType.Material:
-                            case ClassIDType.Texture:
-                            case ClassIDType.Mesh:
-                            case ClassIDType.Sprite:
-                            case ClassIDType.TextAsset:
-                            case ClassIDType.Texture2D:
-                            case ClassIDType.VideoClip:
-                            case ClassIDType.AudioClip:
-                            case ClassIDType.AnimationClip when AnimationClip.Parsable:
+                            case ClassIDType.MonoBehaviour when AssetsManager.TypesInfo[ClassIDType.MonoBehaviour].Item1:
+                                var monoBehaviour = new MonoBehaviour(objectReader);
+                                asset.Name = monoBehaviour.m_Name;
+                                monoBehaviours.Add((monoBehaviour.m_Script, asset));
+                                exportable = AssetsManager.TypesInfo[ClassIDType.MonoBehaviour].Item2;
+                                break;
+                            case ClassIDType.MonoScript when AssetsManager.TypesInfo[ClassIDType.MonoScript].Item1:
+                                var monoScript = new MonoScript(objectReader);
+                                obj = monoScript;
+                                asset.Name = monoScript.Name;
+                                exportable = AssetsManager.TypesInfo[ClassIDType.MonoScript].Item2;
+                                break;
+                            case ClassIDType.Font when AssetsManager.TypesInfo[ClassIDType.Font].Item1:
+                            case ClassIDType.Material when AssetsManager.TypesInfo[ClassIDType.Material].Item1:
+                            case ClassIDType.Texture when AssetsManager.TypesInfo[ClassIDType.Texture].Item1:
+                            case ClassIDType.Mesh when AssetsManager.TypesInfo[ClassIDType.Mesh].Item1:
+                            case ClassIDType.Sprite when AssetsManager.TypesInfo[ClassIDType.Sprite].Item1:
+                            case ClassIDType.SpriteAtlas when AssetsManager.TypesInfo[ClassIDType.SpriteAtlas].Item1:
+                            case ClassIDType.TextAsset when AssetsManager.TypesInfo[ClassIDType.TextAsset].Item1:
+                            case ClassIDType.Texture2D when AssetsManager.TypesInfo[ClassIDType.Texture2D].Item1:
+                            case ClassIDType.VideoClip when AssetsManager.TypesInfo[ClassIDType.VideoClip].Item1:
+                            case ClassIDType.AudioClip when AssetsManager.TypesInfo[ClassIDType.AudioClip].Item1:
+                            case ClassIDType.AnimationClip when AssetsManager.TypesInfo[ClassIDType.AnimationClip].Item1:
                                 asset.Name = objectReader.ReadAlignedString();
+                                exportable = AssetsManager.TypesInfo[asset.Type].Item2;
+                                break;
+                            case ClassIDType.Animation when AssetsManager.TypesInfo[ClassIDType.Animation].Item1:
+                            case ClassIDType.AnimatorController when AssetsManager.TypesInfo[ClassIDType.AnimatorController].Item1:
+                            case ClassIDType.AnimatorOverrideController when AssetsManager.TypesInfo[ClassIDType.AnimatorOverrideController].Item1:
+                            case ClassIDType.Avatar when AssetsManager.TypesInfo[ClassIDType.Avatar].Item1:
+                            case ClassIDType.MeshFilter when AssetsManager.TypesInfo[ClassIDType.MeshFilter].Item1:
+                            case ClassIDType.MeshRenderer when AssetsManager.TypesInfo[ClassIDType.MeshRenderer].Item1:
+                            case ClassIDType.MovieTexture when AssetsManager.TypesInfo[ClassIDType.MovieTexture].Item1:
+                            case ClassIDType.PlayerSettings when AssetsManager.TypesInfo[ClassIDType.PlayerSettings].Item1:
+                            case ClassIDType.RectTransform when AssetsManager.TypesInfo[ClassIDType.RectTransform].Item1:
+                            case ClassIDType.SkinnedMeshRenderer when AssetsManager.TypesInfo[ClassIDType.SkinnedMeshRenderer].Item1:
+                            case ClassIDType.Transform when AssetsManager.TypesInfo[ClassIDType.Transform].Item1:
+                            case ClassIDType.ResourceManager when AssetsManager.TypesInfo[ClassIDType.ResourceManager].Item1:
+                                asset.Name = objectReader.type.ToString();
+                                exportable = AssetsManager.TypesInfo[asset.Type].Item2;
                                 break;
                             default:
                                 asset.Name = objectReader.type.ToString();
@@ -423,9 +457,8 @@ namespace AssetStudio
                         objectAssetItemDic.Add(obj, asset);
                         assetsFile.AddObject(obj);
                     }
-                    var isMatchRegex = nameFilters.IsNullOrEmpty() || nameFilters.Any(x => x.IsMatch(asset.Name) || asset.Type == ClassIDType.Animator);
-                    var isFilteredType = typeFilters.IsNullOrEmpty() || typeFilters.Contains(asset.Type) || asset.Type == ClassIDType.Animator;
-                    if (isMatchRegex && isFilteredType && exportable)
+                    var isMatchRegex = filters.IsNullOrEmpty() || filters.Any(x => x.IsMatch(asset.Name));
+                    if (isMatchRegex && exportable)
                     {
                         assets.Add(asset);
                     }
@@ -433,9 +466,31 @@ namespace AssetStudio
             }
             foreach ((var pptr, var asset) in animators)
             {
-                if (pptr.TryGet<GameObject>(out var gameObject) && (nameFilters.IsNullOrEmpty() || nameFilters.Any(x => x.IsMatch(gameObject.m_Name))) && (typeFilters.IsNullOrEmpty() || typeFilters.Contains(asset.Type)))
+                if (pptr.TryGet<GameObject>(out var gameObject) && (filters.IsNullOrEmpty()))
                 {
-                    asset.Name = gameObject.m_Name;
+                    asset.Name = gameObject.Name;
+                }
+                else
+                {
+                    assets.Remove(asset);
+                }
+
+            }
+            foreach ((var pptr, var asset) in monoBehaviours)
+            {
+                if (pptr.TryGet<MonoScript>(out var monoScript))
+                {
+                    var name = asset.Name;
+                    if (string.IsNullOrEmpty(name))
+                    {
+                        name = monoScript.Name;
+                    }
+                    if ((filters.IsNullOrEmpty() || filters.Any(x => x.IsMatch(name))))
+                    {
+                        asset.Name = name;
+                        continue;
+                    }
+                    assets.Remove(asset);
                 }
                 else
                 {
@@ -461,7 +516,7 @@ namespace AssetStudio
                 if (pptr.TryGet(out var obj))
                 {
                     var item = objectAssetItemDic[obj];
-                    if (containerFilters.IsNullOrEmpty() || containerFilters.Any(x => x.IsMatch(container)))
+                    if (filters.IsNullOrEmpty() || filters.Any(x => x.IsMatch(container)))
                     {
                         item.Container = container;
                     }
@@ -564,7 +619,7 @@ namespace AssetStudio
                 resetEvent?.Set();
             });
         }
-        public static void BuildBoth(string[] files, string mapName, string baseFolder, Game game, string savePath, ExportListType exportListType, ManualResetEvent resetEvent = null, ClassIDType[] typeFilters = null, Regex[] nameFilters = null, Regex[] containerFilters = null)
+        public static void BuildBoth(string[] files, string mapName, string baseFolder, Game game, string savePath, ExportListType exportListType, ManualResetEvent resetEvent = null, Regex[] filters = null)
         {
             Logger.Info($"Building Both...");
             CABMap.Clear();
@@ -576,7 +631,7 @@ namespace AssetStudio
             foreach(var file in LoadFiles(files))
             {
                 BuildCABMap(file, ref collision);
-                BuildAssetMap(file, assets, typeFilters, nameFilters, containerFilters);
+                BuildAssetMap(file, assets, filters);
             }
 
             UpdateContainers(assets, game);
