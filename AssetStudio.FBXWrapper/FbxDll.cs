@@ -3,7 +3,7 @@
     internal static class FbxDll
     {
 
-        internal const string DllName = "AssetStudioFBXNative";
+        internal const string DllName = "AssetStudio.FBXNative";
         internal const string FbxsdkDllName = "libfbxsdk";
 
     }
