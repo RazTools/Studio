@@ -1238,6 +1238,7 @@ namespace AssetStudio
         public bool m_KeepOriginalPositionY;
         public bool m_KeepOriginalPositionXZ;
         public bool m_HeightFromFeet;
+        public static bool HasInstancedStructuredBuffers(SerializedType type) => type.Match("E708B1872AE48FD688AC012DF4A7A178");
         public ClipMuscleConstant() { }
 
         public ClipMuscleConstant(ObjectReader reader)
@@ -1265,7 +1266,14 @@ namespace AssetStudio
             m_CycleOffset = reader.ReadSingle();
             m_AverageAngularSpeed = reader.ReadSingle();
 
-            m_IndexArray = reader.ReadInt32Array();
+            if (reader.Game.Type.IsSR() && HasInstancedStructuredBuffers(reader.serializedType))
+            {
+                m_IndexArray = reader.ReadInt16Array().Select(x => (int)x).ToArray();
+            }
+            else
+            {
+                m_IndexArray = reader.ReadInt32Array();
+            }
             if (version[0] < 4 || (version[0] == 4 && version[1] < 3)) //4.3 down
             {
                 var m_AdditionalCurveIndexArray = reader.ReadInt32Array();
