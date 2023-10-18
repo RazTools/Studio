@@ -114,7 +114,6 @@ namespace AssetStudio.GUI
             toolStripSeparator7 = new System.Windows.Forms.ToolStripSeparator();
             assetMapNameTextBox = new System.Windows.Forms.ToolStripTextBox();
             buildAssetMapToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            assetMapTypeComboBox = new System.Windows.Forms.ToolStripComboBox();
             toolStripSeparator8 = new System.Windows.Forms.ToolStripSeparator();
             loadAIToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             assetBrowserToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -172,6 +171,7 @@ namespace AssetStudio.GUI
             exportAnimatorwithselectedAnimationClipMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             goToSceneHierarchyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             showOriginalFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            assetMapTypeMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
@@ -723,7 +723,7 @@ namespace AssetStudio.GUI
             // 
             // miscToolStripMenuItem
             // 
-            miscToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { MapNameComboBox, buildMapToolStripMenuItem, buildBothToolStripMenuItem, clearMapToolStripMenuItem, toolStripSeparator7, assetMapNameTextBox, buildAssetMapToolStripMenuItem, assetMapTypeComboBox, toolStripSeparator8, loadAIToolStripMenuItem, assetBrowserToolStripMenuItem });
+            miscToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { MapNameComboBox, buildMapToolStripMenuItem, buildBothToolStripMenuItem, clearMapToolStripMenuItem, toolStripSeparator7, assetMapNameTextBox, buildAssetMapToolStripMenuItem, assetMapTypeMenuItem, toolStripSeparator8, loadAIToolStripMenuItem, assetBrowserToolStripMenuItem });
             miscToolStripMenuItem.Name = "miscToolStripMenuItem";
             miscToolStripMenuItem.Size = new System.Drawing.Size(47, 20);
             miscToolStripMenuItem.Text = "Misc.";
@@ -773,13 +773,6 @@ namespace AssetStudio.GUI
             buildAssetMapToolStripMenuItem.Size = new System.Drawing.Size(181, 22);
             buildAssetMapToolStripMenuItem.Text = "Build AssetMap";
             buildAssetMapToolStripMenuItem.Click += buildAssetMapToolStripMenuItem_Click;
-            // 
-            // assetMapTypeComboBox
-            // 
-            assetMapTypeComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            assetMapTypeComboBox.Name = "assetMapTypeComboBox";
-            assetMapTypeComboBox.Size = new System.Drawing.Size(121, 23);
-            assetMapTypeComboBox.SelectedIndexChanged += assetMapTypeComboBox_SelectedIndexChanged;
             // 
             // toolStripSeparator8
             // 
@@ -1344,6 +1337,13 @@ namespace AssetStudio.GUI
             showOriginalFileToolStripMenuItem.Visible = false;
             showOriginalFileToolStripMenuItem.Click += showOriginalFileToolStripMenuItem_Click;
             // 
+            // assetMapTypeMenuItem
+            // 
+            assetMapTypeMenuItem.Name = "assetMapTypeMenuItem";
+            assetMapTypeMenuItem.Size = new System.Drawing.Size(181, 22);
+            assetMapTypeMenuItem.Text = "AssetMap Type";
+            assetMapTypeMenuItem.DropDownItemClicked += assetMapTypeMenuItem_DropDownItemClicked;
+            // 
             // MainForm
             // 
             AllowDrop = true;
@@ -1513,7 +1513,6 @@ namespace AssetStudio.GUI
         private System.Windows.Forms.ToolStripMenuItem loadAIToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem clearConsoleToolStripMenuItem;
         private System.Windows.Forms.ToolStripTextBox assetMapNameTextBox;
-        private System.Windows.Forms.ToolStripComboBox assetMapTypeComboBox;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator7;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator8;
         private System.Windows.Forms.ToolStripMenuItem buildMapToolStripMenuItem;
@@ -1533,6 +1532,7 @@ namespace AssetStudio.GUI
         private System.Windows.Forms.ToolStripMenuItem enableFileLogging;
         private System.Windows.Forms.ToolStripMenuItem enableVerbose;
         private System.Windows.Forms.ToolStripMenuItem sceneHierarchy;
+        private System.Windows.Forms.ToolStripMenuItem assetMapTypeMenuItem;
     }
 }
 

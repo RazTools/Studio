@@ -143,8 +143,13 @@ namespace AssetStudio.GUI
 
         private void InitalizeOptions()
         {
-            assetMapTypeComboBox.Items.AddRange(Enum.GetValues<ExportListType>().Cast<object>().ToArray());
-            assetMapTypeComboBox.SelectedIndex = Properties.Settings.Default.selectedAssetMapType;
+            var assetMapType = (ExportListType)Properties.Settings.Default.assetMapType;
+            var assetMapTypes = Enum.GetValues<ExportListType>().ToArray()[1..];
+            foreach(var mapType in assetMapTypes)
+            {
+                var menuItem = new ToolStripMenuItem(mapType.ToString()) { CheckOnClick = true, Checked = assetMapType.HasFlag(mapType), Tag = (int)mapType };
+                assetMapTypeMenuItem.DropDownItems.Add(menuItem);
+            }
 
             specifyGame.Items.AddRange(GameManager.GetGames());
             specifyGame.SelectedIndex = Properties.Settings.Default.selectedGame;
@@ -1281,7 +1286,7 @@ namespace AssetStudio.GUI
             var model = new ModelConverter(m_Animator, Properties.Settings.Default.convertType, Studio.Game, false, Array.Empty<AnimationClip>());
             PreviewModel(model);
         }
-        
+
         private void PreviewAnimationClip(AnimationClip clip)
         {
             var str = clip.Convert();
@@ -2017,10 +2022,24 @@ namespace AssetStudio.GUI
             SkipContainer = skipContainer.Checked;
 
         }
-        private void assetMapTypeComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        private void assetMapTypeMenuItem_DropDownItemClicked(object sender, ToolStripItemClickedEventArgs e)
         {
-            Properties.Settings.Default.selectedAssetMapType = assetMapTypeComboBox.SelectedIndex;
-            Properties.Settings.Default.Save();
+            var assetMapType = Properties.Settings.Default.assetMapType;
+            if (e.ClickedItem is ToolStripMenuItem item)
+            {
+                if (item.Checked)
+                {
+                    assetMapType -= (int)item.Tag;
+                }
+                else
+                {
+                    assetMapType += (int)item.Tag;
+                }
+
+                Properties.Settings.Default.assetMapType = assetMapType;
+                Properties.Settings.Default.Save();
+            }
+            
         }
         private void modelsOnly_CheckedChanged(object sender, EventArgs e)
         {
@@ -2143,7 +2162,7 @@ namespace AssetStudio.GUI
 
             var input = MapNameComboBox.Text;
             var selectedText = MapNameComboBox.SelectedText;
-            var exportListType = (ExportListType)assetMapTypeComboBox.SelectedItem;
+            var exportListType = (ExportListType)assetMapTypeMenuItem.DropDownItems.Cast<ToolStripMenuItem>().Select(x => x.Checked ? (int)x.Tag : 0).Sum();
             var name = "";
 
             if (!string.IsNullOrEmpty(selectedText))
@@ -2192,15 +2211,6 @@ namespace AssetStudio.GUI
                 saveFolderDialog.Title = "Select Output Folder";
                 if (saveFolderDialog.ShowDialog(this) == DialogResult.OK)
                 {
-                    if (File.Exists(Path.Combine(saveFolderDialog.Folder, $"{name}{exportListType.GetExtension()}")))
-                    {
-                        var acceptOverride = MessageBox.Show("AssetMap already exist, Do you want to override it ?", "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-                        if (acceptOverride != DialogResult.Yes)
-                        {
-                            InvokeUpdate(miscToolStripMenuItem, true);
-                            return;
-                        }
-                    }
                     saveDirectoryBackup = saveFolderDialog.Folder;
                     AssetsHelper.SetUnityVersion(version);
                     await Task.Run(() => AssetsHelper.BuildBoth(files, name, openFolderDialog.Folder, Studio.Game, saveFolderDialog.Folder, exportListType));
@@ -2317,7 +2327,7 @@ namespace AssetStudio.GUI
             InvokeUpdate(miscToolStripMenuItem, false);
 
             var input = assetMapNameTextBox.Text;
-            var exportListType = (ExportListType)assetMapTypeComboBox.SelectedItem;
+            var exportListType = (ExportListType)assetMapTypeMenuItem.DropDownItems.Cast<ToolStripMenuItem>().Select(x => x.Checked ? (int)x.Tag : 0).Sum();
             var name = "assets_map";
 
             if (!string.IsNullOrEmpty(input))
@@ -2346,16 +2356,6 @@ namespace AssetStudio.GUI
                 saveFolderDialog.Title = "Select Output Folder";
                 if (saveFolderDialog.ShowDialog(this) == DialogResult.OK)
                 {
-                    if (File.Exists(Path.Combine(saveFolderDialog.Folder, $"{name}{exportListType.GetExtension()}")))
-                    {
-                        var acceptOverride = MessageBox.Show("AssetMap already exist, Do you want to override it ?", "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-                        if (acceptOverride != DialogResult.Yes)
-                        {
-                            InvokeUpdate(miscToolStripMenuItem, true);
-                            return;
-                        }
-                    }
-                    saveDirectoryBackup = saveFolderDialog.Folder;
                     AssetsHelper.SetUnityVersion(version);
                     await Task.Run(() => AssetsHelper.BuildAssetMap(files, name, Studio.Game, saveFolderDialog.Folder, exportListType));
                 }

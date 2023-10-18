@@ -510,56 +510,60 @@ namespace AssetStudio
 
                 Progress.Reset();
 
-                string filename = Path.Combine(savePath, $"{name}{exportListType.GetExtension()}");
-                switch (exportListType)
+                string filename = string.Empty;
+                if (exportListType.Equals(ExportListType.None))
                 {
-                    case ExportListType.XML:
-                        var xmlSettings = new XmlWriterSettings() { Indent = true };
-                        using (XmlWriter writer = XmlWriter.Create(filename, xmlSettings))
-                        {
-                            writer.WriteStartDocument();
-                            writer.WriteStartElement("Assets");
-                            writer.WriteAttributeString("filename", filename);
-                            writer.WriteAttributeString("createdAt", DateTime.UtcNow.ToString("s"));
-                            foreach(var asset in toExportAssets)
-                            {
-                                writer.WriteStartElement("Asset");
-                                writer.WriteElementString("Name", asset.Name);
-                                writer.WriteElementString("Container", asset.Container);
-                                writer.WriteStartElement("Type");
-                                writer.WriteAttributeString("id", ((int)asset.Type).ToString());
-                                writer.WriteValue(asset.Type.ToString());
-                                writer.WriteEndElement();
-                                writer.WriteElementString("PathID", asset.PathID.ToString());
-                                writer.WriteElementString("Source", asset.Source);
-                                writer.WriteEndElement();
-                            }
-                            writer.WriteEndElement();
-                            writer.WriteEndDocument();
-                        }
-                        break;
-                    case ExportListType.JSON:
-                        using (StreamWriter file = File.CreateText(filename))
-                        {
-                            var serializer = new JsonSerializer() { Formatting = Newtonsoft.Json.Formatting.Indented };
-                            serializer.Converters.Add(new StringEnumConverter());
-                            serializer.Serialize(file, toExportAssets);
-                        }
-                        break;
-                    case ExportListType.MessagePack:
-                        using (var file = File.Create(filename))
-                        {
-                            var assetMap = new AssetMap
-                            {
-                                GameType = game.Type,
-                                AssetEntries = toExportAssets
-                            };
-                            MessagePackSerializer.Serialize(file, assetMap, MessagePackSerializerOptions.Standard.WithCompression(MessagePackCompression.Lz4BlockArray));
-                        }
-                        break;
+                    Logger.Info($"No export list type has been selected, skipping...");
                 }
+                else
+                {
+                    if (exportListType.HasFlag(ExportListType.XML))
+                    {
+                        filename = Path.Combine(savePath, $"{name}.xml");
+                        var xmlSettings = new XmlWriterSettings() { Indent = true };
+                        using XmlWriter writer = XmlWriter.Create(filename, xmlSettings);
+                        writer.WriteStartDocument();
+                        writer.WriteStartElement("Assets");
+                        writer.WriteAttributeString("filename", filename);
+                        writer.WriteAttributeString("createdAt", DateTime.UtcNow.ToString("s"));
+                        foreach (var asset in toExportAssets)
+                        {
+                            writer.WriteStartElement("Asset");
+                            writer.WriteElementString("Name", asset.Name);
+                            writer.WriteElementString("Container", asset.Container);
+                            writer.WriteStartElement("Type");
+                            writer.WriteAttributeString("id", ((int)asset.Type).ToString());
+                            writer.WriteValue(asset.Type.ToString());
+                            writer.WriteEndElement();
+                            writer.WriteElementString("PathID", asset.PathID.ToString());
+                            writer.WriteElementString("Source", asset.Source);
+                            writer.WriteEndElement();
+                        }
+                        writer.WriteEndElement();
+                        writer.WriteEndDocument();
+                    }
+                    if (exportListType.HasFlag(ExportListType.JSON))
+                    {
+                        filename = Path.Combine(savePath, $"{name}.json");
+                        using StreamWriter file = File.CreateText(filename);
+                        var serializer = new JsonSerializer() { Formatting = Newtonsoft.Json.Formatting.Indented };
+                        serializer.Converters.Add(new StringEnumConverter());
+                        serializer.Serialize(file, toExportAssets);
+                    }
+                    if (exportListType.HasFlag(ExportListType.MessagePack))
+                    {
+                        filename = Path.Combine(savePath, $"{name}.map");
+                        using var file = File.Create(filename);
+                        var assetMap = new AssetMap
+                        {
+                            GameType = game.Type,
+                            AssetEntries = toExportAssets
+                        };
+                        MessagePackSerializer.Serialize(file, assetMap, MessagePackSerializerOptions.Standard.WithCompression(MessagePackCompression.Lz4BlockArray));
+                    }
 
-                Logger.Info($"Finished buidling AssetMap with {toExportAssets.Length} assets.");
+                    Logger.Info($"Finished buidling AssetMap with {toExportAssets.Length} assets.");
+                }
 
                 resetEvent?.Set();
             });
