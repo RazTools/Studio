@@ -220,7 +220,7 @@ namespace AssetStudio.GUI
                 {
                     paths = File.ReadAllLines(paths[0]);
                 }
-                await Task.Run(() => assetsManager.LoadFiles(openFileDialog1.FileNames));
+                await Task.Run(() => assetsManager.LoadFiles(paths));
                 BuildAssetStructures();
             }
         }
