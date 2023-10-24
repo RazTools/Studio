@@ -20,6 +20,7 @@ using OpenTK.Graphics;
 using OpenTK.Mathematics;
 using Newtonsoft.Json.Converters;
 using System.Text.RegularExpressions;
+using OpenTK.Audio.OpenAL;
 
 namespace AssetStudio.GUI
 {
@@ -210,10 +211,15 @@ namespace AssetStudio.GUI
             openFileDialog1.InitialDirectory = openDirectoryBackup;
             if (openFileDialog1.ShowDialog(this) == DialogResult.OK)
             {
+                var paths = openFileDialog1.FileNames;
                 ResetForm();
-                openDirectoryBackup = Path.GetDirectoryName(openFileDialog1.FileNames[0]);
+                openDirectoryBackup = Path.GetDirectoryName(paths[0]);
                 assetsManager.SpecifyUnityVersion = specifyUnityVersion.Text;
                 assetsManager.Game = Studio.Game;
+                if (paths.Length == 1 && File.Exists(paths[0]) && Path.GetExtension(paths[0]) == ".txt")
+                {
+                    paths = File.ReadAllLines(paths[0]);
+                }
                 await Task.Run(() => assetsManager.LoadFiles(openFileDialog1.FileNames));
                 BuildAssetStructures();
             }
@@ -568,6 +574,15 @@ namespace AssetStudio.GUI
             {
                 if (treeSrcResults.Count == 0)
                 {
+                    try
+                    {
+                        Regex.Match("", treeSearch.Text, RegexOptions.IgnoreCase);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error("Invalid Regex.\n" + ex.Message);
+                        return;
+                    }
                     var regex = new Regex(treeSearch.Text, RegexOptions.IgnoreCase);
                     foreach (TreeNode node in sceneTreeView.Nodes)
                     {
@@ -1814,6 +1829,15 @@ namespace AssetStudio.GUI
             }
             if (!string.IsNullOrEmpty(listSearch.Text))
             {
+                try
+                {
+                    Regex.Match("", listSearch.Text, RegexOptions.IgnoreCase);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error("Invalid Regex.\n" + ex.Message);
+                    listSearch.Text = "";
+                }
                 var regex = new Regex(listSearch.Text, RegexOptions.IgnoreCase);
                 visibleAssets = visibleAssets.FindAll(
                     x => regex.IsMatch(x.Text) ||
