@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using System.Text;
 using MessagePack;
+using System.Reflection.Metadata.Ecma335;
 
 namespace AssetStudio
 {
@@ -244,37 +245,15 @@ namespace AssetStudio
             }
         }
 
-        public static bool LoadCABMap(string mapName)
+        public static bool LoadCABMapInternal(string mapName)
         {
-            Logger.Info($"Loading {mapName}");
+            Logger.Info($"Loading {mapName}...");
             try
             {
                 CABMap.Clear();
-                using (var fs = File.OpenRead(Path.Combine(MapName, $"{mapName}.bin")))
-                using (var reader = new BinaryReader(fs))
-                {
-                    BaseFolder = reader.ReadString();
-                    var count = reader.ReadInt32();
-                    for (int i = 0; i < count; i++)
-                    {
-                        var cab = reader.ReadString();
-                        var path = reader.ReadString();
-                        var offset = reader.ReadInt64();
-                        var depCount = reader.ReadInt32();
-                        var dependencies = new string[depCount];
-                        for (int j = 0; j < depCount; j++)
-                        {
-                            dependencies[j] = reader.ReadString();
-                        }
-                        var entry = new Entry()
-                        {
-                            Path = path,
-                            Offset = offset,
-                            Dependencies = dependencies
-                        };
-                        CABMap.Add(cab, entry);
-                    }
-                }
+                using var fs = File.OpenRead(Path.Combine(MapName, $"{mapName}.bin"));
+                using var reader = new BinaryReader(fs);
+                ParseCABMap(reader);
                 Logger.Verbose($"Initialized CABMap with {CABMap.Count} entries");
                 Logger.Info($"Loaded {mapName} !!");
             }
@@ -286,6 +265,53 @@ namespace AssetStudio
 
             return true;
         }
+
+        public static bool LoadCABMap(string path)
+        {
+            var mapName = Path.GetFileNameWithoutExtension(path);
+            Logger.Info($"Loading {mapName}...");
+            try
+            {
+                CABMap.Clear();
+                using var fs = File.OpenRead(path);
+                using var reader = new BinaryReader(fs);
+                ParseCABMap(reader);
+                Logger.Verbose($"Initialized CABMap with {CABMap.Count} entries");
+                Logger.Info($"Loaded {mapName} !!");
+            }
+            catch (Exception e)
+            {
+                Logger.Warning($"{mapName} was not loaded, {e}");
+                return false;
+            }
+
+            return true;
+        }
+
+        private static void ParseCABMap(BinaryReader reader)
+        {
+            BaseFolder = reader.ReadString();
+            var count = reader.ReadInt32();
+            for (int i = 0; i < count; i++)
+            {
+                var cab = reader.ReadString();
+                var path = reader.ReadString();
+                var offset = reader.ReadInt64();
+                var depCount = reader.ReadInt32();
+                var dependencies = new string[depCount];
+                for (int j = 0; j < depCount; j++)
+                {
+                    dependencies[j] = reader.ReadString();
+                }
+                var entry = new Entry()
+                {
+                    Path = path,
+                    Offset = offset,
+                    Dependencies = dependencies
+                };
+                CABMap.Add(cab, entry);
+            }
+        } 
 
         public static void BuildAssetMap(string[] files, string mapName, Game game, string savePath, ExportListType exportListType, ManualResetEvent resetEvent = null, ClassIDType[] typeFilters = null, Regex[] nameFilters = null, Regex[] containerFilters = null)
         {

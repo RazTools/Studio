@@ -80,7 +80,7 @@ namespace AssetStudio.CLI
                 }
                 if (o.MapOp.HasFlag(MapOpType.Load))
                 {
-                    AssetsHelper.LoadCABMap(o.MapName);
+                    AssetsHelper.LoadCABMapInternal(o.MapName);
                     assetsManager.ResolveDependencies = true;
                 }
                 if (o.MapOp.HasFlag(MapOpType.AssetMap))

@@ -146,7 +146,7 @@ namespace AssetStudio.GUI
         {
             var assetMapType = (ExportListType)Properties.Settings.Default.assetMapType;
             var assetMapTypes = Enum.GetValues<ExportListType>().ToArray()[1..];
-            foreach(var mapType in assetMapTypes)
+            foreach (var mapType in assetMapTypes)
             {
                 var menuItem = new ToolStripMenuItem(mapType.ToString()) { CheckOnClick = true, Checked = assetMapType.HasFlag(mapType), Tag = (int)mapType };
                 assetMapTypeMenuItem.DropDownItems.Add(menuItem);
@@ -166,7 +166,7 @@ namespace AssetStudio.GUI
             MapNameComboBox.SelectedIndexChanged += new EventHandler(specifyNameComboBox_SelectedIndexChanged);
             if (!string.IsNullOrEmpty(Properties.Settings.Default.selectedCABMapName))
             {
-                if (!AssetsHelper.LoadCABMap(Properties.Settings.Default.selectedCABMapName))
+                if (!AssetsHelper.LoadCABMapInternal(Properties.Settings.Default.selectedCABMapName))
                 {
                     Properties.Settings.Default.selectedCABMapName = "";
                     Properties.Settings.Default.Save();
@@ -2063,7 +2063,7 @@ namespace AssetStudio.GUI
                 Properties.Settings.Default.assetMapType = assetMapType;
                 Properties.Settings.Default.Save();
             }
-            
+
         }
         private void modelsOnly_CheckedChanged(object sender, EventArgs e)
         {
@@ -2111,7 +2111,7 @@ namespace AssetStudio.GUI
             var name = MapNameComboBox.SelectedItem.ToString();
             await Task.Run(() =>
             {
-                if (AssetsHelper.LoadCABMap(name))
+                if (AssetsHelper.LoadCABMapInternal(name))
                 {
                     Properties.Settings.Default.selectedCABMapName = name;
                     Properties.Settings.Default.Save();
@@ -2337,6 +2337,20 @@ namespace AssetStudio.GUI
                 await Task.Run(() => ResourceIndex.FromFile(path));
                 UpdateContainers();
                 InvokeUpdate(loadAIToolStripMenuItem, true);
+            }
+        }
+
+        private async void loadCABMapToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            miscToolStripMenuItem.DropDown.Visible = false;
+
+            var openFileDialog = new OpenFileDialog() { Multiselect = false, Filter = "CABMap File|*.bin" };
+            if (openFileDialog.ShowDialog(this) == DialogResult.OK)
+            {
+                var path = openFileDialog.FileName;
+                InvokeUpdate(loadCABMapToolStripMenuItem, false);
+                await Task.Run(() => AssetsHelper.LoadCABMap(path));
+                InvokeUpdate(loadCABMapToolStripMenuItem, true);
             }
         }
 
