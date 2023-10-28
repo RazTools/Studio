@@ -40,6 +40,7 @@ namespace AssetStudio
             Games.Add(index++, new Game(GameType.ProjectSekai));
             Games.Add(index++, new Game(GameType.CodenameJump));
             Games.Add(index++, new Game(GameType.GirlsFrontline));
+            Games.Add(index++, new Game(GameType.Reverse1999));
         }
         public static Game GetGame(GameType gameType) => GetGame((int)gameType);
         public static Game GetGame(int index)
@@ -150,7 +151,8 @@ namespace AssetStudio
         AliceGearAegis,
         ProjectSekai,
         CodenameJump,
-        GirlsFrontline
+        GirlsFrontline,
+        Reverse1999
     }
 
     public static class GameTypes

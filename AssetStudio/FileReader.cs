@@ -208,6 +208,9 @@ namespace AssetStudio
                         break;
                     case GameType.GirlsFrontline:
                         reader = DecryptGirlsFrontline(reader);
+                        break; 
+                    case GameType.Reverse1999:
+                        reader = DecryptReverse1999(reader);
                         break;
                 }
             }

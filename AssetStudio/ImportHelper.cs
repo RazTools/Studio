@@ -898,5 +898,57 @@ namespace AssetStudio
             ms.Position = 0;
             return new FileReader(reader.FullPath, ms);
         }
+        
+        public static FileReader DecryptReverse1999(FileReader reader)
+        {
+            Logger.Verbose($"Attempting to decrypt file {reader.FileName} with Reverse: 1999 encryption");
+
+            var signatureBytes = reader.ReadBytes(8);
+            var signature = Encoding.UTF8.GetString(signatureBytes[..7]);
+            if (signature == "UnityFS")
+            {
+                Logger.Verbose("Found UnityFS signature, file might not be encrypted");
+                reader.Position = 0;
+                return reader;
+            }
+
+            var key = GetAbEncryptKey(Path.GetFileNameWithoutExtension(reader.FileName));
+            for (int i = 0; i < signatureBytes.Length; i++)
+            {
+                signatureBytes[i] ^= key;
+            }
+
+            signature = Encoding.UTF8.GetString(signatureBytes[..7]);
+            if (signature == "UnityFS")
+            {
+                Logger.Verbose($"Found UnityFS signature, key 0x{key:X2} is valid, decrypting the rest of the stream");
+                var remaining = reader.ReadBytes((int)reader.Remaining);
+                for (int i = 0; i < remaining.Length; i++)
+                {
+                    remaining[i] ^= key;
+                }
+
+                Logger.Verbose("Decrypted Reverse: 1999 file successfully !!");
+                var stream = new MemoryStream();
+                stream.Write(signatureBytes);
+                stream.Write(remaining);
+                stream.Position = 0;
+                return new FileReader(reader.FullPath, stream);
+            }
+
+            Logger.Verbose("File doesn't match any of the encryption types");
+            reader.Position = 0;
+            return reader;
+
+            static byte GetAbEncryptKey(string md5Name)
+            {
+                byte key = 0;
+                foreach (var c in md5Name)
+                {
+                    key += (byte)c;
+                }
+                return (byte)(key + (byte)(2 * ((key & 1) + 1)));
+            }
+        }
     }
 }
