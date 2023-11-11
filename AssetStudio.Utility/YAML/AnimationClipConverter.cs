@@ -57,7 +57,7 @@ namespace AssetStudio
             var lastSampleFrame = streamedFrames.Count > 1 ? streamedFrames[streamedFrames.Count - 2].time : 0.0f;
             var lastFrame = Math.Max(lastDenseFrame, lastSampleFrame);
 
-            if (!m_Clip.m_ACLClip.m_ClipData.IsNullOrEmpty() && !game.Type.IsSRGroup())
+            if (m_Clip.m_ACLClip.IsSet && !game.Type.IsSRGroup())
             {
                 var lastACLFrame = ProcessACLClip(m_Clip, bindings, tos);
                 lastFrame = Math.Max(lastFrame, lastACLFrame);
@@ -65,7 +65,7 @@ namespace AssetStudio
             }
             ProcessStreams(streamedFrames, bindings, tos, m_Clip.m_DenseClip.m_SampleRate);
             ProcessDenses(m_Clip, bindings, tos);
-            if (!m_Clip.m_ACLClip.m_ClipData.IsNullOrEmpty() && game.Type.IsSRGroup())
+            if (m_Clip.m_ACLClip.IsSet && game.Type.IsSRGroup())
             {
                 var lastACLFrame = ProcessACLClip(m_Clip, bindings, tos);
                 lastFrame = Math.Max(lastFrame, lastACLFrame);
@@ -112,7 +112,7 @@ namespace AssetStudio
                     var curve = frame.keyList[curveIndex];
                     var index = curve.index;
                     if (!game.Type.IsSRGroup())
-                        index += (int)animationClip.m_MuscleClip.m_Clip.m_ACLClip.m_CurveCount;
+                        index += (int)animationClip.m_MuscleClip.m_Clip.m_ACLClip.CurveCount;
                     var binding = bindings.FindBinding(index);
 
                     var path = GetCurvePath(tos, binding.path);
@@ -161,7 +161,7 @@ namespace AssetStudio
                 {
                     var index = (int)streamCount + curveIndex;
                     if (!game.Type.IsSRGroup())
-                        index += (int)clip.m_ACLClip.m_CurveCount;
+                        index += (int)clip.m_ACLClip.CurveCount;
                     var binding = bindings.FindBinding(index);
                     var path = GetCurvePath(tos, binding.path);
                     var framePosition = frameOffset + curveIndex;
@@ -193,8 +193,8 @@ namespace AssetStudio
             for (int frameIndex = 0; frameIndex < frameCount; frameIndex++)
             {
                 float time = times[frameIndex];
-                int frameOffset = frameIndex * (int)acl.m_CurveCount;
-                for (int curveIndex = 0; curveIndex < acl.m_CurveCount;)
+                int frameOffset = frameIndex * (int)acl.CurveCount;
+                for (int curveIndex = 0; curveIndex < acl.CurveCount;)
                 {
                     var index = curveIndex;
                     if (game.Type.IsSRGroup())
@@ -236,8 +236,8 @@ namespace AssetStudio
                 for (var curveIndex = 0; curveIndex < constant.data.Length;)
                 {
                     var index = (int)(streamCount + denseCount + curveIndex);
-                    if (!clip.m_ACLClip.m_ClipData.IsNullOrEmpty())
-                        index += (int)clip.m_ACLClip.m_CurveCount;
+                    if (clip.m_ACLClip.IsSet)
+                        index += (int)clip.m_ACLClip.CurveCount;
                     GenericBinding binding = bindings.FindBinding(index);
                     string path = GetCurvePath(tos, binding.path);
                     if (binding.typeID == ClassIDType.Transform)

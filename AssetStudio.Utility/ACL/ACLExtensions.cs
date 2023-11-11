@@ -1,4 +1,5 @@
-﻿using ACLLibs;
+﻿using System;
+using ACLLibs;
 
 namespace AssetStudio
 {
@@ -8,17 +9,23 @@ namespace AssetStudio
         {
             if (game.Type.IsSRGroup())
             {
-                SRACL.DecompressAll(m_ACLClip.m_ClipData, out values, out times);
+                var aclClip = m_ACLClip as MHYACLClip;
+                SRACL.DecompressAll(aclClip.m_ClipData, out values, out times);
             }
             else
             {
-                if (!m_ACLClip.m_DatabaseData.IsNullOrEmpty())
+                switch (m_ACLClip)
                 {
-                    DBACL.DecompressTracks(m_ACLClip.m_ClipData, m_ACLClip.m_DatabaseData, out values, out times);
-                }
-                else
-                {
-                    ACL.DecompressAll(m_ACLClip.m_ClipData, out values, out times);
+                    case GIACLClip giaclClip:
+                        DBACL.DecompressTracks(giaclClip.m_ClipData, giaclClip.m_DatabaseData, out values, out times);
+                        break;
+                    case MHYACLClip mhyaclClip:
+                        ACL.DecompressAll(mhyaclClip.m_ClipData, out values, out times);
+                        break;
+                    default:
+                        values = Array.Empty<float>();
+                        times = Array.Empty<float>();
+                        break;
                 }
             }
         }

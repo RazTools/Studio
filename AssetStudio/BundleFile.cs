@@ -35,6 +35,7 @@ namespace AssetStudio
         Lz4HC,
         Lzham,
         Lz4Mr0k,
+        Lz4Inv = 5,
         Zstd = 5
     }
 
@@ -542,8 +543,12 @@ namespace AssetStudio
                             {
                                 NetEaseUtils.Decrypt(compressedBytesSpan);
                             }
-                            if (Game.Type.IsOPFP())
+                            if (Game.Type.IsArknightsEndfield() && i == 0)
                             {
+                                FairGuardUtils.Decrypt(compressedBytesSpan);
+                            }
+                            if (Game.Type.IsOPFP())
+                            { 
                                 OPFPUtils.Decrypt(compressedBytesSpan, reader.FullPath);
                             }
                             var uncompressedSize = (int)blockInfo.uncompressedSize;
@@ -554,6 +559,26 @@ namespace AssetStudio
                             {
                                 throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
                             }
+                            blocksStream.Write(uncompressedBytes, 0, uncompressedSize);
+                            BigArrayPool<byte>.Shared.Return(compressedBytes);
+                            BigArrayPool<byte>.Shared.Return(uncompressedBytes);
+                            break;
+                        }
+                    case CompressionType.Lz4Inv when Game.Type.IsArknightsEndfield():
+                        {
+                            var compressedSize = (int)blockInfo.compressedSize;
+                            var compressedBytes = BigArrayPool<byte>.Shared.Rent(compressedSize);
+                            reader.Read(compressedBytes, 0, compressedSize);
+                            var compressedBytesSpan = compressedBytes.AsSpan(0, compressedSize);
+                            if (i == 0)
+                            {
+                                FairGuardUtils.Decrypt(compressedBytesSpan);
+
+                            }
+                            var uncompressedSize = (int)blockInfo.uncompressedSize;
+                            var uncompressedBytes = BigArrayPool<byte>.Shared.Rent(uncompressedSize);
+                            var uncompressedBytesSpan = uncompressedBytes.AsSpan(0, uncompressedSize);
+                            FairGuardUtils.Lz4.Decompress(compressedBytesSpan, uncompressedBytesSpan);
                             blocksStream.Write(uncompressedBytes, 0, uncompressedSize);
                             BigArrayPool<byte>.Shared.Return(compressedBytes);
                             BigArrayPool<byte>.Shared.Return(uncompressedBytes);

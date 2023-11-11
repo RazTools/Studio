@@ -98,6 +98,12 @@ namespace AssetStudio
                     if (version[0] >= 2021) //2021.1 and up
                     {
                         var m_StaticShadowCaster = reader.ReadByte();
+                        if (reader.Game.Type.IsArknightsEndfield())
+                        {
+                            var m_RealtimeShadowCaster = reader.ReadByte();
+                            var m_SubMeshRenderMode = reader.ReadByte();
+                            var m_CharacterIndex = reader.ReadByte();
+                        }
                     }
                     var m_MotionVectors = reader.ReadByte();
                     var m_LightProbeUsage = reader.ReadByte();

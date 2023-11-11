@@ -783,22 +783,71 @@ namespace AssetStudio
         }
     }
 
-    public class ACLClip
+    public abstract class ACLClip
     {
-        public byte[] m_ClipData;
-        public byte[] m_DatabaseData;
+        public virtual bool IsSet => false;
+        public virtual uint CurveCount => 0;
+        public abstract void Read(ObjectReader reader);
+    }
 
+    public class EmptyACLClip : ACLClip
+    {
+        public override void Read(ObjectReader reader) { }
+    }
+
+    public class ArkACLClip : ACLClip
+    {
+        public int m_ACLType;
+        public byte[] m_ACLArray;
+        public float m_PositionFactor;
+        public float m_EulerFactor;
+        public float m_ScaleFactor;
+        public float m_FloatFactor;
+        public float m_nPositionCurves;
+        public float m_nRotationCurves;
+        public float m_nEulerCurves;
+        public float m_nScaleCurves;
+
+        public override bool IsSet => !m_ACLArray.IsNullOrEmpty();
+
+        public ArkACLClip()
+        {
+            m_ACLArray = Array.Empty<byte>();
+        }
+
+        public override void Read(ObjectReader reader)
+        {
+            m_ACLType = reader.ReadInt32();
+            m_ACLArray = reader.ReadUInt8Array();
+            reader.AlignStream();
+            m_PositionFactor = reader.ReadSingle();
+            m_EulerFactor = reader.ReadSingle();
+            m_ScaleFactor = reader.ReadSingle();
+            m_FloatFactor = reader.ReadSingle();
+            m_nPositionCurves = reader.ReadSingle();
+            m_nRotationCurves = reader.ReadSingle();
+            m_nEulerCurves = reader.ReadSingle();
+            m_nScaleCurves = reader.ReadSingle();
+        }
+    }
+
+    public class MHYACLClip : ACLClip
+    {
         public uint m_CurveCount;
         public uint m_ConstCurveCount;
-        
-        public ACLClip()
+
+        public byte[] m_ClipData;
+
+        public override bool IsSet => !m_ClipData.IsNullOrEmpty();
+        public override uint CurveCount => m_CurveCount;
+
+        public MHYACLClip()
         {
             m_CurveCount = 0;
             m_ConstCurveCount = 0;
             m_ClipData = Array.Empty<byte>();
-            m_DatabaseData = Array.Empty<byte>();
         }
-        public void Read(ObjectReader reader)
+        public override void Read(ObjectReader reader)
         {
             var byteCount = reader.ReadInt32();
 
@@ -817,7 +866,28 @@ namespace AssetStudio
                 m_ConstCurveCount = reader.ReadUInt32();
             }
         }
-        public void ParseGI(ObjectReader reader)
+    }
+
+    public class GIACLClip : ACLClip
+    {
+        public uint m_CurveCount;
+        public uint m_ConstCurveCount;
+
+        public byte[] m_ClipData;
+        public byte[] m_DatabaseData;
+
+        public override bool IsSet => !m_ClipData.IsNullOrEmpty() && !m_DatabaseData.IsNullOrEmpty();
+        public override uint CurveCount => m_CurveCount;
+
+        public GIACLClip()
+        {
+            m_CurveCount = 0;
+            m_ConstCurveCount = 0;
+            m_ClipData = Array.Empty<byte>();
+            m_DatabaseData = Array.Empty<byte>();
+        }
+
+        public override void Read(ObjectReader reader)
         {
             var aclTracksCount = (int)reader.ReadUInt64();
             var aclTracksOffset = reader.Position + reader.ReadInt64();
@@ -1099,7 +1169,7 @@ namespace AssetStudio
 
     public class Clip
     {
-        public ACLClip m_ACLClip = new();
+        public ACLClip m_ACLClip = new EmptyACLClip();
         public StreamedClip m_StreamedClip;
         public DenseClip m_DenseClip;
         public ConstantClip m_ConstantClip;
@@ -1113,6 +1183,12 @@ namespace AssetStudio
             m_DenseClip = new DenseClip(reader);
             if (reader.Game.Type.IsSRGroup())
             {
+                m_ACLClip = new MHYACLClip();
+                m_ACLClip.Read(reader);
+            }
+            if (reader.Game.Type.IsArknightsEndfield())
+            {
+                m_ACLClip = new ArkACLClip();
                 m_ACLClip.Read(reader);
             }
             if (version[0] > 4 || (version[0] == 4 && version[1] >= 3)) //4.3 and up
@@ -1121,6 +1197,7 @@ namespace AssetStudio
             }
             if (reader.Game.Type.IsGIGroup() || reader.Game.Type.IsBH3Group() || reader.Game.Type.IsZZZCB1())
             {
+                m_ACLClip = new MHYACLClip();
                 m_ACLClip.Read(reader);
             }
             if (version[0] < 2018 || (version[0] == 2018 && version[1] < 3)) //2018.3 down
@@ -1143,7 +1220,8 @@ namespace AssetStudio
             clip.m_StreamedClip = StreamedClip.ParseGI(reader);
             clip.m_DenseClip = DenseClip.ParseGI(reader);
             clip.m_ConstantClip = ConstantClip.ParseGI(reader);
-            clip.m_ACLClip.ParseGI(reader);
+            clip.m_ACLClip = new GIACLClip();
+            clip.m_ACLClip.Read(reader);
 
             reader.Position = pos;
 
@@ -1683,6 +1761,10 @@ namespace AssetStudio
 
             m_SampleRate = reader.ReadSingle();
             m_WrapMode = reader.ReadInt32();
+            if (reader.Game.Type.IsArknightsEndfield())
+            {
+                var m_aclType = reader.ReadInt32();
+            }
             if (version[0] > 3 || (version[0] == 3 && version[1] >= 4)) //3.4 and up
             {
                 m_Bounds = new AABB(reader);
@@ -1746,14 +1828,16 @@ namespace AssetStudio
                 m_StreamData = new StreamingInfo(reader);
                 if (!string.IsNullOrEmpty(m_StreamData?.path))
                 {
+                    var aclClip = m_MuscleClip.m_Clip.m_ACLClip as GIACLClip;
+
                     var resourceReader = new ResourceReader(m_StreamData.path, assetsFile, m_StreamData.offset, m_StreamData.size);
                     var ms = new MemoryStream();
-                    ms.Write(m_MuscleClip.m_Clip.m_ACLClip.m_DatabaseData);
+                    ms.Write(aclClip.m_DatabaseData);
 
                     ms.Write(resourceReader.GetData());
                     ms.AlignStream();
 
-                    m_MuscleClip.m_Clip.m_ACLClip.m_DatabaseData = ms.ToArray();
+                    aclClip.m_DatabaseData = ms.ToArray();
                 }
             }
         }

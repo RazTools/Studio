@@ -471,6 +471,7 @@ namespace AssetStudio
         private VertexData m_VertexData;
         private CompressedMesh m_CompressedMesh;
         private StreamingInfo m_StreamData;
+        private bool m_CollisionMeshBaked = false;
 
         public List<uint> m_Indices = new List<uint>();
 
@@ -549,6 +550,12 @@ namespace AssetStudio
                     }
                     var m_KeepVertices = reader.ReadBoolean();
                     var m_KeepIndices = reader.ReadBoolean();
+                    if (reader.Game.Type.IsArknightsEndfield())
+                    {
+                        var m_CollisionMeshOnly = reader.ReadBoolean();
+                        m_CollisionMeshBaked = reader.ReadBoolean();
+                        var m_CollisionMeshConvex = reader.ReadBoolean();
+                    }
                 }
                 reader.AlignStream();
                 if (reader.Game.Type.IsGISubGroup())
@@ -641,7 +648,7 @@ namespace AssetStudio
                 m_VertexData = new VertexData(reader);
             }
 
-            if (version[0] > 2 || (version[0] == 2 && version[1] >= 6)) //2.6.0 and later
+            if ((version[0] > 2 || (version[0] == 2 && version[1] >= 6)) && !m_CollisionMeshBaked) //2.6.0 and later
             {
                 m_CompressedMesh = new CompressedMesh(reader);
             }
@@ -696,6 +703,10 @@ namespace AssetStudio
                 var m_MeshMetrics = new float[2];
                 m_MeshMetrics[0] = reader.ReadSingle();
                 m_MeshMetrics[1] = reader.ReadSingle();
+                if (reader.Game.Type.IsArknightsEndfield())
+                {
+                    var m_MeshMetrics2 = reader.ReadSingle();
+                }
             }
 
             if (reader.Game.Type.IsGIGroup())
@@ -735,7 +746,12 @@ namespace AssetStudio
                 ReadVertexData();
             }
 
-            if (version[0] > 2 || (version[0] == 2 && version[1] >= 6)) //2.6.0 and later
+            if (m_CollisionMeshBaked)
+            {
+                return;
+            }
+
+            if ((version[0] > 2 || (version[0] == 2 && version[1] >= 6))) //2.6.0 and later
             {
                 DecompressCompressedMesh();
             }

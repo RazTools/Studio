@@ -634,36 +634,36 @@ namespace AssetStudio
 
         public static string FindPropertyNameByCRC28(this Material material, uint crc)
         {
-            foreach (var property in material.m_SavedProperties.m_TexEnvs.Keys)
+            foreach (var property in material.m_SavedProperties.m_TexEnvs)
             {
-                string hdrName = $"{property}_HDR";
+                string hdrName = $"{property.Key}_HDR";
                 if (CRC.Verify28DigestUTF8(hdrName, crc))
                 {
                     return hdrName;
                 }
-                string stName = $"{property}_ST";
+                string stName = $"{property.Key}_ST";
                 if (CRC.Verify28DigestUTF8(stName, crc))
                 {
                     return stName;
                 }
-                string texelName = $"{property}_TexelSize";
+                string texelName = $"{property.Key}_TexelSize";
                 if (CRC.Verify28DigestUTF8(texelName, crc))
                 {
                     return texelName;
                 }
             }
-            foreach (var property in material.m_SavedProperties.m_Floats.Keys)
+            foreach (var property in material.m_SavedProperties.m_Floats)
             {
-                if (CRC.Verify28DigestUTF8(property, crc))
+                if (CRC.Verify28DigestUTF8(property.Key, crc))
                 {
-                    return property;
+                    return property.Key;
                 }
             }
-            foreach (var property in material.m_SavedProperties.m_Colors.Keys)
+            foreach (var property in material.m_SavedProperties.m_Colors)
             {
-                if (CRC.Verify28DigestUTF8(property, crc))
+                if (CRC.Verify28DigestUTF8(property.Key, crc))
                 {
-                    return property;
+                    return property.Key;
                 }
             }
             return null;

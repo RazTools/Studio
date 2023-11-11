@@ -13,49 +13,53 @@ namespace AssetStudio
             m_Texture = new PPtr<Texture>(reader);
             m_Scale = reader.ReadVector2();
             m_Offset = reader.ReadVector2();
+            if (reader.Game.Type.IsArknightsEndfield())
+            {
+                var m_UVSetIndex = reader.ReadInt32();
+            }
         }
     }
 
     public class UnityPropertySheet
     {
-        public Dictionary<string, UnityTexEnv> m_TexEnvs;
-        public Dictionary<string, int> m_Ints;
-        public Dictionary<string, float> m_Floats;
-        public Dictionary<string, Color> m_Colors;
+        public KeyValuePair<string, UnityTexEnv>[] m_TexEnvs;
+        public KeyValuePair<string, int>[] m_Ints;
+        public KeyValuePair<string, float>[] m_Floats;
+        public KeyValuePair<string, Color>[] m_Colors;
 
         public UnityPropertySheet(ObjectReader reader)
         {
             var version = reader.version;
 
             int m_TexEnvsSize = reader.ReadInt32();
-            m_TexEnvs = new Dictionary<string, UnityTexEnv>(m_TexEnvsSize);
+            m_TexEnvs = new KeyValuePair<string, UnityTexEnv>[m_TexEnvsSize];
             for (int i = 0; i < m_TexEnvsSize; i++)
             {
-                m_TexEnvs.Add(reader.ReadAlignedString(), new UnityTexEnv(reader));
+                m_TexEnvs[i] = new(reader.ReadAlignedString(), new UnityTexEnv(reader));
             }
 
             if (version[0] >= 2021) //2021.1 and up
             {
                 int m_IntsSize = reader.ReadInt32();
-                m_Ints = new Dictionary<string, int>(m_IntsSize);
+                m_Ints = new KeyValuePair<string, int>[m_IntsSize];
                 for (int i = 0; i < m_IntsSize; i++)
                 {
-                    m_Ints.Add(reader.ReadAlignedString(), reader.ReadInt32());
+                    m_Ints[i] = new(reader.ReadAlignedString(), reader.ReadInt32());
                 }
             }
 
             int m_FloatsSize = reader.ReadInt32();
-            m_Floats = new Dictionary<string, float>(m_FloatsSize);
+            m_Floats = new KeyValuePair<string, float>[m_FloatsSize];
             for (int i = 0; i < m_FloatsSize; i++)
             {
-                m_Floats.Add(reader.ReadAlignedString(), reader.ReadSingle());
+                m_Floats[i] = new(reader.ReadAlignedString(), reader.ReadSingle());
             }
 
             int m_ColorsSize = reader.ReadInt32();
-            m_Colors = new Dictionary<string, Color>(m_ColorsSize);
+            m_Colors = new KeyValuePair<string, Color>[m_ColorsSize];
             for (int i = 0; i < m_ColorsSize; i++)
             {
-                m_Colors.Add(reader.ReadAlignedString(), reader.ReadColor4());
+                m_Colors[i] = new(reader.ReadAlignedString(), reader.ReadColor4());
             }
         }
     }

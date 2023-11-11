@@ -718,6 +718,8 @@ namespace AssetStudio
                         dest = 1;
                     else if (Game.Type.IsSRGroup() && texEnv.Key.Contains("Pack"))
                         dest = 0;
+                    else if (Game.Type.IsArknightsEndfield() && texEnv.Key == "_BaseMap")
+                        dest = 0;
 
                     texture.Dest = dest;
 
@@ -896,15 +898,15 @@ namespace AssetStudio
                     var streamedFrames = m_Clip.m_StreamedClip.ReadData();
                     var m_ClipBindingConstant = animationClip.m_ClipBindingConstant ?? m_Clip.ConvertValueArrayToGenericBinding();
                     var m_ACLClip = m_Clip.m_ACLClip;
-                    var aclCount = m_ACLClip.m_CurveCount;
-                    if (!m_ACLClip.m_ClipData.IsNullOrEmpty() && !Game.Type.IsSRGroup())
+                    var aclCount = m_ACLClip.CurveCount;
+                    if (m_ACLClip.IsSet && !Game.Type.IsSRGroup())
                     {
                         m_ACLClip.Process(Game, out var values, out var times);
                         for (int frameIndex = 0; frameIndex < times.Length; frameIndex++)
                         {
                             var time = times[frameIndex];
-                            var frameOffset = frameIndex * m_ACLClip.m_CurveCount;
-                            for (int curveIndex = 0; curveIndex < m_ACLClip.m_CurveCount;)
+                            var frameOffset = frameIndex * m_ACLClip.CurveCount;
+                            for (int curveIndex = 0; curveIndex < m_ACLClip.CurveCount;)
                             {
                                 var index = curveIndex;
                                 ReadCurveData(iAnim, m_ClipBindingConstant, index, time, values, (int)frameOffset, ref curveIndex);
@@ -938,14 +940,14 @@ namespace AssetStudio
                             ReadCurveData(iAnim, m_ClipBindingConstant, (int)index, time, m_DenseClip.m_SampleArray, (int)frameOffset, ref curveIndex);
                         }
                     }
-                    if (!m_ACLClip.m_ClipData.IsNullOrEmpty() && Game.Type.IsSRGroup())
+                    if (m_ACLClip.IsSet && Game.Type.IsSRGroup())
                     {
                         m_ACLClip.Process(Game, out var values, out var times);
                         for (int frameIndex = 0; frameIndex < times.Length; frameIndex++)
                         {
                             var time = times[frameIndex];
-                            var frameOffset = frameIndex * m_ACLClip.m_CurveCount;
-                            for (int curveIndex = 0; curveIndex < m_ACLClip.m_CurveCount;)
+                            var frameOffset = frameIndex * m_ACLClip.CurveCount;
+                            for (int curveIndex = 0; curveIndex < m_ACLClip.CurveCount;)
                             {
                                 var index = (int)(curveIndex + m_DenseClip.m_CurveCount + streamCount);
                                 ReadCurveData(iAnim, m_ClipBindingConstant, index, time, values, (int)frameOffset, ref curveIndex);
