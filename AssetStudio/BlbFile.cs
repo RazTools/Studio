@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using K4os.Compression.LZ4;
 
 namespace AssetStudio
 {
@@ -131,7 +130,7 @@ namespace AssetStudio
                 var compressedBytesSpan = compressedBytes.AsSpan(0, compressedSize);
                 var uncompressedBytesSpan = uncompressedBytes.AsSpan(0, uncompressedSize);
 
-                var numWrite = LZ4Codec.Decode(compressedBytesSpan, uncompressedBytesSpan);
+                var numWrite = LZ4.LZ4.Decompress(compressedBytesSpan, uncompressedBytesSpan);
                 if (numWrite != uncompressedSize)
                 {
                     throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");

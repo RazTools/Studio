@@ -1,5 +1,4 @@
-﻿using K4os.Compression.LZ4;
-using ZstdSharp;
+﻿using ZstdSharp;
 using System;
 using System.Data;
 using System.IO;
@@ -438,7 +437,7 @@ namespace AssetStudio
                 case CompressionType.Lz4HC: //LZ4HC
                     {
                         var uncompressedBytes = new byte[uncompressedSize];
-                        var numWrite = LZ4Codec.Decode(blocksInfoBytesSpan, uncompressedBytes);
+                        var numWrite = LZ4.LZ4.Decompress(blocksInfoBytesSpan, uncompressedBytes);
                         if (numWrite != uncompressedSize)
                         {
                             throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
@@ -554,7 +553,7 @@ namespace AssetStudio
                             var uncompressedSize = (int)blockInfo.uncompressedSize;
                             var uncompressedBytes = BigArrayPool<byte>.Shared.Rent(uncompressedSize);
                             var uncompressedBytesSpan = uncompressedBytes.AsSpan(0, uncompressedSize);
-                            var numWrite = LZ4Codec.Decode(compressedBytesSpan, uncompressedBytesSpan);
+                            var numWrite = LZ4.LZ4.Decompress(compressedBytesSpan, uncompressedBytesSpan);
                             if (numWrite != uncompressedSize)
                             {
                                 throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
@@ -578,7 +577,11 @@ namespace AssetStudio
                             var uncompressedSize = (int)blockInfo.uncompressedSize;
                             var uncompressedBytes = BigArrayPool<byte>.Shared.Rent(uncompressedSize);
                             var uncompressedBytesSpan = uncompressedBytes.AsSpan(0, uncompressedSize);
-                            FairGuardUtils.Lz4.Decompress(compressedBytesSpan, uncompressedBytesSpan);
+                            var numWrite = LZ4.LZ4Inv.Decompress(compressedBytesSpan, uncompressedBytesSpan);
+                            if (numWrite != uncompressedSize)
+                            {
+                                throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
+                            }
                             blocksStream.Write(uncompressedBytes, 0, uncompressedSize);
                             BigArrayPool<byte>.Shared.Return(compressedBytes);
                             BigArrayPool<byte>.Shared.Return(uncompressedBytes);

@@ -1,5 +1,4 @@
-﻿using K4os.Compression.LZ4;
-using SpirV;
+﻿using SpirV;
 using System;
 using System.Globalization;
 using System.IO;
@@ -16,7 +15,11 @@ namespace AssetStudio
             if (shader.m_SubProgramBlob != null) //5.3 - 5.4
             {
                 var decompressedBytes = new byte[shader.decompressedSize];
-                LZ4Codec.Decode(shader.m_SubProgramBlob, decompressedBytes);
+                var numWrite = LZ4.LZ4.Decompress(shader.m_SubProgramBlob, decompressedBytes);
+                if (numWrite != shader.decompressedSize)
+                {
+                    throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {shader.decompressedSize} bytes");
+                }
                 using (var blobReader = new EndianBinaryReader(new MemoryStream(decompressedBytes), EndianType.LittleEndian))
                 {
                     var program = new ShaderProgram(blobReader, shader);
@@ -51,7 +54,11 @@ namespace AssetStudio
                     }
                     else
                     {
-                        LZ4Codec.Decode(shader.compressedBlob, (int)offset, (int)compressedLength, decompressedBytes, 0, (int)decompressedLength);
+                        var numWrite = LZ4.LZ4.Decompress(shader.compressedBlob.AsSpan().Slice((int)offset, (int)compressedLength), decompressedBytes.AsSpan().Slice(0, (int)decompressedLength));
+                        if (numWrite != decompressedLength)
+                        {
+                            throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {decompressedLength} bytes");
+                        }
                     }
                     using (var blobReader = new EndianBinaryReader(new MemoryStream(decompressedBytes), EndianType.LittleEndian))
                     {
