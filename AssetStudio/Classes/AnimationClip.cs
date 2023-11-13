@@ -795,42 +795,6 @@ namespace AssetStudio
         public override void Read(ObjectReader reader) { }
     }
 
-    public class ArkACLClip : ACLClip
-    {
-        public int m_ACLType;
-        public byte[] m_ACLArray;
-        public float m_PositionFactor;
-        public float m_EulerFactor;
-        public float m_ScaleFactor;
-        public float m_FloatFactor;
-        public float m_nPositionCurves;
-        public float m_nRotationCurves;
-        public float m_nEulerCurves;
-        public float m_nScaleCurves;
-
-        public override bool IsSet => !m_ACLArray.IsNullOrEmpty();
-
-        public ArkACLClip()
-        {
-            m_ACLArray = Array.Empty<byte>();
-        }
-
-        public override void Read(ObjectReader reader)
-        {
-            m_ACLType = reader.ReadInt32();
-            m_ACLArray = reader.ReadUInt8Array();
-            reader.AlignStream();
-            m_PositionFactor = reader.ReadSingle();
-            m_EulerFactor = reader.ReadSingle();
-            m_ScaleFactor = reader.ReadSingle();
-            m_FloatFactor = reader.ReadSingle();
-            m_nPositionCurves = reader.ReadSingle();
-            m_nRotationCurves = reader.ReadSingle();
-            m_nEulerCurves = reader.ReadSingle();
-            m_nScaleCurves = reader.ReadSingle();
-        }
-    }
-
     public class MHYACLClip : ACLClip
     {
         public uint m_CurveCount;
@@ -1101,6 +1065,108 @@ namespace AssetStudio
             return denseClip;
         }
     }
+    public class ArkDenseClip : DenseClip
+    {
+        public int m_ACLType;
+        public byte[] m_ACLArray;
+        public float m_PositionFactor;
+        public float m_EulerFactor;
+        public float m_ScaleFactor;
+        public float m_FloatFactor;
+        public uint m_nPositionCurves;
+        public uint m_nRotationCurves;
+        public uint m_nEulerCurves;
+        public uint m_nScaleCurves;
+
+        public ArkDenseClip(ObjectReader reader) : base(reader)
+        {
+            m_ACLType = reader.ReadInt32();
+            m_ACLArray = reader.ReadUInt8Array();
+            reader.AlignStream();
+            m_PositionFactor = reader.ReadSingle();
+            m_EulerFactor = reader.ReadSingle();
+            m_ScaleFactor = reader.ReadSingle();
+            m_FloatFactor = reader.ReadSingle();
+            m_nPositionCurves = reader.ReadUInt32();
+            m_nRotationCurves = reader.ReadUInt32();
+            m_nEulerCurves = reader.ReadUInt32();
+            m_nScaleCurves = reader.ReadUInt32();
+
+            Process();
+        }
+
+        private void Process()
+        {
+            if (m_ACLType == 0 || !m_SampleArray.IsNullOrEmpty())
+            {
+                return;
+            }
+
+            var sampleArray = new List<float>();
+
+            var size = m_ACLType >> 2;
+            var factor = (float)((1 << m_ACLType) - 1);
+            var aclSpan = m_ACLArray.ToUInt4Array().AsSpan();
+            var buffer = (stackalloc byte[8]);
+
+            for (int i = 0; i < m_FrameCount; i++)
+            {
+                var index = i * (int)(m_CurveCount * size);
+                for (int j = 0; j < m_nPositionCurves; j++)
+                {
+                    sampleArray.Add(ReadCurve(aclSpan, m_PositionFactor, ref index));
+                }
+                for (int j = 0; j < m_nRotationCurves; j++)
+                {
+                    sampleArray.Add(ReadCurve(aclSpan, 1.0f, ref index));
+                }
+                for (int j = 0; j < m_nEulerCurves; j++)
+                {
+                    sampleArray.Add(ReadCurve(aclSpan, m_EulerFactor, ref index));
+                }
+                for (int j = 0; j < m_nScaleCurves; j++)
+                {
+                    sampleArray.Add(ReadCurve(aclSpan, m_ScaleFactor, ref index));
+                }
+                var m_nFloatCurves = m_CurveCount - (m_nPositionCurves + m_nRotationCurves + m_nEulerCurves + m_nScaleCurves);
+                for (int j = 0; j < m_nFloatCurves; j++)
+                {
+                    sampleArray.Add(ReadCurve(aclSpan, m_FloatFactor, ref index));
+                }
+            }
+
+            m_SampleArray = sampleArray.ToArray();
+        }
+
+        private float ReadCurve(Span<byte> aclSpan, float curveFactor, ref int curveIndex)
+        {
+            var buffer = (stackalloc byte[8]);
+
+            var curveSize = m_ACLType >> 2;
+            var factor = (float)((1 << m_ACLType) - 1);
+
+            aclSpan.Slice(curveIndex, curveSize).CopyTo(buffer);
+            var temp = buffer.ToArray().ToUInt8Array(0, curveSize);
+            buffer.Clear();
+            temp.CopyTo(buffer);
+
+            float curve;
+            var value = BitConverter.ToUInt64(buffer);
+            if (value != 0)
+            {
+                curve = ((value / factor) - 0.5f) * 2;
+            }
+            else
+            {
+                curve = -1.0f;
+            }
+
+            curve *= curveFactor;
+            curveIndex += curveSize;
+
+            return curve;
+        }
+    }
 
     public class ConstantClip
     {
@@ -1180,15 +1246,17 @@ namespace AssetStudio
         {
             var version = reader.version;
             m_StreamedClip = new StreamedClip(reader);
-            m_DenseClip = new DenseClip(reader);
+            if (reader.Game.Type.IsArknightsEndfield())
+            {
+                m_DenseClip = new ArkDenseClip(reader);
+            }
+            else
+            {
+                m_DenseClip = new DenseClip(reader);
+            }
             if (reader.Game.Type.IsSRGroup())
             {
                 m_ACLClip = new MHYACLClip();
-                m_ACLClip.Read(reader);
-            }
-            if (reader.Game.Type.IsArknightsEndfield())
-            {
-                m_ACLClip = new ArkACLClip();
                 m_ACLClip.Read(reader);
             }
             if (version[0] > 4 || (version[0] == 4 && version[1] >= 3)) //4.3 and up

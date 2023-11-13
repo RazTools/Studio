@@ -130,7 +130,7 @@ namespace AssetStudio
                 var compressedBytesSpan = compressedBytes.AsSpan(0, compressedSize);
                 var uncompressedBytesSpan = uncompressedBytes.AsSpan(0, uncompressedSize);
 
-                var numWrite = LZ4.LZ4.Decompress(compressedBytesSpan, uncompressedBytesSpan);
+                var numWrite = LZ4.Decompress(compressedBytesSpan, uncompressedBytesSpan);
                 if (numWrite != uncompressedSize)
                 {
                     throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");

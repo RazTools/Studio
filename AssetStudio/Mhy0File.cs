@@ -54,7 +54,7 @@ namespace AssetStudio
             Logger.Verbose($"uncompressed blocksInfo size: 0x{m_Header.uncompressedBlocksInfoSize:X8}");
             var compressedBlocksInfo = blocksInfoReader.ReadBytes((int)blocksInfoReader.Remaining);
             var uncompressedBlocksInfo = new byte[(int)m_Header.uncompressedBlocksInfoSize];
-            var numWrite = LZ4.LZ4.Decompress(compressedBlocksInfo, uncompressedBlocksInfo);
+            var numWrite = LZ4.Decompress(compressedBlocksInfo, uncompressedBlocksInfo);
             if (numWrite != m_Header.uncompressedBlocksInfoSize)
             {
                 throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {m_Header.uncompressedBlocksInfoSize} bytes");
@@ -127,7 +127,7 @@ namespace AssetStudio
                 DescrambleEntry(compressedBytesSpan);
 
                 Logger.Verbose($"Descrambled block signature {Convert.ToHexString(compressedBytes, 0, 4)}");
-                var numWrite = LZ4.LZ4.Decompress(compressedBytesSpan[0xC..compressedSize], uncompressedBytesSpan);
+                var numWrite = LZ4.Decompress(compressedBytesSpan[0xC..compressedSize], uncompressedBytesSpan);
                 if (numWrite != uncompressedSize)
                 {
                     throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");

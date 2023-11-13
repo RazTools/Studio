@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace AssetStudio.LZ4;
+namespace AssetStudio;
 public static class LZ4
 {
     public static int Decompress(ReadOnlySpan<byte> cmp, Span<byte> dec)

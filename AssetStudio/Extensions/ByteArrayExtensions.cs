@@ -18,6 +18,23 @@ namespace AssetStudio
             }
             return buffer;
         }
+        public static byte[] ToUInt8Array(this byte[] source, int offset, int size)
+        {
+            var buffer = new byte[size / 2];
+            for (var i = 0; i < size; i++)
+            {
+                var idx = i / 2;
+                if (i % 2 == 0)
+                {
+                    buffer[idx] = (byte)(source[offset + i] << 4);
+                }
+                else
+                {
+                    buffer[idx] |= source[offset + i];
+                }
+            }
+            return buffer;
+        }
         public static int Search(this byte[] src, string value, int offset = 0) => Search(src.AsSpan(), Encoding.UTF8.GetBytes(value), offset);
         public static int Search(this Span<byte> src, byte[] pattern, int offset = 0)
         {
