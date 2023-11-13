@@ -144,17 +144,16 @@ namespace AssetStudio
         }
         public static string Convert(this AnimationClip clip)
         {
-            if (clip.m_Legacy || clip.m_MuscleClip == null)
+            if (!clip.m_Legacy || clip.m_MuscleClip != null)
             {
-                return string.Empty;
+                var converter = AnimationClipConverter.Process(clip);
+                clip.m_RotationCurves = converter.Rotations.Union(clip.m_RotationCurves).ToArray();
+                clip.m_EulerCurves = converter.Eulers.Union(clip.m_EulerCurves).ToArray();
+                clip.m_PositionCurves = converter.Translations.Union(clip.m_PositionCurves).ToArray();
+                clip.m_ScaleCurves = converter.Scales.Union(clip.m_ScaleCurves).ToArray();
+                clip.m_FloatCurves = converter.Floats.Union(clip.m_FloatCurves).ToArray();
+                clip.m_PPtrCurves = converter.PPtrs.Union(clip.m_PPtrCurves).ToArray();
             }
-            var converter = AnimationClipConverter.Process(clip);
-            clip.m_RotationCurves = converter.Rotations.Union(clip.m_RotationCurves).ToArray();
-            clip.m_EulerCurves = converter.Eulers.Union(clip.m_EulerCurves).ToArray();
-            clip.m_PositionCurves = converter.Translations.Union(clip.m_PositionCurves).ToArray();
-            clip.m_ScaleCurves = converter.Scales.Union(clip.m_ScaleCurves).ToArray();
-            clip.m_FloatCurves = converter.Floats.Union(clip.m_FloatCurves).ToArray();
-            clip.m_PPtrCurves = converter.PPtrs.Union(clip.m_PPtrCurves).ToArray();
             return ConvertSerializedAnimationClip(clip);
         }
         public static string ConvertSerializedAnimationClip(AnimationClip animationClip)
@@ -199,7 +198,7 @@ namespace AssetStudio
             node.Add(nameof(clip.m_WrapMode), clip.m_WrapMode);
             node.Add(nameof(clip.m_Bounds), clip.m_Bounds.ExportYAML(version));
             node.Add(nameof(clip.m_ClipBindingConstant), clip.m_ClipBindingConstant.ExportYAML(version));
-            node.Add("m_AnimationClipSettings", clip.m_MuscleClip.ExportYAML(version));
+            node.Add("m_AnimationClipSettings", clip.m_MuscleClip != null ? clip.m_MuscleClip.ExportYAML(version) : new YAMLMappingNode());
             node.Add(nameof(clip.m_Events), clip.m_Events.ExportYAML(version));
             return node;
         }
