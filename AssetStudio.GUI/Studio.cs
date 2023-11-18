@@ -11,14 +11,6 @@ using static AssetStudio.GUI.Exporter;
 
 namespace AssetStudio.GUI
 {
-    internal enum ExportType
-    {
-        Convert,
-        Raw,
-        Dump,
-        JSON
-    }
-
     internal enum ExportFilter
     {
         All,

@@ -22,14 +22,6 @@ namespace AssetStudio.CLI
         All = Both | Load,
     }
 
-    public enum AssetGroupOption
-    {
-        ByType,
-        ByContainer,
-        BySource,
-        None,
-    }
-
     internal static class Studio
     {
         public static Game Game;
@@ -364,7 +356,7 @@ namespace AssetStudio.CLI
             }
         }
 
-        public static void ExportAssets(string savePath, List<AssetItem> toExportAssets, AssetGroupOption assetGroupOption)
+        public static void ExportAssets(string savePath, List<AssetItem> toExportAssets, AssetGroupOption assetGroupOption, ExportType exportType)
         {
             int toExportCount = toExportAssets.Count;
             int exportedCount = 0;
@@ -404,9 +396,32 @@ namespace AssetStudio.CLI
                 Logger.Info($"[{exportedCount}/{toExportCount}] Exporting {asset.TypeString}: {asset.Text}");
                 try
                 {
-                    if (ExportConvertFile(asset, exportPath))
+                    switch (exportType)
                     {
-                        exportedCount++;
+                        case ExportType.Raw:
+                            if (ExportRawFile(asset, exportPath))
+                            {
+                                exportedCount++;
+                            }
+                            break;
+                        case ExportType.Dump:
+                            if (ExportDumpFile(asset, exportPath))
+                            {
+                                exportedCount++;
+                            }
+                            break;
+                        case ExportType.Convert:
+                            if (ExportConvertFile(asset, exportPath))
+                            {
+                                exportedCount++;
+                            }
+                            break;
+                        case ExportType.JSON:
+                            if (ExportJSONFile(asset, exportPath))
+                            {
+                                exportedCount++;
+                            }
+                            break;
                     }
                 }
                 catch (Exception ex)
