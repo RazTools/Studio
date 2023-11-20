@@ -13,14 +13,16 @@ namespace AssetStudio.FbxInterop
         private readonly Dictionary<ImportedFrame, IntPtr> _frameToNode;
         private readonly List<KeyValuePair<string, IntPtr>> _createdMaterials;
         private readonly Dictionary<string, IntPtr> _createdTextures;
+        private readonly Fbx.ExportOptions _exportOptions;
 
-        public FbxExporterContext()
+        public FbxExporterContext(Fbx.ExportOptions exportOptions)
         {
             Fbx.QuaternionToEuler(Quaternion.Zero); // workaround to init dll
             _pContext = AsFbxCreateContext();
             _frameToNode = new Dictionary<ImportedFrame, IntPtr>();
             _createdMaterials = new List<KeyValuePair<string, IntPtr>>();
             _createdTextures = new Dictionary<string, IntPtr>();
+            _exportOptions = exportOptions;
         }
 
         ~FbxExporterContext()
@@ -60,11 +62,11 @@ namespace AssetStudio.FbxInterop
             }
         }
 
-        internal void Initialize(string fileName, float scaleFactor, int versionIndex, bool isAscii, bool is60Fps)
+        internal void Initialize(string fileName, bool is60Fps)
         {
             EnsureNotDisposed();
 
-            var b = AsFbxInitializeContext(_pContext, fileName, scaleFactor, versionIndex, isAscii, is60Fps, out var errorMessage);
+            var b = AsFbxInitializeContext(_pContext, fileName, _exportOptions.scaleFactor, _exportOptions.fbxVersion, _exportOptions.fbxFormat == 1, is60Fps, out var errorMessage);
 
             if (!b)
             {
@@ -129,7 +131,7 @@ namespace AssetStudio.FbxInterop
             }
         }
 
-        internal void SetJointsNode(ImportedFrame rootFrame, HashSet<string> bonePaths, bool castToBone, float boneSize)
+        internal void SetJointsNode(ImportedFrame rootFrame, HashSet<string> bonePaths, bool castToBone)
         {
             var frameStack = new Stack<ImportedFrame>();
 
@@ -145,7 +147,7 @@ namespace AssetStudio.FbxInterop
 
                     if (castToBone)
                     {
-                        AsFbxSetJointsNode_CastToBone(_pContext, node, boneSize);
+                        AsFbxSetJointsNode_CastToBone(_pContext, node, _exportOptions.boneSize);
                     }
                     else
                     {
@@ -153,7 +155,7 @@ namespace AssetStudio.FbxInterop
 
                         if (bonePaths.Contains(frame.Path))
                         {
-                            AsFbxSetJointsNode_BoneInPath(_pContext, node, boneSize);
+                            AsFbxSetJointsNode_BoneInPath(_pContext, node, _exportOptions.boneSize);
                         }
                         else
                         {
@@ -174,12 +176,12 @@ namespace AssetStudio.FbxInterop
             AsFbxPrepareMaterials(_pContext, materialCount, textureCount);
         }
 
-        internal void ExportMeshFromFrame(ImportedFrame rootFrame, ImportedFrame meshFrame, List<ImportedMesh> meshList, List<ImportedMaterial> materialList, List<ImportedTexture> textureList, bool exportSkins, bool exportAllUvsAsDiffuseMaps, bool exportUV0UV1)
+        internal void ExportMeshFromFrame(ImportedFrame rootFrame, ImportedFrame meshFrame, List<ImportedMesh> meshList, List<ImportedMaterial> materialList, List<ImportedTexture> textureList)
         {
             var meshNode = _frameToNode[meshFrame];
             var mesh = ImportedHelpers.FindMesh(meshFrame.Path, meshList);
 
-            ExportMesh(rootFrame, materialList, textureList, meshNode, mesh, exportSkins, exportAllUvsAsDiffuseMaps, exportUV0UV1);
+            ExportMesh(rootFrame, materialList, textureList, meshNode, mesh);
         }
 
         private IntPtr ExportTexture(ImportedTexture texture)
@@ -208,12 +210,12 @@ namespace AssetStudio.FbxInterop
             return pTex;
         }
 
-        private void ExportMesh(ImportedFrame rootFrame, List<ImportedMaterial> materialList, List<ImportedTexture> textureList, IntPtr frameNode, ImportedMesh importedMesh, bool exportSkins, bool exportAllUvsAsDiffuseMaps, bool exportUV0UV1)
+        private void ExportMesh(ImportedFrame rootFrame, List<ImportedMaterial> materialList, List<ImportedTexture> textureList, IntPtr frameNode, ImportedMesh importedMesh)
         {
             var boneList = importedMesh.BoneList;
             var totalBoneCount = 0;
             var hasBones = false;
-            if (exportSkins && boneList?.Count > 0)
+            if (_exportOptions.exportSkins && boneList?.Count > 0)
             {
                 totalBoneCount = boneList.Count;
                 hasBones = true;
@@ -254,7 +256,7 @@ namespace AssetStudio.FbxInterop
                     AsFbxMeshCreateElementNormal(mesh);
                 }
 
-                if (exportUV0UV1)
+                if (_exportOptions.exportUV0UV1)
                 {
                     if (importedMesh.hasUV[0])
                     {
@@ -262,7 +264,7 @@ namespace AssetStudio.FbxInterop
                     }
                     if (importedMesh.hasUV[1])
                     {
-                        if (exportAllUvsAsDiffuseMaps)
+                        if (_exportOptions.exportAllUvsAsDiffuseMaps)
                         {
                             AsFbxMeshCreateDiffuseUV(mesh, 1);
                         }
@@ -278,7 +280,7 @@ namespace AssetStudio.FbxInterop
                     {
                         if (!importedMesh.hasUV[i]) { continue; }
 
-                        if (i == 1 && !exportAllUvsAsDiffuseMaps)
+                        if (i == 1 && !_exportOptions.exportAllUvsAsDiffuseMaps)
                         {
                             AsFbxMeshCreateNormalMapUV(mesh, 1);
                         }
@@ -389,7 +391,7 @@ namespace AssetStudio.FbxInterop
                         AsFbxMeshElementNormalAdd(mesh, 0, normal.X, normal.Y, normal.Z);
                     }
 
-                    var uvSize = exportUV0UV1 ? 2 : importedMesh.hasUV.Length;
+                    var uvSize = _exportOptions.exportUV0UV1 ? 2 : importedMesh.hasUV.Length;
                     for (var uvIndex = 0; uvIndex < uvSize; uvIndex += 1)
                     {
                         if (importedMesh.hasUV[uvIndex])
@@ -487,7 +489,7 @@ namespace AssetStudio.FbxInterop
             return 4 * m + n;
         }
 
-        internal void ExportAnimations(ImportedFrame rootFrame, List<ImportedKeyframedAnimation> animationList, bool eulerFilter, float filterPrecision)
+        internal void ExportAnimations(ImportedFrame rootFrame, List<ImportedKeyframedAnimation> animationList)
         {
             if (animationList == null || animationList.Count == 0)
             {
@@ -498,7 +500,7 @@ namespace AssetStudio.FbxInterop
 
             try
             {
-                pAnimContext = AsFbxAnimCreateContext(eulerFilter);
+                pAnimContext = AsFbxAnimCreateContext(_exportOptions.eulerFilter);
 
                 for (int i = 0; i < animationList.Count; i++)
                 {
@@ -516,7 +518,7 @@ namespace AssetStudio.FbxInterop
 
                     AsFbxAnimPrepareStackAndLayer(_pContext, pAnimContext, takeName);
 
-                    ExportKeyframedAnimation(rootFrame, importedAnimation, pAnimContext, filterPrecision);
+                    ExportKeyframedAnimation(rootFrame, importedAnimation, pAnimContext);
                 }
             }
             finally
@@ -525,7 +527,7 @@ namespace AssetStudio.FbxInterop
             }
         }
 
-        private void ExportKeyframedAnimation(ImportedFrame rootFrame, ImportedKeyframedAnimation parser, IntPtr pAnimContext, float filterPrecision)
+        private void ExportKeyframedAnimation(ImportedFrame rootFrame, ImportedKeyframedAnimation parser, IntPtr pAnimContext)
         {
             foreach (var track in parser.TrackList)
             {
@@ -567,7 +569,7 @@ namespace AssetStudio.FbxInterop
 
                 AsFbxAnimEndKeyModify(pAnimContext);
 
-                AsFbxAnimApplyEulerFilter(pAnimContext, filterPrecision);
+                AsFbxAnimApplyEulerFilter(pAnimContext, _exportOptions.filterPrecision);
 
                 var blendShape = track.BlendShape;
 

@@ -91,7 +91,6 @@ namespace AssetStudio.CLI
         public readonly Argument<FileInfo> Input;
         public readonly Argument<DirectoryInfo> Output;
 
-
         public OptionsBinder()
         {
             Silent = new Option<bool>("--silent", "Hide log messages.");

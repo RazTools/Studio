@@ -1,5 +1,6 @@
 ﻿using AssetStudio.FbxInterop;
 using AssetStudio.PInvoke;
+using Newtonsoft.Json.Linq;
 using System.IO;
 
 namespace AssetStudio
@@ -26,9 +27,7 @@ namespace AssetStudio
 
         public static class Exporter
         {
-
-            public static void Export(string path, IImported imported, bool eulerFilter, float filterPrecision,
-                bool allNodes, bool skins, bool animation, bool blendShape, bool castToBone, float boneSize, bool exportAllUvsAsDiffuseMaps, bool exportUV0UV1, float scaleFactor, int versionIndex, bool isAscii)
+            public static void Export(string path, IImported imported, ExportOptions exportOptions)
             {
                 var file = new FileInfo(path);
                 var dir = file.Directory;
@@ -43,16 +42,31 @@ namespace AssetStudio
 
                 var name = Path.GetFileName(path);
 
-                using (var exporter = new FbxExporter(name, imported, allNodes, skins, castToBone, boneSize, exportAllUvsAsDiffuseMaps, exportUV0UV1, scaleFactor, versionIndex, isAscii))
+                using (var exporter = new FbxExporter(name, imported, exportOptions))
                 {
                     exporter.Initialize();
-                    exporter.ExportAll(blendShape, animation, eulerFilter, filterPrecision);
+                    exporter.ExportAll();
                 }
 
                 Directory.SetCurrentDirectory(currentDir);
             }
-
         }
 
+        public record ExportOptions
+        {
+            public bool eulerFilter;
+            public float filterPrecision;
+            public bool exportAllNodes;
+            public bool exportSkins;
+            public bool exportAnimations;
+            public bool exportBlendShape;
+            public bool castToBone;
+            public int boneSize;
+            public bool exportAllUvsAsDiffuseMaps;
+            public bool exportUV0UV1;
+            public float scaleFactor;
+            public int fbxVersion;
+            public int fbxFormat;
+        }
     }
 }
