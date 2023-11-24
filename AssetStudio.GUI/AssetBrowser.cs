@@ -82,10 +82,10 @@ namespace AssetStudio.GUI
                 }
 
                 var assets = ResourceMap.GetEntries();
-                if (assets.Length != 0)
+                if (assets.Count != 0)
                 {
                     var regex = new Regex(value, RegexOptions.IgnoreCase);
-                    assetListView.DataSource = Array.FindAll(assets, x => x.Matches(filters));
+                    assetListView.DataSource = assets.FindAll(x => x.Matches(filters));    
                 }
                 else
                 {
