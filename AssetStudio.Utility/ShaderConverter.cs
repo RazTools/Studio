@@ -1,5 +1,6 @@
 ﻿using SpirV;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -153,42 +154,42 @@ namespace AssetStudio
                 {
                     sb.Append(ConvertSerializedShaderState(m_Passe.m_State));
 
-                    if (m_Passe.progVertex.m_SubPrograms.Length > 0)
+                    if (m_Passe.progVertex.m_SubPrograms.Count > 0)
                     {
                         sb.Append("Program \"vp\" {\n");
                         sb.Append(ConvertSerializedSubPrograms(m_Passe.progVertex.m_SubPrograms, platforms, shaderPrograms));
                         sb.Append("}\n");
                     }
 
-                    if (m_Passe.progFragment.m_SubPrograms.Length > 0)
+                    if (m_Passe.progFragment.m_SubPrograms.Count > 0)
                     {
                         sb.Append("Program \"fp\" {\n");
                         sb.Append(ConvertSerializedSubPrograms(m_Passe.progFragment.m_SubPrograms, platforms, shaderPrograms));
                         sb.Append("}\n");
                     }
 
-                    if (m_Passe.progGeometry.m_SubPrograms.Length > 0)
+                    if (m_Passe.progGeometry.m_SubPrograms.Count > 0)
                     {
                         sb.Append("Program \"gp\" {\n");
                         sb.Append(ConvertSerializedSubPrograms(m_Passe.progGeometry.m_SubPrograms, platforms, shaderPrograms));
                         sb.Append("}\n");
                     }
 
-                    if (m_Passe.progHull.m_SubPrograms.Length > 0)
+                    if (m_Passe.progHull.m_SubPrograms.Count > 0)
                     {
                         sb.Append("Program \"hp\" {\n");
                         sb.Append(ConvertSerializedSubPrograms(m_Passe.progHull.m_SubPrograms, platforms, shaderPrograms));
                         sb.Append("}\n");
                     }
 
-                    if (m_Passe.progDomain.m_SubPrograms.Length > 0)
+                    if (m_Passe.progDomain.m_SubPrograms.Count > 0)
                     {
                         sb.Append("Program \"dp\" {\n");
                         sb.Append(ConvertSerializedSubPrograms(m_Passe.progDomain.m_SubPrograms, platforms, shaderPrograms));
                         sb.Append("}\n");
                     }
 
-                    if (m_Passe.progRayTracing?.m_SubPrograms.Length > 0)
+                    if (m_Passe.progRayTracing?.m_SubPrograms.Count > 0)
                     {
                         sb.Append("Program \"rtp\" {\n");
                         sb.Append(ConvertSerializedSubPrograms(m_Passe.progRayTracing.m_SubPrograms, platforms, shaderPrograms));
@@ -200,7 +201,7 @@ namespace AssetStudio
             return sb.ToString();
         }
 
-        private static string ConvertSerializedSubPrograms(SerializedSubProgram[] m_SubPrograms, ShaderCompilerPlatform[] platforms, ShaderProgram[] shaderPrograms)
+        private static string ConvertSerializedSubPrograms(List<SerializedSubProgram> m_SubPrograms, ShaderCompilerPlatform[] platforms, ShaderProgram[] shaderPrograms)
         {
             var sb = new StringBuilder();
             var groups = m_SubPrograms.GroupBy(x => x.m_BlobIndex);
@@ -496,10 +497,10 @@ namespace AssetStudio
             }
         }
 
-        private static string ConvertSerializedShaderRTBlendState(SerializedShaderRTBlendState[] rtBlend, bool rtSeparateBlend)
+        private static string ConvertSerializedShaderRTBlendState(List<SerializedShaderRTBlendState> rtBlend, bool rtSeparateBlend)
         {
             var sb = new StringBuilder();
-            for (var i = 0; i < rtBlend.Length; i++)
+            for (var i = 0; i < rtBlend.Count; i++)
             {
                 var blend = rtBlend[i];
                 if (blend.srcBlend.val != 1f ||
@@ -653,7 +654,7 @@ namespace AssetStudio
         private static string ConvertSerializedTagMap(SerializedTagMap m_Tags, int intent)
         {
             var sb = new StringBuilder();
-            if (m_Tags.tags.Length > 0)
+            if (m_Tags.tags.Count > 0)
             {
                 sb.Append(new string(' ', intent));
                 sb.Append("Tags { ");

@@ -85,10 +85,11 @@ namespace AssetStudio
                 {
                     FileType.BundleFile => "UnityFS\x00",
                     FileType.BlbFile => "Blb\x02",
-                    FileType.Mhy0File => "mhy0",
+                    FileType.MhyFile => Encoding.UTF8.GetString(reader.ReadBytes(4)),
                     FileType.ENCRFile => "ENCR\x00",
                     _ => throw new InvalidOperationException()
                 };
+                reader.Position = 0;
 
                 Logger.Verbose($"Prased signature: {signature}");
 

@@ -13,12 +13,12 @@ namespace AssetStudio
             int index = 0;
             Games.Add(index++, new(GameType.Normal));
             Games.Add(index++, new(GameType.UnityCN));
-            Games.Add(index++, new Mhy0(GameType.GI, GIMhy0ShiftRow, GIMhy0Key, GIMhy0Mul, GIExpansionKey, GISBox, GIInitVector, GIInitSeed));
+            Games.Add(index++, new Mhy(GameType.GI, GIMhyShiftRow, GIMhyKey, GIMhyMul, GIExpansionKey, GISBox, GIInitVector, GIInitSeed));
             Games.Add(index++, new Mr0k(GameType.GI_Pack, PackExpansionKey, blockKey: PackBlockKey));
             Games.Add(index++, new Mr0k(GameType.GI_CB1));
             Games.Add(index++, new Blk(GameType.GI_CB2, GI_CBXExpansionKey, initVector: GI_CBXInitVector, initSeed: GI_CBXInitSeed));
             Games.Add(index++, new Blk(GameType.GI_CB3, GI_CBXExpansionKey, initVector: GI_CBXInitVector, initSeed: GI_CBXInitSeed));
-            Games.Add(index++, new Mhy0(GameType.GI_CB3Pre, GI_CBXMhy0ShiftRow, GI_CBXMhy0Key, GI_CBXMhy0Mul, GI_CBXExpansionKey, GI_CBXSBox, GI_CBXInitVector, GI_CBXInitSeed));
+            Games.Add(index++, new Mhy(GameType.GI_CB3Pre, GI_CBXMhyShiftRow, GI_CBXMhyKey, GI_CBXMhyMul, GI_CBXExpansionKey, GI_CBXSBox, GI_CBXInitVector, GI_CBXInitSeed));
             Games.Add(index++, new Mr0k(GameType.BH3, BH3ExpansionKey, BH3SBox, BH3InitVector, BH3BlockKey));
             Games.Add(index++, new Mr0k(GameType.BH3Pre, PackExpansionKey, blockKey: PackBlockKey));
             Games.Add(index++, new Mr0k(GameType.SR_CB2, Mr0kExpansionKey, initVector: Mr0kInitVector, blockKey: Mr0kBlockKey));
@@ -108,17 +108,17 @@ namespace AssetStudio
         }
     }
 
-    public record Mhy0 : Blk
+    public record Mhy : Blk
     {
-        public byte[] Mhy0ShiftRow { get; }
-        public byte[] Mhy0Key { get; }
-        public byte[] Mhy0Mul { get; }
+        public byte[] MhyShiftRow { get; }
+        public byte[] MhyKey { get; }
+        public byte[] MhyMul { get; }
 
-        public Mhy0(GameType type, byte[] mhy0ShiftRow, byte[] mhy0Key, byte[] mhy0Mul, byte[] expansionKey = null, byte[] sBox = null, byte[] initVector = null, ulong initSeed = 0) : base(type, expansionKey, sBox, initVector, initSeed)
+        public Mhy(GameType type, byte[] mhyShiftRow, byte[] mhyKey, byte[] mhyMul, byte[] expansionKey = null, byte[] sBox = null, byte[] initVector = null, ulong initSeed = 0) : base(type, expansionKey, sBox, initVector, initSeed)
         {
-            Mhy0ShiftRow = mhy0ShiftRow;
-            Mhy0Key = mhy0Key;
-            Mhy0Mul = mhy0Mul;
+            MhyShiftRow = mhyShiftRow;
+            MhyKey = mhyKey;
+            MhyMul = mhyMul;
         }
     }
 

@@ -24,8 +24,7 @@ namespace AssetStudio
 
         public MiHoYoBinData(ObjectReader reader) : base(reader)
         {
-            var length = reader.ReadInt32();
-            RawData = reader.ReadBytes(length);
+            RawData = reader.ReadUInt8Array();
         }
 
         public string AsString => Type switch

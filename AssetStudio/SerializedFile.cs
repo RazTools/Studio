@@ -106,7 +106,7 @@ namespace AssetStudio
 
             // Read Types
             int typeCount = reader.ReadInt32();
-            m_Types = new List<SerializedType>(typeCount);
+            m_Types = new List<SerializedType>();
             Logger.Verbose($"Found {typeCount} serialized types");
             for (int i = 0; i < typeCount; i++)
             {
@@ -120,9 +120,9 @@ namespace AssetStudio
 
             // Read Objects
             int objectCount = reader.ReadInt32();
-            m_Objects = new List<ObjectInfo>(objectCount);
-            Objects = new List<Object>(objectCount);
-            ObjectsDic = new Dictionary<long, Object>(objectCount);
+            m_Objects = new List<ObjectInfo>();
+            Objects = new List<Object>();
+            ObjectsDic = new Dictionary<long, Object>();
             Logger.Verbose($"Found {objectCount} objects");
             for (int i = 0; i < objectCount; i++)
             {
@@ -182,7 +182,7 @@ namespace AssetStudio
             {
                 int scriptCount = reader.ReadInt32();
                 Logger.Verbose($"Found {scriptCount} scripts");
-                m_ScriptTypes = new List<LocalSerializedObjectIdentifier>(scriptCount);
+                m_ScriptTypes = new List<LocalSerializedObjectIdentifier>();
                 for (int i = 0; i < scriptCount; i++)
                 {
                     var m_ScriptType = new LocalSerializedObjectIdentifier();
@@ -202,7 +202,7 @@ namespace AssetStudio
             }
 
             int externalsCount = reader.ReadInt32();
-            m_Externals = new List<FileIdentifier>(externalsCount);
+            m_Externals = new List<FileIdentifier>();
             Logger.Verbose($"Found {externalsCount} externals");
             for (int i = 0; i < externalsCount; i++)
             {
@@ -225,7 +225,7 @@ namespace AssetStudio
             if (header.m_Version >= SerializedFileFormatVersion.SupportsRefObject)
             {
                 int refTypesCount = reader.ReadInt32();
-                m_RefTypes = new List<SerializedType>(refTypesCount);
+                m_RefTypes = new List<SerializedType>();
                 Logger.Verbose($"Found {refTypesCount} reference types");
                 for (int i = 0; i < refTypesCount; i++)
                 {

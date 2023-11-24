@@ -21,7 +21,7 @@ namespace AssetStudio
     {
         public static bool Parsable;
 
-        public PPtr<Material>[] m_Materials;
+        public List<PPtr<Material>> m_Materials;
         public StaticBatchInfo m_StaticBatchInfo;
         public uint[] m_SubsetIndices;
         private bool isNewHeader = false;
@@ -165,10 +165,10 @@ namespace AssetStudio
                 var m_ShaderLODDistanceRatio = reader.ReadSingle();
             }
             var m_MaterialsSize = reader.ReadInt32();
-            m_Materials = new PPtr<Material>[m_MaterialsSize];
+            m_Materials = new List<PPtr<Material>>();
             for (int i = 0; i < m_MaterialsSize; i++)
             {
-                m_Materials[i] = new PPtr<Material>(reader);
+                m_Materials.Add(new PPtr<Material>(reader));
             }
 
             if (version[0] < 3) //3.0 down

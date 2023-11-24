@@ -112,10 +112,10 @@ namespace AssetStudio
         }
         private static bool AddTOS(this AnimationClip clip, Dictionary<uint, string> src, Dictionary<uint, string> dest)
         {
-            int tosCount = clip.m_ClipBindingConstant.genericBindings.Length;
+            int tosCount = clip.m_ClipBindingConstant.genericBindings.Count;
             for (int i = 0; i < tosCount; i++)
             {
-                ref GenericBinding binding = ref clip.m_ClipBindingConstant.genericBindings[i];
+                var binding = clip.m_ClipBindingConstant.genericBindings[i];
                 if (src.TryGetValue(binding.path, out string path))
                 {
                     dest[binding.path] = path;
@@ -147,12 +147,12 @@ namespace AssetStudio
             if (!clip.m_Legacy || clip.m_MuscleClip != null)
             {
                 var converter = AnimationClipConverter.Process(clip);
-                clip.m_RotationCurves = converter.Rotations.Union(clip.m_RotationCurves).ToArray();
-                clip.m_EulerCurves = converter.Eulers.Union(clip.m_EulerCurves).ToArray();
-                clip.m_PositionCurves = converter.Translations.Union(clip.m_PositionCurves).ToArray();
-                clip.m_ScaleCurves = converter.Scales.Union(clip.m_ScaleCurves).ToArray();
-                clip.m_FloatCurves = converter.Floats.Union(clip.m_FloatCurves).ToArray();
-                clip.m_PPtrCurves = converter.PPtrs.Union(clip.m_PPtrCurves).ToArray();
+                clip.m_RotationCurves = converter.Rotations.Union(clip.m_RotationCurves).ToList();
+                clip.m_EulerCurves = converter.Eulers.Union(clip.m_EulerCurves).ToList();
+                clip.m_PositionCurves = converter.Translations.Union(clip.m_PositionCurves).ToList();
+                clip.m_ScaleCurves = converter.Scales.Union(clip.m_ScaleCurves).ToList();
+                clip.m_FloatCurves = converter.Floats.Union(clip.m_FloatCurves).ToList();
+                clip.m_PPtrCurves = converter.PPtrs.Union(clip.m_PPtrCurves).ToList();
             }
             return ConvertSerializedAnimationClip(clip);
         }

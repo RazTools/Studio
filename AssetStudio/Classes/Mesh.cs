@@ -12,7 +12,7 @@ namespace AssetStudio
         public Vector3 m_Min;
         public Vector3 m_Max;
 
-        public MinMaxAABB(EndianBinaryReader reader)
+        public MinMaxAABB(ObjectReader reader)
         {
             m_Min = reader.ReadVector3();
             m_Max = reader.ReadVector3();
@@ -124,8 +124,8 @@ namespace AssetStudio
     {
         public uint m_CurrentChannels;
         public uint m_VertexCount;
-        public ChannelInfo[] m_Channels;
-        public StreamInfo[] m_Streams;
+        public List<ChannelInfo> m_Channels;
+        public List<StreamInfo> m_Streams;
         public byte[] m_DataSize;
 
         public VertexData(ObjectReader reader)
@@ -142,25 +142,18 @@ namespace AssetStudio
             if (version[0] >= 4) //4.0 and up
             {
                 var m_ChannelsSize = reader.ReadInt32();
-                m_Channels = new ChannelInfo[m_ChannelsSize];
+                m_Channels = new List<ChannelInfo>();
                 for (int i = 0; i < m_ChannelsSize; i++)
                 {
-                    m_Channels[i] = new ChannelInfo(reader);
+                    m_Channels.Add(new ChannelInfo(reader));
                 }
             }
 
             if (version[0] < 5) //5.0 down
             {
-                if (version[0] < 4)
-                {
-                    m_Streams = new StreamInfo[4];
-                }
-                else
-                {
-                    m_Streams = new StreamInfo[reader.ReadInt32()];
-                }
-
-                for (int i = 0; i < m_Streams.Length; i++)
+                var numStreams = version[0] < 4 ? 4 : reader.ReadInt32();
+                m_Streams = new List<StreamInfo>();
+                for (int i = 0; i < numStreams; i++)
                 {
                     m_Streams[i] = new StreamInfo(reader);
                 }
@@ -182,13 +175,13 @@ namespace AssetStudio
         private void GetStreams(int[] version)
         {
             var streamCount = m_Channels.Max(x => x.stream) + 1;
-            m_Streams = new StreamInfo[streamCount];
+            m_Streams = new List<StreamInfo>();
             uint offset = 0;
             for (int s = 0; s < streamCount; s++)
             {
                 uint chnMask = 0;
                 uint stride = 0;
-                for (int chn = 0; chn < m_Channels.Length; chn++)
+                for (int chn = 0; chn < m_Channels.Count; chn++)
                 {
                     var m_Channel = m_Channels[chn];
                     if (m_Channel.stream == s)
@@ -200,14 +193,14 @@ namespace AssetStudio
                         }
                     }
                 }
-                m_Streams[s] = new StreamInfo
+                m_Streams.Add(new StreamInfo
                 {
                     channelMask = chnMask,
                     offset = offset,
                     stride = stride,
                     dividerOp = 0,
                     frequency = 0
-                };
+                });
                 offset += m_VertexCount * stride;
                 //static size_t AlignStreamSize (size_t size) { return (size + (kVertexStreamAlign-1)) & ~(kVertexStreamAlign-1); }
                 offset = (offset + (16u - 1u)) & ~(16u - 1u);
@@ -216,12 +209,12 @@ namespace AssetStudio
 
         private void GetChannels(int[] version)
         {
-            m_Channels = new ChannelInfo[6];
+            m_Channels = new List<ChannelInfo>(6);
             for (int i = 0; i < 6; i++)
             {
-                m_Channels[i] = new ChannelInfo();
+                m_Channels.Add(new ChannelInfo());
             }
-            for (var s = 0; s < m_Streams.Length; s++)
+            for (var s = 0; s < m_Streams.Count; s++)
             {
                 var m_Stream = m_Streams[s];
                 var channelMask = new BitArray(new[] { (int)m_Stream.channelMask });
@@ -345,9 +338,9 @@ namespace AssetStudio
 
     public class BlendShapeData
     {
-        public BlendShapeVertex[] vertices;
-        public MeshBlendShape[] shapes;
-        public MeshBlendShapeChannel[] channels;
+        public List<BlendShapeVertex> vertices;
+        public List<MeshBlendShape> shapes;
+        public List<MeshBlendShapeChannel> channels;
         public float[] fullWeights;
 
         public BlendShapeData(ObjectReader reader)
@@ -357,24 +350,24 @@ namespace AssetStudio
             if (version[0] > 4 || (version[0] == 4 && version[1] >= 3)) //4.3 and up
             {
                 int numVerts = reader.ReadInt32();
-                vertices = new BlendShapeVertex[numVerts];
+                vertices = new List<BlendShapeVertex>();
                 for (int i = 0; i < numVerts; i++)
                 {
-                    vertices[i] = new BlendShapeVertex(reader);
+                    vertices.Add(new BlendShapeVertex(reader));
                 }
 
                 int numShapes = reader.ReadInt32();
-                shapes = new MeshBlendShape[numShapes];
+                shapes = new List<MeshBlendShape>();
                 for (int i = 0; i < numShapes; i++)
                 {
-                    shapes[i] = new MeshBlendShape(reader);
+                    shapes.Add(new MeshBlendShape(reader));
                 }
 
                 int numChannels = reader.ReadInt32();
-                channels = new MeshBlendShapeChannel[numChannels];
+                channels = new List<MeshBlendShapeChannel>();
                 for (int i = 0; i < numChannels; i++)
                 {
-                    channels[i] = new MeshBlendShapeChannel(reader);
+                    channels.Add(new MeshBlendShapeChannel(reader));
                 }
 
                 fullWeights = reader.ReadSingleArray();
@@ -382,17 +375,17 @@ namespace AssetStudio
             else
             {
                 var m_ShapesSize = reader.ReadInt32();
-                var m_Shapes = new MeshBlendShape[m_ShapesSize];
+                var m_Shapes = new List<MeshBlendShape>();
                 for (int i = 0; i < m_ShapesSize; i++)
                 {
-                    m_Shapes[i] = new MeshBlendShape(reader);
+                    m_Shapes.Add(new MeshBlendShape(reader));
                 }
                 reader.AlignStream();
                 var m_ShapeVerticesSize = reader.ReadInt32();
-                var m_ShapeVertices = new BlendShapeVertex[m_ShapeVerticesSize]; //MeshBlendShapeVertex
+                var m_ShapeVertices = new List<BlendShapeVertex>(); //MeshBlendShapeVertex
                 for (int i = 0; i < m_ShapeVerticesSize; i++)
                 {
-                    m_ShapeVertices[i] = new BlendShapeVertex(reader);
+                    m_ShapeVertices.Add(new BlendShapeVertex(reader));
                 }
             }
         }
@@ -449,14 +442,14 @@ namespace AssetStudio
     public sealed class Mesh : NamedObject
     {
         private bool m_Use16BitIndices = true;
-        public SubMesh[] m_SubMeshes;
+        public List<SubMesh> m_SubMeshes;
         private uint[] m_IndexBuffer;
         public BlendShapeData m_Shapes;
         public Matrix4x4[] m_BindPose;
         public uint[] m_BoneNameHashes;
         public int m_VertexCount;
         public float[] m_Vertices;
-        public BoneWeights4[] m_Skin;
+        public List<BoneWeights4> m_Skin;
         public float[] m_Normals;
         public float[] m_Colors;
         public float[] m_UV0;
@@ -502,10 +495,10 @@ namespace AssetStudio
             }
 
             int m_SubMeshesSize = reader.ReadInt32();
-            m_SubMeshes = new SubMesh[m_SubMeshesSize];
+            m_SubMeshes = new List<SubMesh>();
             for (int i = 0; i < m_SubMeshesSize; i++)
             {
-                m_SubMeshes[i] = new SubMesh(reader);
+                m_SubMeshes.Add(new SubMesh(reader));
             }
 
             if (version[0] > 4 || (version[0] == 4 && version[1] >= 1)) //4.1 and up
@@ -525,10 +518,10 @@ namespace AssetStudio
                 if (version[0] >= 2019) //2019 and up
                 {
                     var m_BonesAABBSize = reader.ReadInt32();
-                    var m_BonesAABB = new MinMaxAABB[m_BonesAABBSize];
+                    var m_BonesAABB = new List<MinMaxAABB>();
                     for (int i = 0; i < m_BonesAABBSize; i++)
                     {
-                        m_BonesAABB[i] = new MinMaxAABB(reader);
+                        m_BonesAABB.Add(new MinMaxAABB(reader));
                     }
 
                     var m_VariableBoneCountWeights = reader.ReadUInt32Array();
@@ -594,10 +587,11 @@ namespace AssetStudio
                 m_VertexCount = reader.ReadInt32();
                 m_Vertices = reader.ReadSingleArray(m_VertexCount * 3); //Vector3
 
-                m_Skin = new BoneWeights4[reader.ReadInt32()];
-                for (int s = 0; s < m_Skin.Length; s++)
+                var skinNum = reader.ReadInt32();
+                m_Skin = new List<BoneWeights4>();
+                for (int s = 0; s < skinNum; s++)
                 {
-                    m_Skin[s] = new BoneWeights4(reader);
+                    m_Skin.Add(new BoneWeights4(reader));
                 }
 
                 m_BindPose = reader.ReadMatrixArray();
@@ -633,10 +627,11 @@ namespace AssetStudio
             {
                 if (version[0] < 2018 || (version[0] == 2018 && version[1] < 2)) //2018.2 down
                 {
-                    m_Skin = new BoneWeights4[reader.ReadInt32()];
-                    for (int s = 0; s < m_Skin.Length; s++)
+                    var skinNum = reader.ReadInt32();
+                    m_Skin = new List<BoneWeights4>();
+                    for (int s = 0; s < skinNum; s++)
                     {
-                        m_Skin[s] = new BoneWeights4(reader);
+                        m_Skin.Add(new BoneWeights4(reader));
                     }
                 }
 
@@ -763,7 +758,7 @@ namespace AssetStudio
         {
             m_VertexCount = (int)m_VertexData.m_VertexCount;
 
-            for (var chn = 0; chn < m_VertexData.m_Channels.Length; chn++)
+            for (var chn = 0; chn < m_VertexData.m_Channels.Count; chn++)
             {
                 var m_Channel = m_VertexData.m_Channels[chn];
                 if (m_Channel.dimension > 0)
@@ -1184,10 +1179,10 @@ namespace AssetStudio
 
         private void InitMSkin()
         {
-            m_Skin = new BoneWeights4[m_VertexCount];
+            m_Skin = new List<BoneWeights4>();
             for (int i = 0; i < m_VertexCount; i++)
             {
-                m_Skin[i] = new BoneWeights4();
+                m_Skin.Add(new BoneWeights4());
             }
         }
 

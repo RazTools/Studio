@@ -1,31 +1,33 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
 namespace AssetStudio
 {
-    public class Mhy0File
+    public class MhyFile
     {
-        private BundleFile.StorageBlock[] m_BlocksInfo;
-        private BundleFile.Node[] m_DirectoryInfo;
+        private string signature;
+        private List<BundleFile.StorageBlock> m_BlocksInfo;
+        private List<BundleFile.Node> m_DirectoryInfo;
 
         public BundleFile.Header m_Header;
-        public StreamFile[] fileList;
+        public List<StreamFile> fileList;
         public long Offset;
-        public Mhy0 mhy0;
+        public Mhy mhy;
 
         public long TotalSize => 8 + m_Header.compressedBlocksInfoSize + m_BlocksInfo.Sum(x => x.compressedSize);
 
-        public Mhy0File(FileReader reader, string path, Mhy0 mhy0)
+        public MhyFile(FileReader reader, string path, Mhy mhy)
         {
-            this.mhy0 = mhy0;
+            this.mhy = mhy;
             Offset = reader.Position;
             reader.Endian = EndianType.LittleEndian;
 
-            var signature = reader.ReadStringToNull(4);
+            signature = reader.ReadStringToNull(4);
             Logger.Verbose($"Parsed signature {signature}");
             if (signature != "mhy0")
-                throw new Exception("not a mhy0");
+                throw new Exception("not a mhy file");
 
             m_Header = new BundleFile.Header
             {
@@ -44,17 +46,19 @@ namespace AssetStudio
 
         private void ReadBlocksInfoAndDirectory(FileReader reader)
         {
+            int offset = 0x20;
             var blocksInfo = reader.ReadBytes((int)m_Header.compressedBlocksInfoSize);
             DescrambleHeader(blocksInfo);
 
             Logger.Verbose($"Descrambled blocksInfo signature {Convert.ToHexString(blocksInfo, 0 , 4)}");
-            using var blocksInfoStream = new MemoryStream(blocksInfo, 0x20, (int)m_Header.compressedBlocksInfoSize - 0x20);
+            using var blocksInfoStream = new MemoryStream(blocksInfo, offset, (int)m_Header.compressedBlocksInfoSize - offset);
             using var blocksInfoReader = new EndianBinaryReader(blocksInfoStream);
-            m_Header.uncompressedBlocksInfoSize = blocksInfoReader.ReadMhy0UInt();
+            m_Header.uncompressedBlocksInfoSize = blocksInfoReader.ReadMhyUInt();
             Logger.Verbose($"uncompressed blocksInfo size: 0x{m_Header.uncompressedBlocksInfoSize:X8}");
             var compressedBlocksInfo = blocksInfoReader.ReadBytes((int)blocksInfoReader.Remaining);
-            var uncompressedBlocksInfo = new byte[(int)m_Header.uncompressedBlocksInfoSize];
-            var numWrite = LZ4.Decompress(compressedBlocksInfo, uncompressedBlocksInfo);
+            var uncompressedBlocksInfo = BigArrayPool<byte>.Shared.Rent((int)m_Header.uncompressedBlocksInfoSize);
+            var uncompressedBlocksInfoSpan = uncompressedBlocksInfo.AsSpan(0, (int)m_Header.uncompressedBlocksInfoSize);
+            var numWrite = LZ4.Decompress(compressedBlocksInfo, uncompressedBlocksInfoSpan);
             if (numWrite != m_Header.uncompressedBlocksInfoSize)
             {
                 throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {m_Header.uncompressedBlocksInfoSize} bytes");
@@ -63,36 +67,38 @@ namespace AssetStudio
             Logger.Verbose($"Writing block and directory to blocks stream...");
             using var blocksInfoUncompressedStream = new MemoryStream(uncompressedBlocksInfo);
             using var blocksInfoUncompressedReader = new EndianBinaryReader(blocksInfoUncompressedStream);
-            var nodesCount = blocksInfoUncompressedReader.ReadMhy0Int();
-            m_DirectoryInfo = new BundleFile.Node[nodesCount];
+            var nodesCount = blocksInfoUncompressedReader.ReadMhyInt();
+            m_DirectoryInfo = new List<BundleFile.Node>();
             Logger.Verbose($"Directory count: {nodesCount}");
             for (int i = 0; i < nodesCount; i++)
             {
-                m_DirectoryInfo[i] = new BundleFile.Node
+                m_DirectoryInfo.Add(new BundleFile.Node
                 {
-                    path = blocksInfoUncompressedReader.ReadMhy0String(),
+                    path = blocksInfoUncompressedReader.ReadMhyString(),
                     flags = blocksInfoUncompressedReader.ReadBoolean() ? 4u : 0,
-                    offset = blocksInfoUncompressedReader.ReadMhy0Int(),
-                    size = blocksInfoUncompressedReader.ReadMhy0UInt()
-                };
+                    offset = blocksInfoUncompressedReader.ReadMhyInt(),
+                    size = blocksInfoUncompressedReader.ReadMhyUInt()
+                });
 
                 Logger.Verbose($"Directory {i} Info: {m_DirectoryInfo[i]}");
             }
 
-            var blocksInfoCount = blocksInfoUncompressedReader.ReadMhy0Int();
-            m_BlocksInfo = new BundleFile.StorageBlock[blocksInfoCount];
+            var blocksInfoCount = blocksInfoUncompressedReader.ReadMhyInt();
+            m_BlocksInfo = new List<BundleFile.StorageBlock>();
             Logger.Verbose($"Blocks count: {blocksInfoCount}");
             for (int i = 0; i < blocksInfoCount; i++)
             {
-                m_BlocksInfo[i] = new BundleFile.StorageBlock
+                m_BlocksInfo.Add(new BundleFile.StorageBlock
                 {
-                    compressedSize = (uint)blocksInfoUncompressedReader.ReadMhy0Int(),
-                    uncompressedSize = blocksInfoUncompressedReader.ReadMhy0UInt(),
+                    compressedSize = (uint)blocksInfoUncompressedReader.ReadMhyInt(),
+                    uncompressedSize = blocksInfoUncompressedReader.ReadMhyUInt(),
                     flags = (StorageBlockFlags)0x43
-                };
+                });
 
                 Logger.Verbose($"Block {i} Info: {m_BlocksInfo[i]}");
             }
+
+            BigArrayPool<byte>.Shared.Return(uncompressedBlocksInfo);
         }
 
         private Stream CreateBlocksStream(string path)
@@ -122,12 +128,13 @@ namespace AssetStudio
                 var uncompressedBytes = BigArrayPool<byte>.Shared.Rent(uncompressedSize);
                 reader.Read(compressedBytes, 0, compressedSize);
 
+                var offset = 0xC;
                 var compressedBytesSpan = compressedBytes.AsSpan(0, compressedSize);
                 var uncompressedBytesSpan = uncompressedBytes.AsSpan(0, uncompressedSize);
                 DescrambleEntry(compressedBytesSpan);
 
                 Logger.Verbose($"Descrambled block signature {Convert.ToHexString(compressedBytes, 0, 4)}");
-                var numWrite = LZ4.Decompress(compressedBytesSpan[0xC..compressedSize], uncompressedBytesSpan);
+                var numWrite = LZ4.Decompress(compressedBytesSpan[offset..], uncompressedBytesSpan);
                 if (numWrite != uncompressedSize)
                 {
                     throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
@@ -143,12 +150,12 @@ namespace AssetStudio
         {
             Logger.Verbose($"Writing files from blocks stream...");
 
-            fileList = new StreamFile[m_DirectoryInfo.Length];
-            for (int i = 0; i < m_DirectoryInfo.Length; i++)
+            fileList = new List<StreamFile>();
+            for (int i = 0; i < m_DirectoryInfo.Count; i++)
             {
                 var node = m_DirectoryInfo[i];
                 var file = new StreamFile();
-                fileList[i] = file;
+                fileList.Add(file);
                 file.path = node.path;
                 file.fileName = Path.GetFileName(node.path);
                 if (node.size >= int.MaxValue)
@@ -177,9 +184,9 @@ namespace AssetStudio
             {
                 for (int j = 0; j < 0x10; j++)
                 {
-                    int k = mhy0.Mhy0ShiftRow[(2 - i) * 0x10 + j];
+                    int k = mhy.MhyShiftRow[(2 - i) * 0x10 + j];
                     int idx = j % 8;
-                    vector[j] = (byte)(mhy0.Mhy0Key[idx] ^ mhy0.SBox[(j % 4 * 0x100) | GF256Mul(mhy0.Mhy0Mul[idx], input[k])]);
+                    vector[j] = (byte)(mhy.MhyKey[idx] ^ mhy.SBox[(j % 4 * 0x100) | GF256Mul(mhy.MhyMul[idx], input[k])]);
                 }
                 vector.CopyTo(input);
             }
@@ -193,8 +200,8 @@ namespace AssetStudio
             for (int i = 0; i < 4; i++)
                 input[i] ^= input[i + 4];
 
-            var currentEntry = roundedEntrySize + 4;
             var finished = false;
+            var currentEntry = roundedEntrySize + 4;
             while (currentEntry < blockSize && !finished)
             {
                 for (int i = 0; i < entrySize; i++)

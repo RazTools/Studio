@@ -1,13 +1,14 @@
 ﻿using MessagePack;
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace AssetStudio
 {
     public static class ResourceMap
     {
-        private static AssetMap Instance = new() { GameType = GameType.Normal, AssetEntries = Array.Empty<AssetEntry>() };
-        public static AssetEntry[] GetEntries() => Instance.AssetEntries;
+        private static AssetMap Instance = new() { GameType = GameType.Normal, AssetEntries = new List<AssetEntry>() };
+        public static List<AssetEntry> GetEntries() => Instance.AssetEntries;
         public static void FromFile(string path)
         {
             if (!string.IsNullOrEmpty(path))
@@ -31,7 +32,7 @@ namespace AssetStudio
         public static void Clear()
         {
             Instance.GameType = GameType.Normal;
-            Instance.AssetEntries = Array.Empty<AssetEntry>();
+            Instance.AssetEntries = new List<AssetEntry>();
         }
     }
 }

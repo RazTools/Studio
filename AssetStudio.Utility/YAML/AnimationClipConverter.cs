@@ -26,12 +26,12 @@ namespace AssetStudio
         private readonly Dictionary<FloatCurve, List<Keyframe<Float>>> m_floats = new Dictionary<FloatCurve, List<Keyframe<Float>>>();
         private readonly Dictionary<PPtrCurve, List<PPtrKeyframe>> m_pptrs = new Dictionary<PPtrCurve, List<PPtrKeyframe>>();
 
-        public Vector3Curve[] Translations { get; private set; }
-        public QuaternionCurve[] Rotations { get; private set; }
-        public Vector3Curve[] Scales { get; private set; }
-        public Vector3Curve[] Eulers { get; private set; }
-        public FloatCurve[] Floats { get; private set; }
-        public PPtrCurve[] PPtrs { get; private set; }
+        public List<Vector3Curve> Translations { get; private set; }
+        public List<QuaternionCurve> Rotations { get; private set; }
+        public List<Vector3Curve> Scales { get; private set; }
+        public List<Vector3Curve> Eulers { get; private set; }
+        public List<FloatCurve> Floats { get; private set; }
+        public List<PPtrCurve> PPtrs { get; private set; }
 
         public AnimationClipConverter(AnimationClip clip)
         {
@@ -81,17 +81,17 @@ namespace AssetStudio
         private void CreateCurves()
         {
             m_translations.AsEnumerable().ToList().ForEach(x => x.Key.curve.m_Curve.AddRange(x.Value));
-            Translations = m_translations.Keys.ToArray();
+            Translations = m_translations.Keys.ToList();
             m_rotations.AsEnumerable().ToList().ForEach(x => x.Key.curve.m_Curve.AddRange(x.Value));
-            Rotations = m_rotations.Keys.ToArray();
+            Rotations = m_rotations.Keys.ToList();
             m_scales.AsEnumerable().ToList().ForEach(x => x.Key.curve.m_Curve.AddRange(x.Value));
-            Scales = m_scales.Keys.ToArray();
+            Scales = m_scales.Keys.ToList();
             m_eulers.AsEnumerable().ToList().ForEach(x => x.Key.curve.m_Curve.AddRange(x.Value));
-            Eulers = m_eulers.Keys.ToArray();
+            Eulers = m_eulers.Keys.ToList();
             m_floats.AsEnumerable().ToList().ForEach(x => x.Key.curve.m_Curve.AddRange(x.Value));
-            Floats = m_floats.Keys.ToArray();
+            Floats = m_floats.Keys.ToList();
             m_pptrs.AsEnumerable().ToList().ForEach(x => x.Key.curve.AddRange(x.Value));
-            PPtrs = m_pptrs.Keys.ToArray();
+            PPtrs = m_pptrs.Keys.ToList();
         }
 
         private void ProcessStreams(List<StreamedClip.StreamedFrame> streamFrames, AnimationClipBindingConstant bindings, Dictionary<uint, string> tos, float sampleRate)
@@ -107,7 +107,7 @@ namespace AssetStudio
             for (var frameIndex = 1; frameIndex < streamFrames.Count - 1; frameIndex++)
             {
                 var frame = streamFrames[frameIndex];
-                for (var curveIndex = 0; curveIndex < frame.keyList.Length;)
+                for (var curveIndex = 0; curveIndex < frame.keyList.Count;)
                 {
                     var curve = frame.keyList[curveIndex];
                     var index = curve.index;
@@ -496,7 +496,7 @@ namespace AssetStudio
             for (frameIndex = currentFrame - 1; frameIndex >= 0; frameIndex--)
             {
                 var frame = streamFrames[frameIndex];
-                for (curveIndex = 0; curveIndex < frame.keyList.Length; curveIndex++)
+                for (curveIndex = 0; curveIndex < frame.keyList.Count; curveIndex++)
                 {
                     var curve = frame.keyList[curveIndex];
                     if (curve.index == curveID)
@@ -512,7 +512,7 @@ namespace AssetStudio
         {
             var curve = frame.keyList[currentCurve];
             int i = currentCurve + 1;
-            for (; i < frame.keyList.Length; i++)
+            for (; i < frame.keyList.Count; i++)
             {
                 if (frame.keyList[i].index != curve.index)
                 {

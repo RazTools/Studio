@@ -17,17 +17,17 @@ namespace AssetStudio
     public sealed class IndexObject : NamedObject
     {
         public int Count;
-        public KeyValuePair<string, Index>[] AssetMap;
+        public List<KeyValuePair<string, Index>> AssetMap;
 
         public override string Name => "IndexObject";
 
         public IndexObject(ObjectReader reader) : base(reader)
         {
             Count = reader.ReadInt32();
-            AssetMap = new KeyValuePair<string, Index>[Count];
+            AssetMap = new List<KeyValuePair<string, Index>>();
             for (int i = 0; i < Count; i++)
             {
-                AssetMap[i] = new KeyValuePair<string, Index>(reader.ReadAlignedString(), new Index(reader));
+                AssetMap.Add(new KeyValuePair<string, Index>(reader.ReadAlignedString(), new Index(reader)));
             }
         }
     } 

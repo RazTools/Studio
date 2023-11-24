@@ -5,6 +5,8 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Text;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace AssetStudio
 {
@@ -104,10 +106,10 @@ namespace AssetStudio
         private UnityCN UnityCN;
 
         public Header m_Header;
-        private Node[] m_DirectoryInfo;
-        private StorageBlock[] m_BlocksInfo;
+        private List<Node> m_DirectoryInfo;
+        private List<StorageBlock> m_BlocksInfo;
 
-        public StreamFile[] fileList;
+        public List<StreamFile> fileList;
 
 
         private bool HasUncompressedDataHash = true;
@@ -216,7 +218,7 @@ namespace AssetStudio
             m_Header.size = reader.ReadUInt32();
             var numberOfLevelsToDownloadBeforeStreaming = reader.ReadUInt32();
             var levelCount = reader.ReadInt32();
-            m_BlocksInfo = new StorageBlock[1];
+            m_BlocksInfo = new List<StorageBlock>();
             for (int i = 0; i < levelCount; i++)
             {
                 var storageBlock = new StorageBlock()
@@ -226,7 +228,7 @@ namespace AssetStudio
                 };
                 if (i == levelCount - 1)
                 {
-                    m_BlocksInfo[0] = storageBlock;
+                    m_BlocksInfo.Add(storageBlock);
                 }
             }
             if (m_Header.version >= 2)
@@ -277,16 +279,16 @@ namespace AssetStudio
             blocksStream.Position = 0;
             var blocksReader = new EndianBinaryReader(blocksStream);
             var nodesCount = blocksReader.ReadInt32();
-            m_DirectoryInfo = new Node[nodesCount];
+            m_DirectoryInfo = new List<Node>();
             Logger.Verbose($"Directory count: {nodesCount}");
             for (int i = 0; i < nodesCount; i++)
             {
-                m_DirectoryInfo[i] = new Node
+                m_DirectoryInfo.Add(new Node
                 {
                     path = blocksReader.ReadStringToNull(),
                     offset = blocksReader.ReadUInt32(),
                     size = blocksReader.ReadUInt32()
-                };
+                });
             }
         }
 
@@ -294,12 +296,12 @@ namespace AssetStudio
         {
             Logger.Verbose($"Writing files from blocks stream...");
 
-            fileList = new StreamFile[m_DirectoryInfo.Length];
-            for (int i = 0; i < m_DirectoryInfo.Length; i++)
+            fileList = new List<StreamFile>();
+            for (int i = 0; i < m_DirectoryInfo.Count; i++)
             {
                 var node = m_DirectoryInfo[i];
                 var file = new StreamFile();
-                fileList[i] = file;
+                fileList.Add(file);
                 file.path = node.path;
                 file.fileName = Path.GetFileName(node.path);
                 if (node.size >= int.MaxValue)
@@ -412,7 +414,7 @@ namespace AssetStudio
                 blocksInfoBytes = reader.ReadBytes((int)m_Header.compressedBlocksInfoSize);
             }
             MemoryStream blocksInfoUncompresseddStream;
-            var blocksInfoBytesSpan = blocksInfoBytes.AsSpan();
+            var blocksInfoBytesSpan = blocksInfoBytes.AsSpan(0, (int)m_Header.compressedBlocksInfoSize);
             var uncompressedSize = m_Header.uncompressedBlocksInfoSize;
             var compressionType = (CompressionType)(m_Header.flags & ArchiveFlags.CompressionTypeMask);
             Logger.Verbose($"BlockInfo compression type: {compressionType}");
@@ -436,13 +438,15 @@ namespace AssetStudio
                 case CompressionType.Lz4: //LZ4
                 case CompressionType.Lz4HC: //LZ4HC
                     {
-                        var uncompressedBytes = new byte[uncompressedSize];
-                        var numWrite = LZ4.Decompress(blocksInfoBytesSpan, uncompressedBytes);
+                        var uncompressedBytes = BigArrayPool<byte>.Shared.Rent((int)uncompressedSize);
+                        var uncompressedBytesSpan = uncompressedBytes.AsSpan(0, (int)uncompressedSize);
+                        var numWrite = LZ4.Decompress(blocksInfoBytesSpan, uncompressedBytesSpan);
                         if (numWrite != uncompressedSize)
                         {
                             throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
                         }
-                        blocksInfoUncompresseddStream = new MemoryStream(uncompressedBytes);
+                        blocksInfoUncompresseddStream = new MemoryStream(uncompressedBytesSpan.ToArray());
+                        BigArrayPool<byte>.Shared.Return(uncompressedBytes);
                         break;
                     }
                 case CompressionType.Lz4Mr0k: //Lz4Mr0k
@@ -462,32 +466,32 @@ namespace AssetStudio
                     var uncompressedDataHash = blocksInfoReader.ReadBytes(16);
                 }
                 var blocksInfoCount = blocksInfoReader.ReadInt32();
-                m_BlocksInfo = new StorageBlock[blocksInfoCount];
+                m_BlocksInfo = new List<StorageBlock>();
                 Logger.Verbose($"Blocks count: {blocksInfoCount}");
                 for (int i = 0; i < blocksInfoCount; i++)
                 {
-                    m_BlocksInfo[i] = new StorageBlock
+                    m_BlocksInfo.Add(new StorageBlock
                     {
                         uncompressedSize = blocksInfoReader.ReadUInt32(),
                         compressedSize = blocksInfoReader.ReadUInt32(),
                         flags = (StorageBlockFlags)blocksInfoReader.ReadUInt16()
-                    };
+                    });
 
                     Logger.Verbose($"Block {i} Info: {m_BlocksInfo[i]}");
                 }
 
                 var nodesCount = blocksInfoReader.ReadInt32();
-                m_DirectoryInfo = new Node[nodesCount];
+                m_DirectoryInfo = new List<Node>();
                 Logger.Verbose($"Directory count: {nodesCount}");
                 for (int i = 0; i < nodesCount; i++)
                 {
-                    m_DirectoryInfo[i] = new Node
+                    m_DirectoryInfo.Add(new Node
                     {
                         offset = blocksInfoReader.ReadInt64(),
                         size = blocksInfoReader.ReadInt64(),
                         flags = blocksInfoReader.ReadUInt32(),
                         path = blocksInfoReader.ReadStringToNull(),
-                    };
+                    });
 
                     Logger.Verbose($"Directory {i} Info: {m_DirectoryInfo[i]}");
                 }
@@ -502,7 +506,7 @@ namespace AssetStudio
         {
             Logger.Verbose($"Writing block to blocks stream...");
 
-            for (int i = 0; i < m_BlocksInfo.Length; i++)
+            for (int i = 0; i < m_BlocksInfo.Count; i++)
             {
                 Logger.Verbose($"Reading block {i}...");
                 var blockInfo = m_BlocksInfo[i];

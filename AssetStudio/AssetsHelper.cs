@@ -10,7 +10,6 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using System.Text;
 using MessagePack;
-using System.Reflection.Metadata.Ecma335;
 
 namespace AssetStudio
 {
@@ -30,7 +29,7 @@ namespace AssetStudio
         {
             public string Path { get; set; }
             public long Offset { get; set; }
-            public string[] Dependencies { get; set; }
+            public List<string> Dependencies { get; set; }
         }
 
         public static void SetUnityVersion(string version)
@@ -207,7 +206,7 @@ namespace AssetStudio
                 {
                     Path = relativePath,
                     Offset = assetsFile.offset,
-                    Dependencies = assetsFile.m_Externals.Select(x => x.fileName).ToArray()
+                    Dependencies = assetsFile.m_Externals.Select(x => x.fileName).ToList()
                 };
 
                 if (CABMap.ContainsKey(assetsFile.fileName))
@@ -236,7 +235,7 @@ namespace AssetStudio
                     writer.Write(kv.Key);
                     writer.Write(kv.Value.Path);
                     writer.Write(kv.Value.Offset);
-                    writer.Write(kv.Value.Dependencies.Length);
+                    writer.Write(kv.Value.Dependencies.Count);
                     foreach (var cab in kv.Value.Dependencies)
                     {
                         writer.Write(cab);
@@ -298,10 +297,10 @@ namespace AssetStudio
                 var path = reader.ReadString();
                 var offset = reader.ReadInt64();
                 var depCount = reader.ReadInt32();
-                var dependencies = new string[depCount];
+                var dependencies = new List<string>();
                 for (int j = 0; j < depCount; j++)
                 {
-                    dependencies[j] = reader.ReadString();
+                    dependencies.Add(reader.ReadString());
                 }
                 var entry = new Entry()
                 {
@@ -328,7 +327,7 @@ namespace AssetStudio
 
                 UpdateContainers(assets, game);
 
-                ExportAssetsMap(assets.ToArray(), game, mapName, savePath, exportListType, resetEvent);
+                ExportAssetsMap(assets, game, mapName, savePath, exportListType, resetEvent);
             }
             catch(Exception e)
             {
@@ -528,7 +527,7 @@ namespace AssetStudio
             }
         }
 
-        private static void ExportAssetsMap(AssetEntry[] toExportAssets, Game game, string name, string savePath, ExportListType exportListType, ManualResetEvent resetEvent = null)
+        private static void ExportAssetsMap(List<AssetEntry> toExportAssets, Game game, string name, string savePath, ExportListType exportListType, ManualResetEvent resetEvent = null)
         {
             ThreadPool.QueueUserWorkItem(state =>
             {
@@ -588,7 +587,7 @@ namespace AssetStudio
                         MessagePackSerializer.Serialize(file, assetMap, MessagePackSerializerOptions.Standard.WithCompression(MessagePackCompression.Lz4BlockArray));
                     }
 
-                    Logger.Info($"Finished buidling AssetMap with {toExportAssets.Length} assets.");
+                    Logger.Info($"Finished buidling AssetMap with {toExportAssets.Count} assets.");
                 }
 
                 resetEvent?.Set();
@@ -613,7 +612,7 @@ namespace AssetStudio
             DumpCABMap(mapName);
 
             Logger.Info($"Map build successfully !! {collision} collisions found");
-            ExportAssetsMap(assets.ToArray(), game, mapName, savePath, exportListType, resetEvent);
+            ExportAssetsMap(assets, game, mapName, savePath, exportListType, resetEvent);
         }
     }
 }

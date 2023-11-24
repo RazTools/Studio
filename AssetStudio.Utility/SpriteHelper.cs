@@ -150,7 +150,7 @@ namespace AssetStudio
                             var vertices = new Vector2[subMesh.vertexCount];
                             for (int v = 0; v < subMesh.vertexCount; v++)
                             {
-                                vertices[v] = vertexReader.ReadVector3();
+                                vertices[v] = new Vector3(vertexReader.ReadSingle(), vertexReader.ReadSingle(), vertexReader.ReadSingle());
                                 vertexReader.BaseStream.Position += m_Stream.stride - 12;
                             }
 

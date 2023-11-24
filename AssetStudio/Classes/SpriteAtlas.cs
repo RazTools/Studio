@@ -13,7 +13,7 @@ namespace AssetStudio
         public Vector4 uvTransform;
         public float downscaleMultiplier;
         public SpriteSettings settingsRaw;
-        public SecondarySpriteTexture[] secondaryTextures;
+        public List<SecondarySpriteTexture> secondaryTextures;
 
         public SpriteAtlasData(ObjectReader reader)
         {
@@ -32,10 +32,10 @@ namespace AssetStudio
             if (version[0] > 2020 || (version[0] == 2020 && version[1] >= 2)) //2020.2 and up
             {
                 var secondaryTexturesSize = reader.ReadInt32();
-                secondaryTextures = new SecondarySpriteTexture[secondaryTexturesSize];
+                secondaryTextures = new List<SecondarySpriteTexture>();
                 for (int i = 0; i < secondaryTexturesSize; i++)
                 {
-                    secondaryTextures[i] = new SecondarySpriteTexture(reader);
+                    secondaryTextures.Add(new SecondarySpriteTexture(reader));
                 }
                 reader.AlignStream();
             }
@@ -44,23 +44,23 @@ namespace AssetStudio
 
     public sealed class SpriteAtlas : NamedObject
     {
-        public PPtr<Sprite>[] m_PackedSprites;
+        public List<PPtr<Sprite>> m_PackedSprites;
         public Dictionary<KeyValuePair<Guid, long>, SpriteAtlasData> m_RenderDataMap;
         public bool m_IsVariant;
 
         public SpriteAtlas(ObjectReader reader) : base(reader)
         {
             var m_PackedSpritesSize = reader.ReadInt32();
-            m_PackedSprites = new PPtr<Sprite>[m_PackedSpritesSize];
+            m_PackedSprites = new List<PPtr<Sprite>>();
             for (int i = 0; i < m_PackedSpritesSize; i++)
             {
-                m_PackedSprites[i] = new PPtr<Sprite>(reader);
+                m_PackedSprites.Add(new PPtr<Sprite>(reader));
             }
 
             var m_PackedSpriteNamesToIndex = reader.ReadStringArray();
 
             var m_RenderDataMapSize = reader.ReadInt32();
-            m_RenderDataMap = new Dictionary<KeyValuePair<Guid, long>, SpriteAtlasData>(m_RenderDataMapSize);
+            m_RenderDataMap = new Dictionary<KeyValuePair<Guid, long>, SpriteAtlasData>();
             for (int i = 0; i < m_RenderDataMapSize; i++)
             {
                 var first = new Guid(reader.ReadBytes(16));

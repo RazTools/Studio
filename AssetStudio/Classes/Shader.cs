@@ -18,8 +18,8 @@ namespace AssetStudio
 
     public class StructParameter
     {
-        public MatrixParameter[] m_MatrixParams;
-        public VectorParameter[] m_VectorParams;
+        public List<MatrixParameter> m_MatrixParams;
+        public List<VectorParameter> m_VectorParams;
 
         public StructParameter(EndianBinaryReader reader)
         {
@@ -29,17 +29,17 @@ namespace AssetStudio
             var m_StructSize = reader.ReadInt32();
 
             int numVectorParams = reader.ReadInt32();
-            m_VectorParams = new VectorParameter[numVectorParams];
+            m_VectorParams = new List<VectorParameter>();
             for (int i = 0; i < numVectorParams; i++)
             {
-                m_VectorParams[i] = new VectorParameter(reader);
+                m_VectorParams.Add(new VectorParameter(reader));
             }
 
             int numMatrixParams = reader.ReadInt32();
-            m_MatrixParams = new MatrixParameter[numMatrixParams];
+            m_MatrixParams = new List<MatrixParameter>();
             for (int i = 0; i < numMatrixParams; i++)
             {
-                m_MatrixParams[i] = new MatrixParameter(reader);
+                m_MatrixParams.Add(new MatrixParameter(reader));
             }
         }
     }
@@ -113,15 +113,15 @@ namespace AssetStudio
 
     public class SerializedProperties
     {
-        public SerializedProperty[] m_Props;
+        public List<SerializedProperty> m_Props;
 
         public SerializedProperties(EndianBinaryReader reader)
         {
             int numProps = reader.ReadInt32();
-            m_Props = new SerializedProperty[numProps];
+            m_Props = new List<SerializedProperty>();
             for (int i = 0; i < numProps; i++)
             {
-                m_Props[i] = new SerializedProperty(reader);
+                m_Props.Add(new SerializedProperty(reader));
             }
         }
     }
@@ -206,7 +206,7 @@ namespace AssetStudio
     public class SerializedShaderState
     {
         public string m_Name;
-        public SerializedShaderRTBlendState[] rtBlend;
+        public List<SerializedShaderRTBlendState> rtBlend;
         public bool rtSeparateBlend;
         public SerializedShaderFloatValue zClip;
         public SerializedShaderFloatValue zTest;
@@ -237,10 +237,10 @@ namespace AssetStudio
             var version = reader.version;
 
             m_Name = reader.ReadAlignedString();
-            rtBlend = new SerializedShaderRTBlendState[8];
+            rtBlend = new List<SerializedShaderRTBlendState>();
             for (int i = 0; i < 8; i++)
             {
-                rtBlend[i] = new SerializedShaderRTBlendState(reader);
+                rtBlend.Add(new SerializedShaderRTBlendState(reader));
             }
             rtSeparateBlend = reader.ReadBoolean();
             reader.AlignStream();
@@ -291,16 +291,16 @@ namespace AssetStudio
 
     public class ParserBindChannels
     {
-        public ShaderBindChannel[] m_Channels;
+        public List<ShaderBindChannel> m_Channels;
         public uint m_SourceMap;
 
         public ParserBindChannels(EndianBinaryReader reader)
         {
             int numChannels = reader.ReadInt32();
-            m_Channels = new ShaderBindChannel[numChannels];
+            m_Channels = new List<ShaderBindChannel>();
             for (int i = 0; i < numChannels; i++)
             {
-                m_Channels[i] = new ShaderBindChannel(reader);
+                m_Channels.Add(new ShaderBindChannel(reader));
             }
             reader.AlignStream();
 
@@ -391,9 +391,9 @@ namespace AssetStudio
     public class ConstantBuffer
     {
         public int m_NameIndex;
-        public MatrixParameter[] m_MatrixParams;
-        public VectorParameter[] m_VectorParams;
-        public StructParameter[] m_StructParams;
+        public List<MatrixParameter> m_MatrixParams;
+        public List<VectorParameter> m_VectorParams;
+        public List<StructParameter> m_StructParams;
         public int m_Size;
         public bool m_IsPartialCB;
 
@@ -404,25 +404,25 @@ namespace AssetStudio
             m_NameIndex = reader.ReadInt32();
 
             int numMatrixParams = reader.ReadInt32();
-            m_MatrixParams = new MatrixParameter[numMatrixParams];
+            m_MatrixParams = new List<MatrixParameter>();
             for (int i = 0; i < numMatrixParams; i++)
             {
-                m_MatrixParams[i] = new MatrixParameter(reader);
+                m_MatrixParams.Add(new MatrixParameter(reader));
             }
 
             int numVectorParams = reader.ReadInt32();
-            m_VectorParams = new VectorParameter[numVectorParams];
+            m_VectorParams = new List<VectorParameter>();
             for (int i = 0; i < numVectorParams; i++)
             {
-                m_VectorParams[i] = new VectorParameter(reader);
+                m_VectorParams.Add(new VectorParameter(reader));
             }
             if (version[0] > 2017 || (version[0] == 2017 && version[1] >= 3)) //2017.3 and up
             {
                 int numStructParams = reader.ReadInt32();
-                m_StructParams = new StructParameter[numStructParams];
+                m_StructParams = new List<StructParameter>();
                 for (int i = 0; i < numStructParams; i++)
                 {
-                    m_StructParams[i] = new StructParameter(reader);
+                    m_StructParams.Add(new StructParameter(reader));
                 }
             }
             m_Size = reader.ReadInt32();
@@ -492,71 +492,71 @@ namespace AssetStudio
 
     public class SerializedProgramParameters
     {
-        public VectorParameter[] m_VectorParams;
-        public MatrixParameter[] m_MatrixParams;
-        public TextureParameter[] m_TextureParams;
-        public BufferBinding[] m_BufferParams;
-        public ConstantBuffer[] m_ConstantBuffers;
-        public BufferBinding[] m_ConstantBufferBindings;
-        public UAVParameter[] m_UAVParams;
-        public SamplerParameter[] m_Samplers;
+        public List<VectorParameter> m_VectorParams;
+        public List<MatrixParameter> m_MatrixParams;
+        public List<TextureParameter> m_TextureParams;
+        public List<BufferBinding> m_BufferParams;
+        public List<ConstantBuffer> m_ConstantBuffers;
+        public List<BufferBinding> m_ConstantBufferBindings;
+        public List<UAVParameter> m_UAVParams;
+        public List<SamplerParameter> m_Samplers;
 
         public SerializedProgramParameters(ObjectReader reader)
         {
             int numVectorParams = reader.ReadInt32();
-            m_VectorParams = new VectorParameter[numVectorParams];
+            m_VectorParams = new List<VectorParameter>();
             for (int i = 0; i < numVectorParams; i++)
             {
-                m_VectorParams[i] = new VectorParameter(reader);
+                m_VectorParams.Add(new VectorParameter(reader));
             }
 
             int numMatrixParams = reader.ReadInt32();
-            m_MatrixParams = new MatrixParameter[numMatrixParams];
+            m_MatrixParams = new List<MatrixParameter>();
             for (int i = 0; i < numMatrixParams; i++)
             {
-                m_MatrixParams[i] = new MatrixParameter(reader);
+                m_MatrixParams.Add(new MatrixParameter(reader));
             }
 
             int numTextureParams = reader.ReadInt32();
-            m_TextureParams = new TextureParameter[numTextureParams];
+            m_TextureParams = new List<TextureParameter>();
             for (int i = 0; i < numTextureParams; i++)
             {
-                m_TextureParams[i] = new TextureParameter(reader);
+                m_TextureParams.Add(new TextureParameter(reader));
             }
 
             int numBufferParams = reader.ReadInt32();
-            m_BufferParams = new BufferBinding[numBufferParams];
+            m_BufferParams = new List<BufferBinding>();
             for (int i = 0; i < numBufferParams; i++)
             {
-                m_BufferParams[i] = new BufferBinding(reader);
+                m_BufferParams.Add(new BufferBinding(reader));
             }
 
             int numConstantBuffers = reader.ReadInt32();
-            m_ConstantBuffers = new ConstantBuffer[numConstantBuffers];
+            m_ConstantBuffers = new List<ConstantBuffer>();
             for (int i = 0; i < numConstantBuffers; i++)
             {
-                m_ConstantBuffers[i] = new ConstantBuffer(reader);
+                m_ConstantBuffers.Add(new ConstantBuffer(reader));
             }
 
             int numConstantBufferBindings = reader.ReadInt32();
-            m_ConstantBufferBindings = new BufferBinding[numConstantBufferBindings];
+            m_ConstantBufferBindings = new List<BufferBinding>();
             for (int i = 0; i < numConstantBufferBindings; i++)
             {
-                m_ConstantBufferBindings[i] = new BufferBinding(reader);
+                m_ConstantBufferBindings.Add(new BufferBinding(reader));
             }
 
             int numUAVParams = reader.ReadInt32();
-            m_UAVParams = new UAVParameter[numUAVParams];
+            m_UAVParams = new List<UAVParameter>();
             for (int i = 0; i < numUAVParams; i++)
             {
-                m_UAVParams[i] = new UAVParameter(reader);
+                m_UAVParams.Add(new UAVParameter(reader));
             }
 
             int numSamplers = reader.ReadInt32();
-            m_Samplers = new SamplerParameter[numSamplers];
+            m_Samplers = new List<SamplerParameter>();
             for (int i = 0; i < numSamplers; i++)
             {
-                m_Samplers[i] = new SamplerParameter(reader);
+                m_Samplers.Add(new SamplerParameter(reader));
             }
         }
     }
@@ -569,14 +569,14 @@ namespace AssetStudio
         public sbyte m_ShaderHardwareTier;
         public ShaderGpuProgramType m_GpuProgramType;
         public SerializedProgramParameters m_Parameters;
-        public VectorParameter[] m_VectorParams;
-        public MatrixParameter[] m_MatrixParams;
-        public TextureParameter[] m_TextureParams;
-        public BufferBinding[] m_BufferParams;
-        public ConstantBuffer[] m_ConstantBuffers;
-        public BufferBinding[] m_ConstantBufferBindings;
-        public UAVParameter[] m_UAVParams;
-        public SamplerParameter[] m_Samplers;
+        public List<VectorParameter> m_VectorParams;
+        public List<MatrixParameter> m_MatrixParams;
+        public List<TextureParameter> m_TextureParams;
+        public List<BufferBinding> m_BufferParams;
+        public List<ConstantBuffer> m_ConstantBuffers;
+        public List<BufferBinding> m_ConstantBufferBindings;
+        public List<UAVParameter> m_UAVParams;
+        public List<SamplerParameter> m_Samplers;
 
         public static bool HasGlobalLocalKeywordIndices(SerializedType type) => type.Match("E99740711222CD922E9A6F92FF1EB07A", "450A058C218DAF000647948F2F59DA6D");
         public static bool HasInstancedStructuredBuffers(SerializedType type) => type.Match("E99740711222CD922E9A6F92FF1EB07A");
@@ -630,61 +630,61 @@ namespace AssetStudio
             else
             {
                 int numVectorParams = reader.ReadInt32();
-                m_VectorParams = new VectorParameter[numVectorParams];
+                m_VectorParams = new List<VectorParameter>();
                 for (int i = 0; i < numVectorParams; i++)
                 {
-                    m_VectorParams[i] = new VectorParameter(reader);
+                    m_VectorParams.Add(new VectorParameter(reader));
                 }
 
                 int numMatrixParams = reader.ReadInt32();
-                m_MatrixParams = new MatrixParameter[numMatrixParams];
+                m_MatrixParams = new List<MatrixParameter>();
                 for (int i = 0; i < numMatrixParams; i++)
                 {
-                    m_MatrixParams[i] = new MatrixParameter(reader);
+                    m_MatrixParams.Add(new MatrixParameter(reader));
                 }
 
                 int numTextureParams = reader.ReadInt32();
-                m_TextureParams = new TextureParameter[numTextureParams];
+                m_TextureParams = new List<TextureParameter>();
                 for (int i = 0; i < numTextureParams; i++)
                 {
-                    m_TextureParams[i] = new TextureParameter(reader);
+                    m_TextureParams.Add(new TextureParameter(reader));
                 }
 
                 int numBufferParams = reader.ReadInt32();
-                m_BufferParams = new BufferBinding[numBufferParams];
+                m_BufferParams = new List<BufferBinding>();
                 for (int i = 0; i < numBufferParams; i++)
                 {
-                    m_BufferParams[i] = new BufferBinding(reader);
+                    m_BufferParams.Add(new BufferBinding(reader));
                 }
 
                 int numConstantBuffers = reader.ReadInt32();
-                m_ConstantBuffers = new ConstantBuffer[numConstantBuffers];
+                m_ConstantBuffers = new List<ConstantBuffer>();
                 for (int i = 0; i < numConstantBuffers; i++)
                 {
-                    m_ConstantBuffers[i] = new ConstantBuffer(reader);
+                    m_ConstantBuffers.Add(new ConstantBuffer(reader));
                 }
 
                 int numConstantBufferBindings = reader.ReadInt32();
-                m_ConstantBufferBindings = new BufferBinding[numConstantBufferBindings];
+                m_ConstantBufferBindings = new List<BufferBinding>();
                 for (int i = 0; i < numConstantBufferBindings; i++)
                 {
-                    m_ConstantBufferBindings[i] = new BufferBinding(reader);
+                    m_ConstantBufferBindings.Add(new BufferBinding(reader));
                 }
 
                 int numUAVParams = reader.ReadInt32();
-                m_UAVParams = new UAVParameter[numUAVParams];
+                m_UAVParams = new List<UAVParameter>();
                 for (int i = 0; i < numUAVParams; i++)
                 {
-                    m_UAVParams[i] = new UAVParameter(reader);
+                    m_UAVParams.Add(new UAVParameter(reader));
                 }
 
                 if (version[0] >= 2017) //2017 and up
                 {
                     int numSamplers = reader.ReadInt32();
-                    m_Samplers = new SamplerParameter[numSamplers];
+                    m_Samplers = new List<SamplerParameter>();
                     for (int i = 0; i < numSamplers; i++)
                     {
-                        m_Samplers[i] = new SamplerParameter(reader);
+                        m_Samplers.Add(new SamplerParameter(reader));
                     }
                 }
             }
@@ -704,10 +704,10 @@ namespace AssetStudio
             if (HasInstancedStructuredBuffers(reader.serializedType))
             {
                 int numInstancedStructuredBuffers = reader.ReadInt32();
-                var m_InstancedStructuredBuffers = new ConstantBuffer[numInstancedStructuredBuffers];
+                var m_InstancedStructuredBuffers = new List<ConstantBuffer>();
                 for (int i = 0; i < numInstancedStructuredBuffers; i++)
                 {
-                    m_InstancedStructuredBuffers[i] = new ConstantBuffer(reader);
+                    m_InstancedStructuredBuffers.Add(new ConstantBuffer(reader));
                 }
             }
         }
@@ -715,7 +715,7 @@ namespace AssetStudio
 
     public class SerializedProgram
     {
-        public SerializedSubProgram[] m_SubPrograms;
+        public List<SerializedSubProgram> m_SubPrograms;
         public SerializedProgramParameters m_CommonParameters;
         public ushort[] m_SerializedKeywordStateMask;
 
@@ -724,10 +724,10 @@ namespace AssetStudio
             var version = reader.version;
 
             int numSubPrograms = reader.ReadInt32();
-            m_SubPrograms = new SerializedSubProgram[numSubPrograms];
+            m_SubPrograms = new List<SerializedSubProgram>();
             for (int i = 0; i < numSubPrograms; i++)
             {
-                m_SubPrograms[i] = new SerializedSubProgram(reader);
+                m_SubPrograms.Add(new SerializedSubProgram(reader));
             }
 
             if ((version[0] == 2020 && version[1] > 3) ||
@@ -756,11 +756,11 @@ namespace AssetStudio
 
     public class SerializedPass
     {
-        public Hash128[] m_EditorDataHash;
+        public List<Hash128> m_EditorDataHash;
         public byte[] m_Platforms;
         public ushort[] m_LocalKeywordMask;
         public ushort[] m_GlobalKeywordMask;
-        public KeyValuePair<string, int>[] m_NameIndices;
+        public List<KeyValuePair<string, int>> m_NameIndices;
         public PassType m_Type;
         public SerializedShaderState m_State;
         public uint m_ProgramMask;
@@ -784,10 +784,10 @@ namespace AssetStudio
             if (version[0] > 2020 || (version[0] == 2020 && version[1] >= 2)) //2020.2 and up
             {
                 int numEditorDataHash = reader.ReadInt32();
-                m_EditorDataHash = new Hash128[numEditorDataHash];
+                m_EditorDataHash = new List<Hash128>();
                 for (int i = 0; i < numEditorDataHash; i++)
                 {
-                    m_EditorDataHash[i] = new Hash128(reader);
+                    m_EditorDataHash.Add(new Hash128(reader));
                 }
                 reader.AlignStream();
                 m_Platforms = reader.ReadUInt8Array();
@@ -802,10 +802,10 @@ namespace AssetStudio
             }
 
             int numIndices = reader.ReadInt32();
-            m_NameIndices = new KeyValuePair<string, int>[numIndices];
+            m_NameIndices = new List<KeyValuePair<string, int>>();
             for (int i = 0; i < numIndices; i++)
             {
-                m_NameIndices[i] = new KeyValuePair<string, int>(reader.ReadAlignedString(), reader.ReadInt32());
+                m_NameIndices.Add(new KeyValuePair<string, int>(reader.ReadAlignedString(), reader.ReadInt32()));
             }
 
             m_Type = (PassType)reader.ReadInt32();
@@ -840,32 +840,32 @@ namespace AssetStudio
 
     public class SerializedTagMap
     {
-        public KeyValuePair<string, string>[] tags;
+        public List<KeyValuePair<string, string>> tags;
 
         public SerializedTagMap(EndianBinaryReader reader)
         {
             int numTags = reader.ReadInt32();
-            tags = new KeyValuePair<string, string>[numTags];
+            tags = new List<KeyValuePair<string, string>>();
             for (int i = 0; i < numTags; i++)
             {
-                tags[i] = new KeyValuePair<string, string>(reader.ReadAlignedString(), reader.ReadAlignedString());
+                tags.Add(new KeyValuePair<string, string>(reader.ReadAlignedString(), reader.ReadAlignedString()));
             }
         }
     }
 
     public class SerializedSubShader
     {
-        public SerializedPass[] m_Passes;
+        public List<SerializedPass> m_Passes;
         public SerializedTagMap m_Tags;
         public int m_LOD;
 
         public SerializedSubShader(ObjectReader reader)
         {
             int numPasses = reader.ReadInt32();
-            m_Passes = new SerializedPass[numPasses];
+            m_Passes = new List<SerializedPass>();
             for (int i = 0; i < numPasses; i++)
             {
-                m_Passes[i] = new SerializedPass(reader);
+                m_Passes.Add(new SerializedPass(reader));
             }
 
             m_Tags = new SerializedTagMap(reader);
@@ -900,14 +900,14 @@ namespace AssetStudio
     public class SerializedShader
     {
         public SerializedProperties m_PropInfo;
-        public SerializedSubShader[] m_SubShaders;
+        public List<SerializedSubShader> m_SubShaders;
         public string[] m_KeywordNames;
         public byte[] m_KeywordFlags;
         public string m_Name;
         public string m_CustomEditorName;
         public string m_FallbackName;
-        public SerializedShaderDependency[] m_Dependencies;
-        public SerializedCustomEditorForRenderPipeline[] m_CustomEditorForRenderPipelines;
+        public List<SerializedShaderDependency> m_Dependencies;
+        public List<SerializedCustomEditorForRenderPipeline> m_CustomEditorForRenderPipelines;
         public bool m_DisableNoSubshadersMessage;
 
         public SerializedShader(ObjectReader reader)
@@ -917,10 +917,10 @@ namespace AssetStudio
             m_PropInfo = new SerializedProperties(reader);
 
             int numSubShaders = reader.ReadInt32();
-            m_SubShaders = new SerializedSubShader[numSubShaders];
+            m_SubShaders = new List<SerializedSubShader>();
             for (int i = 0; i < numSubShaders; i++)
             {
-                m_SubShaders[i] = new SerializedSubShader(reader);
+                m_SubShaders.Add(new SerializedSubShader(reader));
             }
 
             if (version[0] > 2021 || (version[0] == 2021 && version[1] >= 2)) //2021.2 and up
@@ -935,19 +935,19 @@ namespace AssetStudio
             m_FallbackName = reader.ReadAlignedString();
 
             int numDependencies = reader.ReadInt32();
-            m_Dependencies = new SerializedShaderDependency[numDependencies];
+            m_Dependencies = new List<SerializedShaderDependency>();
             for (int i = 0; i < numDependencies; i++)
             {
-                m_Dependencies[i] = new SerializedShaderDependency(reader);
+                m_Dependencies.Add(new SerializedShaderDependency(reader));
             }
 
             if (version[0] >= 2021) //2021.1 and up
             {
                 int m_CustomEditorForRenderPipelinesSize = reader.ReadInt32();
-                m_CustomEditorForRenderPipelines = new SerializedCustomEditorForRenderPipeline[m_CustomEditorForRenderPipelinesSize];
+                m_CustomEditorForRenderPipelines = new List<SerializedCustomEditorForRenderPipeline>();
                 for (int i = 0; i < m_CustomEditorForRenderPipelinesSize; i++)
                 {
-                    m_CustomEditorForRenderPipelines[i] = new SerializedCustomEditorForRenderPipeline(reader);
+                    m_CustomEditorForRenderPipelines.Add(new SerializedCustomEditorForRenderPipeline(reader));
                 }
             }
 

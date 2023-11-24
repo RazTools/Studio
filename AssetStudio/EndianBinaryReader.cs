@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
@@ -108,6 +109,31 @@ namespace AssetStudio
             }
             return base.ReadDouble();
         }
+        public override byte[] ReadBytes(int count)
+        {
+            if (count == 0)
+            {
+                return Array.Empty<byte>();
+            }
+
+            var buffer = ArrayPool<byte>.Shared.Rent(0x1000);
+            List<byte> result = new List<byte>();
+            do
+            {
+                var readNum = Math.Min(count, buffer.Length);
+                int n = Read(buffer, 0, readNum);
+                if (n == 0)
+                {
+                    break;
+                }
+
+                result.AddRange(buffer[..n]);
+                count -= n;
+            } while (count > 0);
+
+            ArrayPool<byte>.Shared.Return(buffer);
+            return result.ToArray();
+        }
 
         public void AlignStream()
         {
@@ -164,11 +190,6 @@ namespace AssetStudio
             return new Vector2(ReadSingle(), ReadSingle());
         }
 
-        public Vector3 ReadVector3()
-        {
-            return new Vector3(ReadSingle(), ReadSingle(), ReadSingle());
-        }
-
         public Vector4 ReadVector4()
         {
             return new Vector4(ReadSingle(), ReadSingle(), ReadSingle(), ReadSingle());
@@ -184,33 +205,24 @@ namespace AssetStudio
             return new Matrix4x4(ReadSingleArray(16));
         }
 
-        public XForm ReadXForm(int[] version, bool isVector4 = false)
-        {
-            var t = (version[0] > 5 || (version[0] == 5 && version[1] >= 4)) && !isVector4 ? ReadVector3() : (Vector3)ReadVector4();//5.4 and up
-            var q = ReadQuaternion();
-            var s = (version[0] > 5 || (version[0] == 5 && version[1] >= 4)) && !isVector4 ? ReadVector3() : (Vector3)ReadVector4();//5.4 and up
-            
-            return new XForm(t, q, s);
-        }
-
         public Float ReadFloat()
         {
             return new Float(ReadSingle());
         }
 
-        public int ReadMhy0Int()
+        public int ReadMhyInt()
         {
             var buffer = ReadBytes(6);
             return buffer[2] | (buffer[4] << 8) | (buffer[0] << 0x10) | (buffer[5] << 0x18);
         }
 
-        public uint ReadMhy0UInt()
+        public uint ReadMhyUInt()
         {
             var buffer = ReadBytes(7);
             return (uint)(buffer[1] | (buffer[6] << 8) | (buffer[3] << 0x10) | (buffer[2] << 0x18));
         }
 
-        public string ReadMhy0String()
+        public string ReadMhyString()
         {
             var pos = BaseStream.Position;
             var str = ReadStringToNull();
@@ -218,94 +230,134 @@ namespace AssetStudio
             return str;
         }
 
-        private T[] ReadArray<T>(Func<T> del, int length)
+        internal T[] ReadArray<T>(Func<T> del, int length)
         {
-            var array = new T[length];
-            for (int i = 0; i < length; i++)
+            if (length < 0x1000)
             {
-                array[i] = del();
+                var array = new T[length];
+                for (int i = 0; i < length; i++)
+                {
+                    array[i] = del();
+                }
+                return array;
             }
-            return array;
+            else
+            {
+                var list = new List<T>();
+                for (int i = 0; i < length; i++)
+                {
+                    list.Add(del());
+                }
+                return list.ToArray();
+            }
         }
 
-        public bool[] ReadBooleanArray()
+        public bool[] ReadBooleanArray(int length = 0)
         {
-            return ReadArray(ReadBoolean, ReadInt32());
+            if (length == 0)
+            {
+                length = ReadInt32();
+            }
+            return ReadArray(ReadBoolean, length);
         }
 
-        public byte[] ReadUInt8Array()
+        public byte[] ReadUInt8Array(int length = 0)
         {
-            return ReadBytes(ReadInt32());
+            if (length == 0)
+            {
+                length = ReadInt32();
+            }
+            return ReadBytes(length);
         }
 
-        public short[] ReadInt16Array()
+        public short[] ReadInt16Array(int length = 0)
         {
-            return ReadArray(ReadInt16, ReadInt32());
-        }
-
-        public short[] ReadInt16Array(int length)
-        {
+            if (length == 0)
+            {
+                length = ReadInt32();
+            }
             return ReadArray(ReadInt16, length);
         }
 
-        public ushort[] ReadUInt16Array()
+        public ushort[] ReadUInt16Array(int length = 0)
         {
-            return ReadArray(ReadUInt16, ReadInt32());
+            if (length == 0)
+            {
+                length = ReadInt32();
+            }
+            return ReadArray(ReadUInt16, length);
         }
 
-        public int[] ReadInt32Array()
+        public int[] ReadInt32Array(int length = 0)
         {
-            return ReadArray(ReadInt32, ReadInt32());
-        }
-
-        public int[] ReadInt32Array(int length)
-        {
+            if (length == 0)
+            {
+                length = ReadInt32();
+            }
             return ReadArray(ReadInt32, length);
         }
 
-        public uint[] ReadUInt32Array()
+        public uint[] ReadUInt32Array(int length = 0)
         {
-            return ReadArray(ReadUInt32, ReadInt32());
-        }
-
-        public uint[][] ReadUInt32ArrayArray()
-        {
-            return ReadArray(ReadUInt32Array, ReadInt32());
-        }
-
-        public uint[] ReadUInt32Array(int length)
-        {
+            if (length == 0)
+            {
+                length = ReadInt32();
+            }
             return ReadArray(ReadUInt32, length);
         }
 
-        public float[] ReadSingleArray()
+        public uint[][] ReadUInt32ArrayArray(int length = 0)
         {
-            return ReadArray(ReadSingle, ReadInt32());
+            if (length == 0)
+            {
+                length = ReadInt32();
+            }
+            return ReadArray(() => ReadUInt32Array(), length);
         }
 
-        public float[] ReadSingleArray(int length)
+        public float[] ReadSingleArray(int length = 0)
         {
+            if (length == 0)
+            {
+                length = ReadInt32();
+            }
             return ReadArray(ReadSingle, length);
         }
 
-        public string[] ReadStringArray()
+        public string[] ReadStringArray(int length = 0)
         {
-            return ReadArray(ReadAlignedString, ReadInt32());
+            if (length == 0)
+            {
+                length = ReadInt32();
+            }
+            return ReadArray(ReadAlignedString, length);
         }
 
-        public Vector2[] ReadVector2Array()
+        public Vector2[] ReadVector2Array(int length = 0)
         {
-            return ReadArray(ReadVector2, ReadInt32());
+            if (length == 0)
+            {
+                length = ReadInt32();
+            }
+            return ReadArray(ReadVector2, length);
         }
 
-        public Vector4[] ReadVector4Array()
+        public Vector4[] ReadVector4Array(int length = 0)
         {
-            return ReadArray(ReadVector4, ReadInt32());
+            if (length == 0)
+            {
+                length = ReadInt32();
+            }
+            return ReadArray(ReadVector4, length);
         }
 
-        public Matrix4x4[] ReadMatrixArray()
+        public Matrix4x4[] ReadMatrixArray(int length = 0)
         {
-            return ReadArray(ReadMatrix, ReadInt32());
+            if (length == 0)
+            {
+                length = ReadInt32();
+            }
+            return ReadArray(ReadMatrix, length);
         }
     }
 }

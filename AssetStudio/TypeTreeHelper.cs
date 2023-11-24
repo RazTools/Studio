@@ -250,7 +250,7 @@ namespace AssetStudio
                         var next = 4 + first.Count;
                         var second = GetNodes(map, next);
                         var size = reader.ReadInt32();
-                        var dic = new List<KeyValuePair<object, object>>(size);
+                        var dic = new List<KeyValuePair<object, object>>();
                         for (int j = 0; j < size; j++)
                         {
                             int tmp1 = 0;
@@ -276,7 +276,7 @@ namespace AssetStudio
                             var vector = GetNodes(m_Nodes, i);
                             i += vector.Count - 1;
                             var size = reader.ReadInt32();
-                            var list = new List<object>(size);
+                            var list = new List<object>();
                             for (int j = 0; j < size; j++)
                             {
                                 int tmp = 3;

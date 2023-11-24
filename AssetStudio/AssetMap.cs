@@ -12,7 +12,7 @@ namespace AssetStudio
         [Key(0)]
         public GameType GameType { get; set; }
         [Key(1)]
-        public AssetEntry[] AssetEntries { get; set; }
+        public List<AssetEntry> AssetEntries { get; set; }
     }
     [MessagePackObject]
     public record AssetEntry

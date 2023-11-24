@@ -157,6 +157,9 @@ namespace AssetStudio
                 case FileType.BlkFile:
                     LoadBlkFile(reader);
                     break;
+                case FileType.MhyFile:
+                    LoadMhyFile(reader);
+                    break;
             }
         }
 
@@ -448,6 +451,9 @@ namespace AssetStudio
                         case FileType.BlbFile:
                             LoadBlbFile(subReader, reader.FullPath, offset, false);
                             break;
+                        case FileType.MhyFile:
+                            LoadMhyFile(subReader, reader.FullPath, offset, false);
+                            break;
                     }
                 }    
             }
@@ -478,8 +484,8 @@ namespace AssetStudio
                         case FileType.BundleFile:
                             LoadBundleFile(subReader, reader.FullPath, offset, false);
                             break;
-                        case FileType.Mhy0File:
-                            LoadMhy0File(subReader, reader.FullPath, offset, false);
+                        case FileType.MhyFile:
+                            LoadMhyFile(subReader, reader.FullPath, offset, false);
                             break;
                     }
                 }
@@ -497,7 +503,7 @@ namespace AssetStudio
                 reader.Dispose();
             }
         }
-        private void LoadMhy0File(FileReader reader, string originalPath = null, long originalOffset = 0, bool log = true)
+        private void LoadMhyFile(FileReader reader, string originalPath = null, long originalOffset = 0, bool log = true)
         {
             if (log)
             {
@@ -505,15 +511,15 @@ namespace AssetStudio
             }
             try
             {
-                var mhy0File = new Mhy0File(reader, reader.FullPath, (Mhy0)Game);
-                Logger.Verbose($"mhy0 total size: {mhy0File.TotalSize:X8}");
-                foreach (var file in mhy0File.fileList)
+                var mhyFile = new MhyFile(reader, reader.FullPath, (Mhy)Game);
+                Logger.Verbose($"mhy total size: {mhyFile.TotalSize:X8}");
+                foreach (var file in mhyFile.fileList)
                 {
                     var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), file.fileName);
                     var cabReader = new FileReader(dummyPath, file.stream);
                     if (cabReader.FileType == FileType.AssetsFile)
                     {
-                        LoadAssetsFromMemory(cabReader, originalPath ?? reader.FullPath, mhy0File.m_Header.unityRevision, originalOffset);
+                        LoadAssetsFromMemory(cabReader, originalPath ?? reader.FullPath, mhyFile.m_Header.unityRevision, originalOffset);
                     }
                     else
                     {
@@ -524,11 +530,11 @@ namespace AssetStudio
             }
             catch (InvalidCastException)
             {
-                Logger.Error($"Game type mismatch, Expected {nameof(Mhy0)} but got {Game.Name} ({Game.GetType().Name}) !!");
+                Logger.Error($"Game type mismatch, Expected {nameof(Mhy)} but got {Game.Name} ({Game.GetType().Name}) !!");
             }
             catch (Exception e)
             {
-                var str = $"Error while reading mhy0 file {reader.FullPath}";
+                var str = $"Error while reading mhy file {reader.FullPath}";
                 if (originalPath != null)
                 {
                     str += $" from {Path.GetFileName(originalPath)}";
@@ -705,7 +711,7 @@ namespace AssetStudio
                     }
                     if (obj is GameObject m_GameObject)
                     {
-                        Logger.Verbose($"GameObject with {m_GameObject.m_PathID} in file {m_GameObject.assetsFile.fileName} has {m_GameObject.m_Components.Length} components, Attempting to fetch them...");
+                        Logger.Verbose($"GameObject with {m_GameObject.m_PathID} in file {m_GameObject.assetsFile.fileName} has {m_GameObject.m_Components.Count} components, Attempting to fetch them...");
                         foreach (var pptr in m_GameObject.m_Components)
                         {
                             if (pptr.TryGet(out var m_Component))
@@ -744,7 +750,7 @@ namespace AssetStudio
                     {
                         if (m_SpriteAtlas.m_RenderDataMap.Count > 0)
                         {
-                            Logger.Verbose($"SpriteAtlas with {m_SpriteAtlas.m_PathID} in file {m_SpriteAtlas.assetsFile.fileName} has {m_SpriteAtlas.m_PackedSprites.Length} packed sprites, Attempting to fetch them...");
+                            Logger.Verbose($"SpriteAtlas with {m_SpriteAtlas.m_PathID} in file {m_SpriteAtlas.assetsFile.fileName} has {m_SpriteAtlas.m_PackedSprites.Count} packed sprites, Attempting to fetch them...");
                             foreach (var m_PackedSprite in m_SpriteAtlas.m_PackedSprites)
                             {
                                 if (m_PackedSprite.TryGet(out var m_Sprite))

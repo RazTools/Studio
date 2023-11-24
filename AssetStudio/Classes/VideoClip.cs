@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 
 namespace AssetStudio
 {
@@ -44,10 +45,10 @@ namespace AssetStudio
             if (version[0] >= 2020) //2020.1 and up
             {
                 var m_VideoShadersSize = reader.ReadInt32();
-                var m_VideoShaders = new PPtr<Shader>[m_VideoShadersSize];
+                var m_VideoShaders = new List<PPtr<Shader>>();
                 for (int i = 0; i < m_VideoShadersSize; i++)
                 {
-                    m_VideoShaders[i] = new PPtr<Shader>(reader);
+                    m_VideoShaders.Add(new PPtr<Shader>(reader));
                 }
             }
             m_ExternalResources = new StreamedResource(reader);

@@ -81,7 +81,7 @@ namespace AssetStudio.CLI
             {
                 var bundleFile = new BundleFile(reader, Game);
                 reader.Dispose();
-                if (bundleFile.fileList.Length > 0)
+                if (bundleFile.fileList.Count > 0)
                 {
                     var extractPath = Path.Combine(savePath, reader.FileName + "_unpacked");
                     return ExtractStreamFile(extractPath, bundleFile.fileList);
@@ -99,7 +99,7 @@ namespace AssetStudio.CLI
             Logger.Info($"Decompressing {reader.FileName} ...");
             var webFile = new WebFile(reader);
             reader.Dispose();
-            if (webFile.fileList.Length > 0)
+            if (webFile.fileList.Count > 0)
             {
                 var extractPath = Path.Combine(savePath, reader.FileName + "_unpacked");
                 return ExtractStreamFile(extractPath, webFile.fileList);
@@ -125,8 +125,8 @@ namespace AssetStudio.CLI
                         case FileType.BundleFile:
                             total += ExtractBundleFile(subReader, subSavePath);
                             break;
-                        case FileType.Mhy0File:
-                            total += ExtractMhy0File(subReader, subSavePath);
+                        case FileType.MhyFile:
+                            total += ExtractMhyFile(subReader, subSavePath);
                             break;
                     }
                 } while (stream.Remaining > 0);
@@ -154,14 +154,14 @@ namespace AssetStudio.CLI
             return total;
         }
 
-        private static int ExtractMhy0File(FileReader reader, string savePath)
+        private static int ExtractMhyFile(FileReader reader, string savePath)
         {
             Logger.Info($"Decompressing {reader.FileName} ...");
             try
             {
-                var mhy0File = new Mhy0File(reader, reader.FullPath, (Mhy0)Game);
+                var mhy0File = new MhyFile(reader, reader.FullPath, (Mhy)Game);
                 reader.Dispose();
-                if (mhy0File.fileList.Length > 0)
+                if (mhy0File.fileList.Count > 0)
                 {
                     var extractPath = Path.Combine(savePath, reader.FileName + "_unpacked");
                     return ExtractStreamFile(extractPath, mhy0File.fileList);
@@ -169,12 +169,12 @@ namespace AssetStudio.CLI
             }
             catch (InvalidCastException)
             {
-                Logger.Error($"Game type mismatch, Expected {nameof(Mhy0)} but got {Game.Name} ({Game.GetType().Name}) !!");
+                Logger.Error($"Game type mismatch, Expected {nameof(Mhy)} but got {Game.Name} ({Game.GetType().Name}) !!");
             }
             return 0;
         }
 
-        private static int ExtractStreamFile(string extractPath, StreamFile[] fileList)
+        private static int ExtractStreamFile(string extractPath, List<StreamFile> fileList)
         {
             int extractedCount = 0;
             foreach (var file in fileList)

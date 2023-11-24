@@ -83,7 +83,7 @@ namespace AssetStudio
                         Logger.Verbose($"Parsed signature does not match with expected signature {Convert.ToHexString(zipMagic)} or {Convert.ToHexString(zipSpannedMagic)}");
                         if (mhy0Magic.SequenceEqual(magic))
                         {
-                            return FileType.Mhy0File;
+                            return FileType.MhyFile;
                         }
                         Logger.Verbose($"Parsed signature does not match with expected signature {Convert.ToHexString(mhy0Magic)}");
                         if (blbMagic.SequenceEqual(magic))
