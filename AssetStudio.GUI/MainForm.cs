@@ -1425,7 +1425,9 @@ namespace AssetStudio.GUI
         {
             if (InvokeRequired)
             {
-                BeginInvoke(new Action(() => { progressBar1.Value = value; }));
+                
+                var result = BeginInvoke(new Action(() => { progressBar1.Value = value; }));
+                result.AsyncWaitHandle.WaitOne();
             }
             else
             {

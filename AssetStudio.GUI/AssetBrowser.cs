@@ -113,8 +113,8 @@ namespace AssetStudio.GUI
                 {
                     0 => assetEntry.Name,
                     1 => assetEntry.Container,
-                    2 => assetEntry.PathID,
-                    3 => assetEntry.Source,
+                    2 => assetEntry.Source,
+                    3 => assetEntry.PathID,
                     4 => assetEntry.Type,
                     _ => ""
                 };
@@ -152,8 +152,8 @@ namespace AssetStudio.GUI
                 {
                     0 => x => x.Name,
                     1 => x => x.Container,
-                    2 => x => x.PathID,
-                    3 => x => x.Source,
+                    2 => x => x.Source,
+                    3 => x => x.PathID,
                     4 => x => x.Type,
                     _ => x => ""
                 };
