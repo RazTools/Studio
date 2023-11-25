@@ -1,22 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using AssetStudio;
 
 namespace AssetStudio.GUI
 {
     partial class AssetBrowser : Form
     {
         private readonly MainForm _parent;
+
+        private SortOrder _sortOrder;
+        private DataGridViewColumn _sortedColumn;
+        private List<AssetEntry> _assetEntries;
+        private List<string> _columnNames;
+        
         public AssetBrowser(MainForm form)
         {
             InitializeComponent();
             _parent = form;
-            FormClosing += AssetBrowser_FormClosing;
         }
 
         private async void loadAssetMap_Click(object sender, EventArgs e)
@@ -29,8 +35,18 @@ namespace AssetStudio.GUI
                 var path = openFileDialog.FileName;
                 Logger.Info($"Loading AssetMap...");
                 await Task.Run(() => ResourceMap.FromFile(path));
-                assetListView.DataSource = ResourceMap.GetEntries();
-                assetListView.Columns.GetLastColumn(DataGridViewElementStates.None, DataGridViewElementStates.None).AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+
+                _sortedColumn = null;
+                _columnNames = typeof(AssetEntry).GetProperties().Select(x => x.Name).ToList();
+                _assetEntries = ResourceMap.GetEntries();
+
+                assetDataGridView.Columns.Clear();
+                assetDataGridView.Columns.AddRange(_columnNames.Select(x => new DataGridViewTextBoxColumn() { Name = x, HeaderText = x, SortMode = DataGridViewColumnSortMode.Programmatic }).ToArray());
+                assetDataGridView.Columns.GetLastColumn(DataGridViewElementStates.None, DataGridViewElementStates.None).AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+
+                assetDataGridView.Rows.Clear();
+                assetDataGridView.RowCount = _assetEntries.Count;
+                assetDataGridView.Refresh();
             }
             loadAssetMap.Enabled = true;
         }
@@ -39,9 +55,9 @@ namespace AssetStudio.GUI
             Clear();
             Logger.Info($"Cleared !!");
         }
-        private async void loadSelected_Click(object sender, EventArgs e)
+        private void loadSelected_Click(object sender, EventArgs e)
         {
-            var files = assetListView.SelectedRows.Cast<DataGridViewRow>().Select(x => x.DataBoundItem as AssetEntry).Select(x => x.Source).ToHashSet();
+            var files = assetDataGridView.SelectedRows.Cast<DataGridViewRow>().Select(x => x.DataBoundItem as AssetEntry).Select(x => x.Source).ToHashSet();
             var missingFiles = files.Where(x => !File.Exists(x));
             foreach (var file in missingFiles)
             {
@@ -59,7 +75,6 @@ namespace AssetStudio.GUI
             if (e.KeyChar == (char)Keys.Enter)
             {
                 var filters = new Dictionary<string, Regex>();
-                var names = typeof(AssetEntry).GetProperties().Select(x => x.Name).ToList();
 
                 var value = searchTextBox.Text;
                 var options = value.Split(' ');
@@ -73,7 +88,7 @@ namespace AssetStudio.GUI
                         continue;
                     }
                     var (name, regex) = (arguments[0], arguments[1]);
-                    if (!names.Contains(name, StringComparer.OrdinalIgnoreCase))
+                    if (!_columnNames.Contains(name, StringComparer.OrdinalIgnoreCase))
                     {
                         Logger.Error($"Unknonw argument {name}");
                         continue;
@@ -81,16 +96,72 @@ namespace AssetStudio.GUI
                     filters[name] = new Regex(regex, RegexOptions.IgnoreCase);
                 }
 
-                var assets = ResourceMap.GetEntries();
-                if (assets.Count != 0)
+                _assetEntries = ResourceMap.GetEntries().FindAll(x => x.Matches(filters));
+
+                assetDataGridView.Rows.Clear();
+                assetDataGridView.RowCount = _assetEntries.Count;
+                assetDataGridView.Refresh();
+            }
+        }
+        private void AssetDataGridView_CellValueNeeded(object sender, DataGridViewCellValueEventArgs e)
+        {
+            if (e.RowIndex <= _assetEntries.Count)
+            {
+                var assetEntry = _assetEntries[e.RowIndex];
+                e.Value = e.ColumnIndex switch
                 {
-                    var regex = new Regex(value, RegexOptions.IgnoreCase);
-                    assetListView.DataSource = assets.FindAll(x => x.Matches(filters));    
+                    0 => assetEntry.Name,
+                    1 => assetEntry.Container,
+                    2 => assetEntry.PathID,
+                    3 => assetEntry.Source,
+                    4 => assetEntry.Type,
+                    _ => ""
+                };
+            }
+        }
+        private void AssetListView_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            if (e.ColumnIndex <= assetDataGridView.Columns.Count)
+            {
+                ListSortDirection direction;
+                var column = assetDataGridView.Columns[e.ColumnIndex];
+
+                if (_sortedColumn != null)
+                {
+                    if (_sortedColumn != column)
+                    {
+                        direction = ListSortDirection.Ascending;
+                        _sortedColumn.HeaderCell.SortGlyphDirection = SortOrder.None;
+                        _sortedColumn = column;
+                    }
+                    else
+                    {
+                        direction = _sortOrder == SortOrder.Ascending ? ListSortDirection.Descending : ListSortDirection.Ascending;
+                    }
                 }
                 else
                 {
-                    assetListView.DataSource = assets;
+                    direction = ListSortDirection.Ascending;
+                    _sortedColumn = column;
                 }
+
+                _sortedColumn.HeaderCell.SortGlyphDirection = _sortOrder = direction == ListSortDirection.Ascending ? SortOrder.Ascending : SortOrder.Descending;
+
+                Func<AssetEntry, object> keySelector = e.ColumnIndex switch
+                {
+                    0 => x => x.Name,
+                    1 => x => x.Container,
+                    2 => x => x.PathID,
+                    3 => x => x.Source,
+                    4 => x => x.Type,
+                    _ => x => ""
+                };
+
+                _assetEntries = direction == ListSortDirection.Ascending ? _assetEntries.OrderBy(keySelector).ToList() : _assetEntries.OrderByDescending(keySelector).ToList();
+
+                assetDataGridView.Rows.Clear();
+                assetDataGridView.RowCount = _assetEntries.Count;
+                assetDataGridView.Refresh();
             }
         }
         private void AssetBrowser_FormClosing(object sender, FormClosingEventArgs e)
@@ -101,7 +172,7 @@ namespace AssetStudio.GUI
         public void Clear()
         {
             ResourceMap.Clear();
-            assetListView.DataSource = Array.Empty<AssetEntry>();
+            assetDataGridView.Rows.Clear();
         }
     }
 }

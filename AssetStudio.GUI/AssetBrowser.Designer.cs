@@ -1,4 +1,5 @@
-﻿using System.Windows.Forms;
+﻿using System.Configuration;
+using System.Windows.Forms;
 
 namespace AssetStudio.GUI
 {
@@ -30,37 +31,42 @@ namespace AssetStudio.GUI
         /// </summary>
         private void InitializeComponent()
         {
-            assetListView = new DataGridView();
+            assetDataGridView = new DataGridView();
             tableLayoutPanel1 = new TableLayoutPanel();
             tableLayoutPanel2 = new TableLayoutPanel();
             loadAssetMap = new Button();
             clear = new Button();
             loadSelected = new Button();
             searchTextBox = new TextBox();
-            ((System.ComponentModel.ISupportInitialize)assetListView).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)assetDataGridView).BeginInit();
             tableLayoutPanel1.SuspendLayout();
             tableLayoutPanel2.SuspendLayout();
+            FormClosing += AssetBrowser_FormClosing;
             SuspendLayout();
             // 
-            // assetListView
+            // assetDataGridView
             // 
-            assetListView.AllowUserToAddRows = false;
-            assetListView.AllowUserToDeleteRows = false;
-            assetListView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            assetListView.Dock = DockStyle.Fill;
-            assetListView.Location = new System.Drawing.Point(3, 38);
-            assetListView.Name = "assetListView";
-            assetListView.ReadOnly = true;
-            assetListView.RowTemplate.Height = 25;
-            assetListView.Size = new System.Drawing.Size(518, 250);
-            assetListView.TabIndex = 2;
+            assetDataGridView.AllowUserToAddRows = false;
+            assetDataGridView.AllowUserToDeleteRows = false;
+            assetDataGridView.AllowUserToResizeRows = false;
+            assetDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            assetDataGridView.Dock = DockStyle.Fill;
+            assetDataGridView.Location = new System.Drawing.Point(3, 38);
+            assetDataGridView.Name = "assetDataGridView";
+            assetDataGridView.ReadOnly = true;
+            assetDataGridView.RowTemplate.Height = 25;
+            assetDataGridView.Size = new System.Drawing.Size(518, 250);
+            assetDataGridView.TabIndex = 2;
+            assetDataGridView.VirtualMode = true;
+            assetDataGridView.CellValueNeeded += AssetDataGridView_CellValueNeeded;
+            assetDataGridView.ColumnHeaderMouseClick += AssetListView_ColumnHeaderMouseClick;
             // 
             // tableLayoutPanel1
             // 
             tableLayoutPanel1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             tableLayoutPanel1.ColumnCount = 1;
             tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            tableLayoutPanel1.Controls.Add(assetListView, 0, 1);
+            tableLayoutPanel1.Controls.Add(assetDataGridView, 0, 1);
             tableLayoutPanel1.Controls.Add(tableLayoutPanel2, 0, 0);
             tableLayoutPanel1.Location = new System.Drawing.Point(12, 12);
             tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -142,7 +148,7 @@ namespace AssetStudio.GUI
             ShowIcon = false;
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Asset Browser";
-            ((System.ComponentModel.ISupportInitialize)assetListView).EndInit();
+            ((System.ComponentModel.ISupportInitialize)assetDataGridView).EndInit();
             tableLayoutPanel1.ResumeLayout(false);
             tableLayoutPanel2.ResumeLayout(false);
             tableLayoutPanel2.PerformLayout();
@@ -152,7 +158,7 @@ namespace AssetStudio.GUI
 
 
         #endregion
-        private System.Windows.Forms.DataGridView assetListView;
+        private System.Windows.Forms.DataGridView assetDataGridView;
         private TableLayoutPanel tableLayoutPanel1;
         private TableLayoutPanel tableLayoutPanel2;
         private Button loadAssetMap;
