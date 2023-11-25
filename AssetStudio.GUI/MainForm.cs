@@ -1437,7 +1437,8 @@ namespace AssetStudio.GUI
         {
             if (InvokeRequired)
             {
-                BeginInvoke(new Action(() => { toolStripStatusLabel1.Text = statusText; }));
+                var result = BeginInvoke(() => { toolStripStatusLabel1.Text = statusText; });
+                result.AsyncWaitHandle.WaitOne();
             }
             else
             {

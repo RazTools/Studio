@@ -57,7 +57,7 @@ namespace AssetStudio.GUI
         }
         private void loadSelected_Click(object sender, EventArgs e)
         {
-            var files = assetDataGridView.SelectedRows.Cast<DataGridViewRow>().Select(x => x.DataBoundItem as AssetEntry).Select(x => x.Source).ToHashSet();
+            var files = assetDataGridView.SelectedRows.Cast<DataGridViewRow>().Select(x => _assetEntries[x.Index]).Select(x => x.Source).ToHashSet();
             var missingFiles = files.Where(x => !File.Exists(x));
             foreach (var file in missingFiles)
             {
@@ -98,6 +98,7 @@ namespace AssetStudio.GUI
 
                 _assetEntries = ResourceMap.GetEntries().FindAll(x => x.Matches(filters));
 
+                assetDataGridView.CurrentCell = assetDataGridView[0, 0];
                 assetDataGridView.Rows.Clear();
                 assetDataGridView.RowCount = _assetEntries.Count;
                 assetDataGridView.Refresh();
@@ -159,6 +160,7 @@ namespace AssetStudio.GUI
 
                 _assetEntries = direction == ListSortDirection.Ascending ? _assetEntries.OrderBy(keySelector).ToList() : _assetEntries.OrderByDescending(keySelector).ToList();
 
+                assetDataGridView.CurrentCell = assetDataGridView[0, 0];
                 assetDataGridView.Rows.Clear();
                 assetDataGridView.RowCount = _assetEntries.Count;
                 assetDataGridView.Refresh();
