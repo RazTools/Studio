@@ -332,13 +332,13 @@ namespace AssetStudio.CLI
                     break;
                 case Mesh _:
                 case TextAsset _:
-                case AnimationClip _ when AnimationClip.Parsable:
+                case AnimationClip _:
                 case Font _:
                 case MovieTexture _:
                 case Sprite _:
                 case Material _:
                 case MiHoYoBinData _:
-                case Shader _ when Shader.Parsable:
+                case Shader _:
                 case Animator _:
                     exportable = !ModelOnly;
                     break;

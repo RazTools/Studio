@@ -336,8 +336,8 @@ namespace AssetStudio.CLI
             }
             var m_Animator = (Animator)item.Asset;
             var convert = animationList != null
-                ? new ModelConverter(m_Animator, Properties.Settings.Default.convertType, Studio.Game, Properties.Settings.Default.collectAnimations, animationList.Select(x => (AnimationClip)x.Asset).ToArray())
-                : new ModelConverter(m_Animator, Properties.Settings.Default.convertType, Studio.Game, Properties.Settings.Default.collectAnimations);
+                ? new ModelConverter(m_Animator, Properties.Settings.Default.convertType, Properties.Settings.Default.texs, Properties.Settings.Default.uvs, Studio.Game, Properties.Settings.Default.collectAnimations, animationList.Select(x => (AnimationClip)x.Asset).ToArray())
+                : new ModelConverter(m_Animator, Properties.Settings.Default.convertType, Properties.Settings.Default.texs, Properties.Settings.Default.uvs, Studio.Game, Properties.Settings.Default.collectAnimations);
             ExportFbx(convert, exportFullPath);
             return true;
         }
@@ -352,8 +352,8 @@ namespace AssetStudio.CLI
         public static bool ExportGameObject(GameObject gameObject, string exportPath, List<AssetItem> animationList = null)
         {
             var convert = animationList != null
-                ? new ModelConverter(gameObject, Properties.Settings.Default.convertType, Studio.Game, Properties.Settings.Default.collectAnimations, animationList.Select(x => (AnimationClip)x.Asset).ToArray())
-                : new ModelConverter(gameObject, Properties.Settings.Default.convertType, Studio.Game, Properties.Settings.Default.collectAnimations);
+                ? new ModelConverter(gameObject, Properties.Settings.Default.convertType, Properties.Settings.Default.texs, Properties.Settings.Default.uvs, Studio.Game, Properties.Settings.Default.collectAnimations, animationList.Select(x => (AnimationClip)x.Asset).ToArray())
+                : new ModelConverter(gameObject, Properties.Settings.Default.convertType, Properties.Settings.Default.texs, Properties.Settings.Default.uvs, Studio.Game, Properties.Settings.Default.collectAnimations);
             
             if (convert.MeshList.Count == 0)
             {
@@ -377,8 +377,6 @@ namespace AssetStudio.CLI
                 exportBlendShape = Properties.Settings.Default.exportBlendShape,
                 castToBone = Properties.Settings.Default.castToBone,
                 boneSize = (int)Properties.Settings.Default.boneSize,
-                exportAllUvsAsDiffuseMaps = Properties.Settings.Default.exportAllUvsAsDiffuseMaps,
-                exportUV0UV1 = Properties.Settings.Default.exportUV0UV1,
                 scaleFactor = (float)Properties.Settings.Default.scaleFactor,
                 fbxVersion = Properties.Settings.Default.fbxVersion,
                 fbxFormat = Properties.Settings.Default.fbxFormat

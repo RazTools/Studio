@@ -256,39 +256,12 @@ namespace AssetStudio.FbxInterop
                     AsFbxMeshCreateElementNormal(mesh);
                 }
 
-                if (_exportOptions.exportUV0UV1)
+                for (int i = 0; i < importedMesh.hasUV.Length; i++)
                 {
-                    if (importedMesh.hasUV[0])
-                    {
-                        AsFbxMeshCreateDiffuseUV(mesh, 0);
-                    }
-                    if (importedMesh.hasUV[1])
-                    {
-                        if (_exportOptions.exportAllUvsAsDiffuseMaps)
-                        {
-                            AsFbxMeshCreateDiffuseUV(mesh, 1);
-                        }
-                        else
-                        {
-                            AsFbxMeshCreateNormalMapUV(mesh, 1);
-                        }
-                    }
-                }
-                else
-                {
-                    for (int i = 0; i < importedMesh.hasUV.Length; i++)
-                    {
-                        if (!importedMesh.hasUV[i]) { continue; }
+                    if (!importedMesh.hasUV[i]) { continue; }
 
-                        if (i == 1 && !_exportOptions.exportAllUvsAsDiffuseMaps)
-                        {
-                            AsFbxMeshCreateNormalMapUV(mesh, 1);
-                        }
-                        else
-                        {
-                            AsFbxMeshCreateDiffuseUV(mesh, i);
-                        }
-                    }
+                    var type = importedMesh.uvType[i];
+                    AsFbxMeshCreateUV(mesh, i, type);
                 }
 
                 if (importedMesh.hasTangent)
@@ -391,7 +364,7 @@ namespace AssetStudio.FbxInterop
                         AsFbxMeshElementNormalAdd(mesh, 0, normal.X, normal.Y, normal.Z);
                     }
 
-                    var uvSize = _exportOptions.exportUV0UV1 ? 2 : importedMesh.hasUV.Length;
+                    var uvSize = importedMesh.hasUV.Length;
                     for (var uvIndex = 0; uvIndex < uvSize; uvIndex += 1)
                     {
                         if (importedMesh.hasUV[uvIndex])

@@ -43,9 +43,6 @@ namespace AssetStudio.CLI
                 Logger.Default = new ConsoleLogger();
                 Logger.FileLogging = Settings.Default.enableFileLogging;
                 AssetsHelper.Minimal = Settings.Default.minimalAssetMap;
-                Shader.Parsable = !Settings.Default.disableShader;
-                Renderer.Parsable = !Settings.Default.disableRenderer;
-                AnimationClip.Parsable = !Settings.Default.disableAnimationClip;
                 AssetsHelper.SetUnityVersion(o.UnityVersion);
 
                 assetsManager.Silent = o.Silent;

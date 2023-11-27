@@ -62,8 +62,6 @@ namespace AssetStudio
             public bool exportBlendShape;
             public bool castToBone;
             public int boneSize;
-            public bool exportAllUvsAsDiffuseMaps;
-            public bool exportUV0UV1;
             public float scaleFactor;
             public int fbxVersion;
             public int fbxFormat;

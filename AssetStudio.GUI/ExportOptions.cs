@@ -1,5 +1,4 @@
-﻿using AssetStudio;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +8,17 @@ namespace AssetStudio.GUI
 {
     public partial class ExportOptions : Form
     {
+        private Dictionary<int, string> typeMap = new Dictionary<int, string>()
+        {
+            { 0, "Diffuse" },
+            { 1, "NormalMap" },
+            { 2, "Specular" },
+            { 3, "Bump" },
+            { 4, "Ambient" },
+            { 5, "Emissive" },
+            { 6, "Reflection" },
+            { 7, "Displacement" },
+        };
         public ExportOptions()
         {
             InitializeComponent();
@@ -33,8 +43,6 @@ namespace AssetStudio.GUI
             exportAnimations.Checked = Properties.Settings.Default.exportAnimations;
             exportBlendShape.Checked = Properties.Settings.Default.exportBlendShape;
             castToBone.Checked = Properties.Settings.Default.castToBone;
-            exportAllUvsAsDiffuseMaps.Checked = Properties.Settings.Default.exportAllUvsAsDiffuseMaps;
-            exportUV0UV1.Checked = Properties.Settings.Default.exportUV0UV1;
             boneSize.Value = Properties.Settings.Default.boneSize;
             scaleFactor.Value = Properties.Settings.Default.scaleFactor;
             fbxVersion.SelectedIndex = Properties.Settings.Default.fbxVersion;
@@ -42,10 +50,24 @@ namespace AssetStudio.GUI
             collectAnimations.Checked = Properties.Settings.Default.collectAnimations;
             encrypted.Checked = Properties.Settings.Default.encrypted;
             key.Value = Properties.Settings.Default.key;
-            disableRenderer.Checked = Properties.Settings.Default.disableRenderer;
-            disableShader.Checked = Properties.Settings.Default.disableShader;
-            disableAnimationClip.Checked = Properties.Settings.Default.disableAnimationClip;
             minimalAssetMap.Checked = Properties.Settings.Default.minimalAssetMap;
+            var uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(Properties.Settings.Default.uvs);
+            foreach (var uv in uvs)
+            {
+                var rowIdx = uvsGridView.Rows.Add();
+
+                uvsGridView.Rows[rowIdx].Cells["UVName"].Value = uv.Key;
+                uvsGridView.Rows[rowIdx].Cells["UVEnabled"].Value = uv.Value.Item1;
+                uvsGridView.Rows[rowIdx].Cells["UVType"].Value = typeMap[uv.Value.Item2];
+            }
+            var texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(Properties.Settings.Default.texs);
+            foreach (var tex in texs)
+            {
+                var rowIdx = texsGridView.Rows.Add();
+
+                texsGridView.Rows[rowIdx].Cells["TexName"].Value = tex.Key;
+                texsGridView.Rows[rowIdx].Cells["TexType"].Value = typeMap[tex.Value];
+            }
         }
 
         private void OKbutton_Click(object sender, EventArgs e)
@@ -70,8 +92,6 @@ namespace AssetStudio.GUI
             Properties.Settings.Default.exportAnimations = exportAnimations.Checked;
             Properties.Settings.Default.exportBlendShape = exportBlendShape.Checked;
             Properties.Settings.Default.castToBone = castToBone.Checked;
-            Properties.Settings.Default.exportAllUvsAsDiffuseMaps = exportAllUvsAsDiffuseMaps.Checked;
-            Properties.Settings.Default.exportUV0UV1 = exportUV0UV1.Checked;
             Properties.Settings.Default.boneSize = boneSize.Value;
             Properties.Settings.Default.scaleFactor = scaleFactor.Value;
             Properties.Settings.Default.fbxVersion = fbxVersion.SelectedIndex;
@@ -79,17 +99,30 @@ namespace AssetStudio.GUI
             Properties.Settings.Default.collectAnimations = collectAnimations.Checked;
             Properties.Settings.Default.encrypted = encrypted.Checked;
             Properties.Settings.Default.key = (byte)key.Value;
-            Properties.Settings.Default.disableRenderer = disableRenderer.Checked;
-            Properties.Settings.Default.disableShader = disableShader.Checked;
-            Properties.Settings.Default.disableAnimationClip = disableAnimationClip.Checked;
             Properties.Settings.Default.minimalAssetMap = minimalAssetMap.Checked;
+            var uvs = new Dictionary<string, (bool, int)>();
+            foreach (DataGridViewRow row in uvsGridView.Rows)
+            {
+                var name = row.Cells["UVName"].Value as string;
+                var enabled = (bool)row.Cells["UVEnabled"].Value;
+                var type = row.Cells["UVType"].Value as string;
+                if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(type)) continue;
+                uvs.Add(name, (enabled, typeMap.FirstOrDefault(x => x.Value == type).Key));
+            }
+            Properties.Settings.Default.uvs = JsonConvert.SerializeObject(uvs);
+            var texs = new Dictionary<string, int>();
+            foreach (DataGridViewRow row in texsGridView.Rows)
+            {
+                var name = row.Cells["TexName"].Value as string;
+                var type = row.Cells["TexType"].Value as string;
+                if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(type)) continue;
+                texs.Add(name, typeMap.FirstOrDefault(x => x.Value == type).Key);
+            }
+            Properties.Settings.Default.texs = JsonConvert.SerializeObject(texs);
             Properties.Settings.Default.Save();
             MiHoYoBinData.Key = (byte)key.Value;
             MiHoYoBinData.Encrypted = encrypted.Checked;
             AssetsHelper.Minimal = Properties.Settings.Default.minimalAssetMap;
-            Renderer.Parsable = !Properties.Settings.Default.disableRenderer;
-            Shader.Parsable = !Properties.Settings.Default.disableShader;
-            AnimationClip.Parsable = !Properties.Settings.Default.disableAnimationClip;
             DialogResult = DialogResult.OK;
             Close();
         }

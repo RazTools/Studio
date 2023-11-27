@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -23,11 +24,15 @@ namespace AssetStudio
         private Dictionary<Texture2D, string> textureNameDictionary = new Dictionary<Texture2D, string>();
         private Dictionary<Transform, ImportedFrame> transformDictionary = new Dictionary<Transform, ImportedFrame>();
         Dictionary<uint, string> morphChannelNames = new Dictionary<uint, string>();
+        Dictionary<string, (bool, int)> uvs = new Dictionary<string, (bool, int)>();
+        Dictionary<string, int> texs = new Dictionary<string, int>();
 
-        public ModelConverter(GameObject m_GameObject, ImageFormat imageFormat, Game game, bool collectAnimations, AnimationClip[] animationList = null)
+        public ModelConverter(GameObject m_GameObject, ImageFormat imageFormat, string texs, string uvs, Game game, bool collectAnimations, AnimationClip[] animationList = null)
         {
             Game = game;
             this.imageFormat = imageFormat;
+            this.texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(texs);
+            this.uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(uvs);
             if (m_GameObject.m_Animator != null)
             {
                 InitWithAnimator(m_GameObject.m_Animator);
@@ -50,10 +55,12 @@ namespace AssetStudio
             ConvertAnimations();
         }
 
-        public ModelConverter(string rootName, List<GameObject> m_GameObjects, ImageFormat imageFormat, Game game, bool collectAnimations, AnimationClip[] animationList = null)
+        public ModelConverter(string rootName, List<GameObject> m_GameObjects, ImageFormat imageFormat, string texs, string uvs, Game game, bool collectAnimations, AnimationClip[] animationList = null)
         {
             Game = game;
             this.imageFormat = imageFormat;
+            this.texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(texs);
+            this.uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(uvs);
             RootFrame = CreateFrame(rootName, Vector3.Zero, new Quaternion(0, 0, 0, 0), Vector3.One);
             foreach (var m_GameObject in m_GameObjects)
             {
@@ -81,10 +88,12 @@ namespace AssetStudio
             ConvertAnimations();
         }
 
-        public ModelConverter(Animator m_Animator, ImageFormat imageFormat, Game game, bool collectAnimations, AnimationClip[] animationList = null)
+        public ModelConverter(Animator m_Animator, ImageFormat imageFormat, string texs, string uvs, Game game, bool collectAnimations, AnimationClip[] animationList = null)
         {
             Game = game;
             this.imageFormat = imageFormat;
+            this.texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(texs);
+            this.uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(uvs);
             InitWithAnimator(m_Animator);
             if (animationList == null && collectAnimations)
             {
@@ -300,9 +309,12 @@ namespace AssetStudio
 
             iMesh.hasNormal = mesh.m_Normals?.Length > 0;
             iMesh.hasUV = new bool[8];
+            iMesh.uvType = new int[8];
             for (int uv = 0; uv < 8; uv++)
             {
-                iMesh.hasUV[uv] = mesh.GetUV(uv)?.Length > 0;
+                var key = $"UV{uv}";
+                iMesh.hasUV[uv] = mesh.GetUV(uv)?.Length > 0 && uvs[key].Item1;
+                iMesh.uvType[uv] = uvs[key].Item2;
             }
             iMesh.hasTangent = mesh.m_Tangents != null && mesh.m_Tangents.Length == mesh.m_VertexCount * 4;
             iMesh.hasColor = mesh.m_Colors?.Length > 0;
@@ -708,7 +720,9 @@ namespace AssetStudio
                     iMat.Textures.Add(texture);
 
                     int dest = -1;
-                    if (texEnv.Key == "_MainTex")
+                    if (texs.TryGetValue(texEnv.Key, out var targetDest))
+                        dest = targetDest;
+                    else if (texEnv.Key == "_MainTex")
                         dest = 0;
                     else if (texEnv.Key == "_BumpMap")
                         dest = 3;
@@ -716,10 +730,6 @@ namespace AssetStudio
                         dest = 2;
                     else if (texEnv.Key.Contains("Normal"))
                         dest = 1;
-                    else if (Game.Type.IsSRGroup() && texEnv.Key.Contains("Pack"))
-                        dest = 0;
-                    else if (Game.Type.IsArknightsEndfield() && texEnv.Key == "_BaseMap")
-                        dest = 0;
 
                     texture.Dest = dest;
 

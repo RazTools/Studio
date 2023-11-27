@@ -388,7 +388,7 @@ namespace AssetStudio
                                 asset.Name = gameObject.m_Name;
                                 exportable = !Minimal;
                                 break;
-                            case ClassIDType.Shader when Shader.Parsable:
+                            case ClassIDType.Shader:
                                 asset.Name = objectReader.ReadAlignedString();
                                 if (string.IsNullOrEmpty(asset.Name))
                                 {
@@ -423,7 +423,7 @@ namespace AssetStudio
                             case ClassIDType.Texture2D:
                             case ClassIDType.VideoClip:
                             case ClassIDType.AudioClip:
-                            case ClassIDType.AnimationClip when AnimationClip.Parsable:
+                            case ClassIDType.AnimationClip:
                                 asset.Name = objectReader.ReadAlignedString();
                                 break;
                             default:

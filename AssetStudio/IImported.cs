@@ -159,6 +159,7 @@ namespace AssetStudio
         public List<ImportedBone> BoneList { get; set; }
         public bool hasNormal { get; set; }
         public bool[] hasUV { get; set; }
+        public int[] uvType { get; set; }
         public bool hasTangent { get; set; }
         public bool hasColor { get; set; }
     }

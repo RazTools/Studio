@@ -23,6 +23,8 @@ namespace AssetStudio.GUI
         {
             InitializeComponent();
             _parent = form;
+            _assetEntries = new List<AssetEntry>();
+            _columnNames = new List<string>();
         }
 
         private async void loadAssetMap_Click(object sender, EventArgs e)
@@ -37,8 +39,11 @@ namespace AssetStudio.GUI
                 await Task.Run(() => ResourceMap.FromFile(path));
 
                 _sortedColumn = null;
-                _columnNames = typeof(AssetEntry).GetProperties().Select(x => x.Name).ToList();
-                _assetEntries = ResourceMap.GetEntries();
+                _columnNames.Clear();
+                _columnNames.AddRange(typeof(AssetEntry).GetProperties().Select(x => x.Name).ToList());
+
+                _assetEntries.Clear();
+                _assetEntries.AddRange(ResourceMap.GetEntries());
 
                 assetDataGridView.Columns.Clear();
                 assetDataGridView.Columns.AddRange(_columnNames.Select(x => new DataGridViewTextBoxColumn() { Name = x, HeaderText = x, SortMode = DataGridViewColumnSortMode.Programmatic }).ToArray());
@@ -96,9 +101,9 @@ namespace AssetStudio.GUI
                     filters[name] = new Regex(regex, RegexOptions.IgnoreCase);
                 }
 
-                _assetEntries = ResourceMap.GetEntries().FindAll(x => x.Matches(filters));
+                _assetEntries.Clear();
+                _assetEntries.AddRange(ResourceMap.GetEntries().FindAll(x => x.Matches(filters)));
 
-                assetDataGridView.CurrentCell = assetDataGridView[0, 0];
                 assetDataGridView.Rows.Clear();
                 assetDataGridView.RowCount = _assetEntries.Count;
                 assetDataGridView.Refresh();
@@ -158,7 +163,8 @@ namespace AssetStudio.GUI
                     _ => x => ""
                 };
 
-                _assetEntries = direction == ListSortDirection.Ascending ? _assetEntries.OrderBy(keySelector).ToList() : _assetEntries.OrderByDescending(keySelector).ToList();
+                _assetEntries.Clear();
+                _assetEntries.AddRange(direction == ListSortDirection.Ascending ? _assetEntries.OrderBy(keySelector).ToList() : _assetEntries.OrderByDescending(keySelector).ToList());
 
                 assetDataGridView.CurrentCell = assetDataGridView[0, 0];
                 assetDataGridView.Rows.Clear();

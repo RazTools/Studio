@@ -111,9 +111,6 @@ namespace AssetStudio.GUI
             MiHoYoBinData.Encrypted = Properties.Settings.Default.encrypted;
             MiHoYoBinData.Key = Properties.Settings.Default.key;
             AssetsHelper.Minimal = Properties.Settings.Default.minimalAssetMap;
-            Renderer.Parsable = !Properties.Settings.Default.disableRenderer;
-            Shader.Parsable = !Properties.Settings.Default.disableShader;
-            AnimationClip.Parsable = !Properties.Settings.Default.disableAnimationClip;
         }
 
         private void InitializeLogger()
@@ -1293,12 +1290,12 @@ namespace AssetStudio.GUI
 
         private void PreviewGameObject(GameObject m_GameObject)
         {
-            var model = new ModelConverter(m_GameObject, Properties.Settings.Default.convertType, Studio.Game, false, Array.Empty<AnimationClip>());
+            var model = new ModelConverter(m_GameObject, Properties.Settings.Default.convertType, Properties.Settings.Default.texs, Properties.Settings.Default.uvs, Studio.Game, false, Array.Empty<AnimationClip>());
             PreviewModel(model);
         }
         private void PreviewAnimator(Animator m_Animator)
         {
-            var model = new ModelConverter(m_Animator, Properties.Settings.Default.convertType, Studio.Game, false, Array.Empty<AnimationClip>());
+            var model = new ModelConverter(m_Animator, Properties.Settings.Default.convertType, Properties.Settings.Default.texs, Properties.Settings.Default.uvs, Studio.Game, false, Array.Empty<AnimationClip>());
             PreviewModel(model);
         }
 

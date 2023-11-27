@@ -370,6 +370,18 @@ AS_API(void) AsFbxLinkTexture(int32_t dest, FbxFileTexture* pTexture, FbxSurface
 	case 3:
 		pProp = &pMaterial->Bump;
 		break;
+	case 4:
+		pProp = &pMaterial->Ambient;
+		break;
+	case 5:
+		pProp = &pMaterial->Emissive;
+		break;
+	case 6:
+		pProp = &pMaterial->Reflection;
+		break;
+	case 7:
+		pProp = &pMaterial->DisplacementColor;
+		break;
 	default:
 		pProp = nullptr;
 		break;
@@ -462,26 +474,45 @@ AS_API(void) AsFbxMeshCreateElementNormal(FbxMesh* pMesh)
 	pNormal->SetReferenceMode(FbxGeometryElement::eDirect);
 }
 
-AS_API(void) AsFbxMeshCreateDiffuseUV(FbxMesh* pMesh, int32_t uv)
+AS_API(void) AsFbxMeshCreateUV(FbxMesh* pMesh, int32_t uv, int32_t uvType)
 {
 	if (pMesh == nullptr)
 	{
 		return;
 	}
 
-	auto pUV = pMesh->CreateElementUV(FbxString("UV") + FbxString(uv), FbxLayerElement::eTextureDiffuse);
-	pUV->SetMappingMode(FbxGeometryElement::eByControlPoint);
-	pUV->SetReferenceMode(FbxGeometryElement::eDirect);
-}
-
-AS_API(void) AsFbxMeshCreateNormalMapUV(FbxMesh* pMesh, int32_t uv)
-{
-	if (pMesh == nullptr)
-	{
-		return;
+	FbxLayerElement::EType type;
+	switch (uvType) {
+	case 0:
+		type = FbxLayerElement::eTextureDiffuse;
+		break;
+	case 1:
+		type = FbxLayerElement::eTextureNormalMap;
+		break;
+	case 2:
+		type = FbxLayerElement::eTextureSpecular;
+		break;
+	case 3:
+		type = FbxLayerElement::eTextureBump;
+		break;
+	case 4:
+		type = FbxLayerElement::eTextureAmbient;
+		break;
+	case 5:
+		type = FbxLayerElement::eTextureEmissive;
+		break;
+	case 6:
+		type = FbxLayerElement::eTextureReflection;
+		break;
+	case 7:
+		type = FbxLayerElement::eTextureDisplacement;
+		break;
+	default:
+		type = FbxLayerElement::eTextureDiffuse;
+		break;
 	}
 
-	auto pUV = pMesh->CreateElementUV(FbxString("UV") + FbxString(uv), FbxLayerElement::eTextureNormalMap);
+	auto pUV = pMesh->CreateElementUV(FbxString("UV") + FbxString(uv), type);
 	pUV->SetMappingMode(FbxGeometryElement::eByControlPoint);
 	pUV->SetReferenceMode(FbxGeometryElement::eDirect);
 }

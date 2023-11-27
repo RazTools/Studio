@@ -19,8 +19,6 @@ namespace AssetStudio
 
     public abstract class Renderer : Component
     {
-        public static bool Parsable;
-
         public List<PPtr<Material>> m_Materials;
         public StaticBatchInfo m_StaticBatchInfo;
         public uint[] m_SubsetIndices;
