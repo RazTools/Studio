@@ -107,11 +107,11 @@
     <Setting Name="enableVerbose" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
-    <Setting Name="uvs" Type="System.String" Scope="User">
-      <Value Profile="(Default)">{"UV0":{"Item1":true,"Item2":0},"UV1":{"Item1":false,"Item2":1},"UV2":{"Item1":true,"Item2":0},"UV3":{"Item1":false,"Item2":0},"UV4":{"Item1":false,"Item2":0},"UV5":{"Item1":false,"Item2":0},"UV6":{"Item1":true,"Item2":0},"UV7":{"Item1":true,"Item2":0}}</Value>
-    </Setting>
     <Setting Name="texs" Type="System.String" Scope="User">
       <Value Profile="(Default)">{}</Value>
+    </Setting>
+    <Setting Name="uvs" Type="System.String" Scope="User">
+      <Value Profile="(Default)">{"UV0":{"Item1":true,"Item2":0},"UV1":{"Item1":true,"Item2":1},"UV2":{"Item1":false,"Item2":0},"UV3":{"Item1":false,"Item2":0},"UV4":{"Item1":false,"Item2":0},"UV5":{"Item1":false,"Item2":0},"UV6":{"Item1":false,"Item2":0},"UV7":{"Item1":false,"Item2":0}}</Value>
     </Setting>
   </Settings>
 </SettingsFile>

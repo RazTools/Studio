@@ -445,21 +445,6 @@ namespace AssetStudio.GUI.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("{\"UV0\":{\"Item1\":true,\"Item2\":0},\"UV1\":{\"Item1\":false,\"Item2\":1},\"UV2\":{\"Item1\":tr" +
-            "ue,\"Item2\":0},\"UV3\":{\"Item1\":false,\"Item2\":0},\"UV4\":{\"Item1\":false,\"Item2\":0},\"U" +
-            "V5\":{\"Item1\":false,\"Item2\":0},\"UV6\":{\"Item1\":true,\"Item2\":0},\"UV7\":{\"Item1\":true" +
-            ",\"Item2\":0}}")]
-        public string uvs {
-            get {
-                return ((string)(this["uvs"]));
-            }
-            set {
-                this["uvs"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("{}")]
         public string texs {
             get {
@@ -467,6 +452,21 @@ namespace AssetStudio.GUI.Properties {
             }
             set {
                 this["texs"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("{\"UV0\":{\"Item1\":true,\"Item2\":0},\"UV1\":{\"Item1\":true,\"Item2\":1},\"UV2\":{\"Item1\":fal" +
+            "se,\"Item2\":0},\"UV3\":{\"Item1\":false,\"Item2\":0},\"UV4\":{\"Item1\":false,\"Item2\":0},\"U" +
+            "V5\":{\"Item1\":false,\"Item2\":0},\"UV6\":{\"Item1\":false,\"Item2\":0},\"UV7\":{\"Item1\":fal" +
+            "se,\"Item2\":0}}")]
+        public string uvs {
+            get {
+                return ((string)(this["uvs"]));
+            }
+            set {
+                this["uvs"] = value;
             }
         }
     }
