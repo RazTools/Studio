@@ -470,6 +470,7 @@ namespace AssetStudio
         public string path;
         public ClassIDType classID;
         public PPtr<MonoScript> script;
+        public int flags;
 
         public FloatCurve(string path, string attribute, ClassIDType classID, PPtr<MonoScript> script)
         {
@@ -478,15 +479,22 @@ namespace AssetStudio
             this.path = path;
             this.classID = classID;
             this.script = script;
+            flags = 0;
         }
 
         public FloatCurve(ObjectReader reader)
         {
+            var version = reader.version;
+
             curve = new AnimationCurve<Float>(reader, reader.ReadFloat);
             attribute = reader.ReadAlignedString();
             path = reader.ReadAlignedString();
             classID = (ClassIDType)reader.ReadInt32();
             script = new PPtr<MonoScript>(reader);
+            if (version[0] == 2022 && version[1] >= 2) //2022.2 and up
+            {
+                flags = reader.ReadInt32();
+        }
         }
 
         public YAMLNode ExportYAML(int[] version)
@@ -500,6 +508,7 @@ namespace AssetStudio
             {
                 node.Add(nameof(script), script.ExportYAML(version));
             }
+            node.Add(nameof(flags), flags);
             return node;
         }
 
@@ -555,6 +564,7 @@ namespace AssetStudio
         public string path;
         public int classID;
         public PPtr<MonoScript> script;
+        public int flags;
 
         public PPtrCurve(string path, string attribute, ClassIDType classID, PPtr<MonoScript> script)
         {
@@ -563,10 +573,13 @@ namespace AssetStudio
             this.path = path;
             this.classID = (int)classID;
             this.script = script;
+            flags = 0;
         }
 
         public PPtrCurve(ObjectReader reader)
         {
+            var version = reader.version;
+
             int numCurves = reader.ReadInt32();
             curve = new List<PPtrKeyframe>();
             for (int i = 0; i < numCurves; i++)
@@ -578,6 +591,10 @@ namespace AssetStudio
             path = reader.ReadAlignedString();
             classID = reader.ReadInt32();
             script = new PPtr<MonoScript>(reader);
+            if (version[0] == 2022 && version[1] >= 2) //2022.2 and up
+            {
+                flags = reader.ReadInt32();
+            }
         }
 
         public YAMLNode ExportYAML(int[] version)
@@ -586,8 +603,9 @@ namespace AssetStudio
             node.Add(nameof(curve), curve.ExportYAML(version));
             node.Add(nameof(attribute), attribute);
             node.Add(nameof(path), path);
-            node.Add(nameof(classID), ((int)classID).ToString());
+            node.Add(nameof(classID), (classID).ToString());
             node.Add(nameof(script), script.ExportYAML(version));
+            node.Add(nameof(flags), flags);
             return node;
         }
 
@@ -609,6 +627,7 @@ namespace AssetStudio
                 hash = hash * 433 + path.GetHashCode();
                 hash = hash * 223 + classID.GetHashCode();
                 hash = hash * 911 + script.GetHashCode();
+                hash = hash * 342 + flags.GetHashCode();
             }
             return hash;
         }

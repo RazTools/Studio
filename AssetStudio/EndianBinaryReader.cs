@@ -152,15 +152,15 @@ namespace AssetStudio
 
         public string ReadAlignedString()
         {
+            var result = "";
             var length = ReadInt32();
             if (length > 0 && length <= Remaining)
             {
                 var stringData = ReadBytes(length);
-                var result = Encoding.UTF8.GetString(stringData);
-                AlignStream(4);
-                return result;
+                result = Encoding.UTF8.GetString(stringData);
             }
-            return "";
+            AlignStream();
+            return result;
         }
 
         public string ReadStringToNull(int maxLength = 32767)

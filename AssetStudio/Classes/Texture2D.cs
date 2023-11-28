@@ -99,6 +99,10 @@ namespace AssetStudio
             {
                 var m_IgnoreMasterTextureLimit = reader.ReadBoolean();
             }
+            if (version[0] == 2022 && version[1] >= 2) //2022.2 and up
+            {
+                var m_MipmapLimitGroupName = reader.ReadAlignedString();
+            }
             if (version[0] >= 3) //3.0.0 - 5.4
             {
                 if (version[0] < 5 || (version[0] == 5 && version[1] <= 4))
