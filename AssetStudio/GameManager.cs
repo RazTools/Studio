@@ -21,6 +21,7 @@ namespace AssetStudio
             Games.Add(index++, new Mhy(GameType.GI_CB3Pre, GI_CBXMhyShiftRow, GI_CBXMhyKey, GI_CBXMhyMul, GI_CBXExpansionKey, GI_CBXSBox, GI_CBXInitVector, GI_CBXInitSeed));
             Games.Add(index++, new Mr0k(GameType.BH3, BH3ExpansionKey, BH3SBox, BH3InitVector, BH3BlockKey));
             Games.Add(index++, new Mr0k(GameType.BH3Pre, PackExpansionKey, blockKey: PackBlockKey));
+            Games.Add(index++, new Mr0k(GameType.BH3PrePre, PackExpansionKey, blockKey: PackBlockKey));
             Games.Add(index++, new Mr0k(GameType.SR_CB2, Mr0kExpansionKey, initVector: Mr0kInitVector, blockKey: Mr0kBlockKey));
             Games.Add(index++, new Mr0k(GameType.SR, Mr0kExpansionKey, initVector: Mr0kInitVector, blockKey: Mr0kBlockKey));
             Games.Add(index++, new Mr0k(GameType.ZZZ_CB1, Mr0kExpansionKey, initVector: Mr0kInitVector, blockKey: Mr0kBlockKey));
@@ -134,6 +135,7 @@ namespace AssetStudio
         GI_CB3Pre,
         BH3,
         BH3Pre,
+        BH3PrePre,
         ZZZ_CB1,
         SR_CB2,
         SR,
@@ -169,6 +171,7 @@ namespace AssetStudio
         public static bool IsGICB3Pre(this GameType type) => type == GameType.GI_CB3Pre;
         public static bool IsBH3(this GameType type) => type == GameType.BH3;
         public static bool IsBH3Pre(this GameType type) => type == GameType.BH3Pre;
+        public static bool IsBH3PrePre(this GameType type) => type == GameType.BH3PrePre;
         public static bool IsZZZCB1(this GameType type) => type == GameType.ZZZ_CB1;
         public static bool IsSRCB2(this GameType type) => type == GameType.SR_CB2;
         public static bool IsSR(this GameType type) => type == GameType.SR;
@@ -191,7 +194,7 @@ namespace AssetStudio
 
         public static bool IsBH3Group(this GameType type) => type switch
         {
-            GameType.BH3 or GameType.BH3Pre => true,
+            GameType.BH3 or GameType.BH3Pre or GameType.BH3PrePre => true,
             _ => false,
         };
 
@@ -203,13 +206,13 @@ namespace AssetStudio
 
         public static bool IsBlockFile(this GameType type) => type switch
         {
-            GameType.BH3 or GameType.BH3Pre or GameType.SR or GameType.GI_Pack or GameType.TOT or GameType.ArknightsEndfield => true,
+            GameType.BH3 or GameType.BH3Pre or GameType.BH3PrePre or GameType.SR or GameType.GI_Pack or GameType.TOT or GameType.ArknightsEndfield => true,
             _ => false,
         };
 
         public static bool IsMhyGroup(this GameType type) => type switch
         {
-            GameType.GI or GameType.GI_Pack or GameType.GI_CB1 or GameType.GI_CB2 or GameType.GI_CB3 or GameType.GI_CB3Pre or GameType.BH3 or GameType.BH3Pre or GameType.SR_CB2 or GameType.SR or GameType.ZZZ_CB1 or GameType.TOT => true,
+            GameType.GI or GameType.GI_Pack or GameType.GI_CB1 or GameType.GI_CB2 or GameType.GI_CB3 or GameType.GI_CB3Pre or GameType.BH3 or GameType.BH3Pre or GameType.BH3PrePre or GameType.SR_CB2 or GameType.SR or GameType.ZZZ_CB1 or GameType.TOT => true,
             _ => false,
         };
     }

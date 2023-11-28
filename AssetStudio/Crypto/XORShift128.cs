@@ -5,11 +5,11 @@ namespace AssetStudio
 {
     public static class XORShift128
     {
+        private const long SEED = 0x61C8864E7A143579;
+        private const uint MT19937 = 0x6C078965;
+        private static uint x = 0, y = 0, z = 0, w = 0, initseed = 0;
+        
         public static bool Init = false;
-        public static uint x = 0, y = 0, z = 0, w = 0, initseed = 0;
-
-        const long SEED = 0x61C8864E7A143579;
-        const uint MT19937 = 0x6C078965;
 
         public static void InitSeed(uint seed)
         {

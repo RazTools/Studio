@@ -163,11 +163,20 @@ namespace AssetStudio
                 case "UnityFS":
                     if (Game.Type.IsBH3Group())
                     {
-                        var version = reader.ReadUInt32();
+                        var version = Game.Type.IsBH3PrePre() ? 12 : reader.ReadUInt32();
                         if (version > 11)
                         {
-                            Logger.Verbose($"Encrypted bundle header with key {version}");
-                            XORShift128.InitSeed(version);
+                            if (Game.Type.IsBH3PrePre())
+                            {
+                                Logger.Verbose($"Encrypted bundle header with key {reader.Length}");
+                                XORShift128.InitSeed((uint)reader.Length);
+                            }
+                            else
+                            {
+                                Logger.Verbose($"Encrypted bundle header with key {version}");
+                                XORShift128.InitSeed(version);
+                            }
+
                             header.version = 6;
                             header.unityVersion = "5.x.x";
                             header.unityRevision = "2017.4.18f1";
@@ -322,26 +331,29 @@ namespace AssetStudio
             }
         }
 
-        private void DecryptHeader()
-        {
-            m_Header.flags ^= (ArchiveFlags)XORShift128.NextDecryptInt();
-            m_Header.size ^= XORShift128.NextDecryptLong();
-            m_Header.uncompressedBlocksInfoSize ^= XORShift128.NextDecryptUInt();
-            m_Header.compressedBlocksInfoSize ^= XORShift128.NextDecryptUInt();
-            XORShift128.Init = false;
-            Logger.Verbose($"Bundle header decrypted");
-        }
-
         private void ReadHeader(FileReader reader)
         {
-            if ((Game.Type.IsBH3Group()) && XORShift128.Init)
+            if (Game.Type.IsBH3Group() && XORShift128.Init)
             {
-                m_Header.flags = (ArchiveFlags)reader.ReadUInt32();
-                m_Header.size = reader.ReadInt64();
-                m_Header.uncompressedBlocksInfoSize = reader.ReadUInt32();
-                m_Header.compressedBlocksInfoSize = reader.ReadUInt32();
-                DecryptHeader();
+                if (Game.Type.IsBH3PrePre())
+                {
+                    m_Header.uncompressedBlocksInfoSize = reader.ReadUInt32() ^ XORShift128.NextDecryptUInt();
+                    m_Header.compressedBlocksInfoSize = reader.ReadUInt32() ^ XORShift128.NextDecryptUInt();
+                    m_Header.flags = (ArchiveFlags)(reader.ReadUInt32() ^ XORShift128.NextDecryptInt());
+                    m_Header.size = reader.ReadInt64() ^ XORShift128.NextDecryptLong();
+                    reader.ReadUInt32(); // version
+                }
+                else
+                {
+                    m_Header.flags = (ArchiveFlags)(reader.ReadUInt32() ^ XORShift128.NextDecryptInt());
+                    m_Header.size = reader.ReadInt64() ^ XORShift128.NextDecryptLong();
+                    m_Header.uncompressedBlocksInfoSize = reader.ReadUInt32() ^ XORShift128.NextDecryptUInt();
+                    m_Header.compressedBlocksInfoSize = reader.ReadUInt32() ^ XORShift128.NextDecryptUInt();
+                }
 
+                XORShift128.Init = false;
+                Logger.Verbose($"Bundle header decrypted");
+               
                 var encUnityVersion = reader.ReadStringToNull();
                 var encUnityRevision = reader.ReadStringToNull();
                 return;
