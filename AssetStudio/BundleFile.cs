@@ -161,31 +161,28 @@ namespace AssetStudio
             switch (header.signature)
             {
                 case "UnityFS":
-                    if (Game.Type.IsBH3Group())
+                    if (Game.Type.IsBH3Group() || Game.Type.IsBH3PrePre())
                     {
-                        var version = Game.Type.IsBH3PrePre() ? 12 : reader.ReadUInt32();
-                        if (version > 11)
+                        if (Game.Type.IsBH3Group())
                         {
-                            if (Game.Type.IsBH3PrePre())
+                            var key = reader.ReadUInt32();
+                            if (key <= 11)
                             {
-                                Logger.Verbose($"Encrypted bundle header with key {reader.Length}");
-                                XORShift128.InitSeed((uint)reader.Length);
+                                reader.Position -= 4;
+                                goto default;
                             }
-                            else
-                            {
-                                Logger.Verbose($"Encrypted bundle header with key {version}");
-                                XORShift128.InitSeed(version);
-                            }
+                            Logger.Verbose($"Encrypted bundle header with key {key}");
+                            XORShift128.InitSeed(key);
+                        }
+                        else if (Game.Type.IsBH3PrePre())
+                        {
+                            Logger.Verbose($"Encrypted bundle header with key {reader.Length}");
+                            XORShift128.InitSeed((uint)reader.Length);
+                        }
 
-                            header.version = 6;
-                            header.unityVersion = "5.x.x";
-                            header.unityRevision = "2017.4.18f1";
-                        }
-                        else
-                        {
-                            reader.Position -= 4;
-                            goto default;
-                        }
+                        header.version = 6;
+                        header.unityVersion = "5.x.x";
+                        header.unityRevision = "2017.4.18f1";
                     }
                     else
                     {
@@ -333,7 +330,7 @@ namespace AssetStudio
 
         private void ReadHeader(FileReader reader)
         {
-            if (Game.Type.IsBH3Group() && XORShift128.Init)
+            if (XORShift128.Init)
             {
                 if (Game.Type.IsBH3PrePre())
                 {

@@ -92,7 +92,7 @@ namespace AssetStudio
                     Logger.Verbose($"Parsed target format {m_TargetPlatform} doesn't match any of supported formats, defaulting to {BuildTarget.UnknownPlatform}");
                     m_TargetPlatform = BuildTarget.UnknownPlatform;
                 }
-                else if (game.Type.IsMhyGroup())
+                else if (m_TargetPlatform == BuildTarget.NoTarget && game.Type.IsMhyGroup())
                 {
                     Logger.Verbose($"Selected game {game.Name} is a mhy game, forcing target format {BuildTarget.StandaloneWindows64}");
                     m_TargetPlatform = BuildTarget.StandaloneWindows64;

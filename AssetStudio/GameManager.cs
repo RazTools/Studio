@@ -194,7 +194,7 @@ namespace AssetStudio
 
         public static bool IsBH3Group(this GameType type) => type switch
         {
-            GameType.BH3 or GameType.BH3Pre or GameType.BH3PrePre => true,
+            GameType.BH3 or GameType.BH3Pre => true,
             _ => false,
         };
 
@@ -206,7 +206,7 @@ namespace AssetStudio
 
         public static bool IsBlockFile(this GameType type) => type switch
         {
-            GameType.BH3 or GameType.BH3Pre or GameType.BH3PrePre or GameType.SR or GameType.GI_Pack or GameType.TOT or GameType.ArknightsEndfield => true,
+            GameType.BH3 or GameType.BH3Pre or GameType.SR or GameType.GI_Pack or GameType.TOT or GameType.ArknightsEndfield => true,
             _ => false,
         };
 

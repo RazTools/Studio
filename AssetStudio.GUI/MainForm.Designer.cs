@@ -117,6 +117,7 @@ namespace AssetStudio.GUI
             assetMapTypeMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             toolStripSeparator8 = new System.Windows.Forms.ToolStripSeparator();
             loadAIToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            loadCABMapToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             assetBrowserToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             assetHelpersToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             MapToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -172,7 +173,6 @@ namespace AssetStudio.GUI
             exportAnimatorwithselectedAnimationClipMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             goToSceneHierarchyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             showOriginalFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            loadCABMapToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
@@ -659,7 +659,7 @@ namespace AssetStudio.GUI
             allToolStripMenuItem.CheckOnClick = true;
             allToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
             allToolStripMenuItem.Name = "allToolStripMenuItem";
-            allToolStripMenuItem.Size = new System.Drawing.Size(88, 22);
+            allToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             allToolStripMenuItem.Text = "All";
             allToolStripMenuItem.Click += typeToolStripMenuItem_Click;
             // 
@@ -793,6 +793,13 @@ namespace AssetStudio.GUI
             loadAIToolStripMenuItem.Size = new System.Drawing.Size(181, 22);
             loadAIToolStripMenuItem.Text = "Load AI";
             loadAIToolStripMenuItem.Click += loadAIToolStripMenuItem_Click;
+            // 
+            // loadCABMapToolStripMenuItem
+            // 
+            loadCABMapToolStripMenuItem.Name = "loadCABMapToolStripMenuItem";
+            loadCABMapToolStripMenuItem.Size = new System.Drawing.Size(181, 22);
+            loadCABMapToolStripMenuItem.Text = "Load CABMap";
+            loadCABMapToolStripMenuItem.Click += loadCABMapToolStripMenuItem_Click;
             // 
             // assetBrowserToolStripMenuItem
             // 
@@ -1344,13 +1351,6 @@ namespace AssetStudio.GUI
             showOriginalFileToolStripMenuItem.Text = "Show original file";
             showOriginalFileToolStripMenuItem.Visible = false;
             showOriginalFileToolStripMenuItem.Click += showOriginalFileToolStripMenuItem_Click;
-            // 
-            // loadCABMapToolStripMenuItem
-            // 
-            loadCABMapToolStripMenuItem.Name = "loadCABMapToolStripMenuItem";
-            loadCABMapToolStripMenuItem.Size = new System.Drawing.Size(181, 22);
-            loadCABMapToolStripMenuItem.Text = "Load CABMap";
-            loadCABMapToolStripMenuItem.Click += loadCABMapToolStripMenuItem_Click;
             // 
             // MainForm
             // 
