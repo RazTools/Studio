@@ -36,11 +36,6 @@ namespace AssetStudio.CLI.Properties {
 
         public static Settings Default => defaultInstance;
 
-        public bool displayAll => AppSettings.Get("displayAll", false);
-        public bool enablePreview => AppSettings.Get("enablePreview", true);
-        public bool displayInfo => AppSettings.Get("displayInfo", true);
-        public bool openAfterExport => AppSettings.Get("openAfterExport", true);
-        public int assetGroupOption => AppSettings.Get("assetGroupOption", 0);
         public bool convertTexture => AppSettings.Get("convertTexture", true);
         public bool convertAudio => AppSettings.Get("convertAudio", true);
         public ImageFormat convertType => AppSettings.Get("convertType", ImageFormat.Png);
@@ -57,13 +52,6 @@ namespace AssetStudio.CLI.Properties {
         public bool exportBlendShape => AppSettings.Get("exportBlendShape", true);
         public bool castToBone => AppSettings.Get("castToBone", false);
         public bool restoreExtensionName => AppSettings.Get("restoreExtensionName", true);
-        public bool encrypted => AppSettings.Get("encrypted", true);
-        public byte key => AppSettings.Get("key", (byte)0x93);
-        public int selectedGame => AppSettings.Get("selectedGame", 0);
-        public bool enableResolveDependencies => AppSettings.Get("enableResolveDependencies", true);
-        public int selectedCNUnityKey => AppSettings.Get("selectedCNUnityKey", 0);
-        public int selectedAssetMapType => AppSettings.Get("selectedAssetMapType", 0);
-        public bool exportMiHoYoBinData => AppSettings.Get("exportMiHoYoBinData", true);
         public bool enableFileLogging => AppSettings.Get("enableFileLogging", false);
         public bool minimalAssetMap => AppSettings.Get("minimalAssetMap", true);
         public string texs => AppSettings.Get("texs", string.Empty);
