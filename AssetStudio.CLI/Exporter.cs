@@ -335,9 +335,17 @@ namespace AssetStudio.CLI
                 exportFullPath = Path.Combine(exportPath, item.Text + item.UniqueID, item.Text + ".fbx");
             }
             var m_Animator = (Animator)item.Asset;
+            var options = new ModelConverter.Options()
+            {
+                imageFormat = Properties.Settings.Default.convertType,
+                game = Studio.Game,
+                collectAnimations = Properties.Settings.Default.collectAnimations,
+                uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(Properties.Settings.Default.uvs),
+                texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(Properties.Settings.Default.texs),
+            };
             var convert = animationList != null
-                ? new ModelConverter(m_Animator, Properties.Settings.Default.convertType, Properties.Settings.Default.texs, Properties.Settings.Default.uvs, Studio.Game, Properties.Settings.Default.collectAnimations, animationList.Select(x => (AnimationClip)x.Asset).ToArray())
-                : new ModelConverter(m_Animator, Properties.Settings.Default.convertType, Properties.Settings.Default.texs, Properties.Settings.Default.uvs, Studio.Game, Properties.Settings.Default.collectAnimations);
+                ? new ModelConverter(m_Animator, options, animationList.Select(x => (AnimationClip)x.Asset).ToArray())
+                : new ModelConverter(m_Animator, options);
             ExportFbx(convert, exportFullPath);
             return true;
         }
@@ -351,9 +359,17 @@ namespace AssetStudio.CLI
 
         public static bool ExportGameObject(GameObject gameObject, string exportPath, List<AssetItem> animationList = null)
         {
+            var options = new ModelConverter.Options()
+            {
+                imageFormat = Properties.Settings.Default.convertType,
+                game = Studio.Game,
+                collectAnimations = Properties.Settings.Default.collectAnimations,
+                uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(Properties.Settings.Default.uvs),
+                texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(Properties.Settings.Default.texs),
+            };
             var convert = animationList != null
-                ? new ModelConverter(gameObject, Properties.Settings.Default.convertType, Properties.Settings.Default.texs, Properties.Settings.Default.uvs, Studio.Game, Properties.Settings.Default.collectAnimations, animationList.Select(x => (AnimationClip)x.Asset).ToArray())
-                : new ModelConverter(gameObject, Properties.Settings.Default.convertType, Properties.Settings.Default.texs, Properties.Settings.Default.uvs, Studio.Game, Properties.Settings.Default.collectAnimations);
+                ? new ModelConverter(gameObject, options, animationList.Select(x => (AnimationClip)x.Asset).ToArray())
+                : new ModelConverter(gameObject, options);
             
             if (convert.MeshList.Count == 0)
             {

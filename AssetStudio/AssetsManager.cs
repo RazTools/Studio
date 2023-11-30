@@ -402,6 +402,7 @@ namespace AssetStudio
                             streamReader.Position = 0;
 
                             FileReader entryReader = new FileReader(dummyPath, streamReader);
+                            entryReader = entryReader.PreProcessing(Game);
                             LoadFile(entryReader);
                             if (entryReader.FileType == FileType.ResourceFile)
                             {

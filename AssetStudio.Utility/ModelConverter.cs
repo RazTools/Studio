@@ -15,8 +15,7 @@ namespace AssetStudio
         public List<ImportedKeyframedAnimation> AnimationList { get; protected set; } = new List<ImportedKeyframedAnimation>();
         public List<ImportedMorph> MorphList { get; protected set; } = new List<ImportedMorph>();
 
-        private Game Game;
-        private ImageFormat imageFormat;
+        private Options options;
         private Avatar avatar;
         private HashSet<AnimationClip> animationClipHashSet = new HashSet<AnimationClip>();
         private Dictionary<AnimationClip, string> boundAnimationPathDic = new Dictionary<AnimationClip, string>();
@@ -24,19 +23,15 @@ namespace AssetStudio
         private Dictionary<Texture2D, string> textureNameDictionary = new Dictionary<Texture2D, string>();
         private Dictionary<Transform, ImportedFrame> transformDictionary = new Dictionary<Transform, ImportedFrame>();
         Dictionary<uint, string> morphChannelNames = new Dictionary<uint, string>();
-        Dictionary<string, (bool, int)> uvs = new Dictionary<string, (bool, int)>();
-        Dictionary<string, int> texs = new Dictionary<string, int>();
 
-        public ModelConverter(GameObject m_GameObject, ImageFormat imageFormat, string texs, string uvs, Game game, bool collectAnimations, AnimationClip[] animationList = null)
+        public ModelConverter(GameObject m_GameObject, Options options, AnimationClip[] animationList = null)
         {
-            Game = game;
-            this.imageFormat = imageFormat;
-            this.texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(texs);
-            this.uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(uvs);
+            this.options = options;
+
             if (m_GameObject.m_Animator != null)
             {
                 InitWithAnimator(m_GameObject.m_Animator);
-                if (animationList == null && collectAnimations)
+                if (animationList == null && this.options.collectAnimations)
                 {
                     CollectAnimationClip(m_GameObject.m_Animator);
                 }
@@ -55,16 +50,14 @@ namespace AssetStudio
             ConvertAnimations();
         }
 
-        public ModelConverter(string rootName, List<GameObject> m_GameObjects, ImageFormat imageFormat, string texs, string uvs, Game game, bool collectAnimations, AnimationClip[] animationList = null)
+        public ModelConverter(string rootName, List<GameObject> m_GameObjects, Options options, AnimationClip[] animationList = null)
         {
-            Game = game;
-            this.imageFormat = imageFormat;
-            this.texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(texs);
-            this.uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(uvs);
+            this.options = options;
+
             RootFrame = CreateFrame(rootName, Vector3.Zero, new Quaternion(0, 0, 0, 0), Vector3.One);
             foreach (var m_GameObject in m_GameObjects)
             {
-                if (m_GameObject.m_Animator != null && animationList == null && collectAnimations)
+                if (m_GameObject.m_Animator != null && animationList == null && this.options.collectAnimations)
                 {
                     CollectAnimationClip(m_GameObject.m_Animator);
                 }
@@ -88,14 +81,12 @@ namespace AssetStudio
             ConvertAnimations();
         }
 
-        public ModelConverter(Animator m_Animator, ImageFormat imageFormat, string texs, string uvs, Game game, bool collectAnimations, AnimationClip[] animationList = null)
+        public ModelConverter(Animator m_Animator, Options options, AnimationClip[] animationList = null)
         {
-            Game = game;
-            this.imageFormat = imageFormat;
-            this.texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(texs);
-            this.uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(uvs);
+            this.options = options;
+
             InitWithAnimator(m_Animator);
-            if (animationList == null && collectAnimations)
+            if (animationList == null && this.options.collectAnimations)
             {
                 CollectAnimationClip(m_Animator);
             }
@@ -313,8 +304,8 @@ namespace AssetStudio
             for (int uv = 0; uv < 8; uv++)
             {
                 var key = $"UV{uv}";
-                iMesh.hasUV[uv] = mesh.GetUV(uv)?.Length > 0 && uvs[key].Item1;
-                iMesh.uvType[uv] = uvs[key].Item2;
+                iMesh.hasUV[uv] = mesh.GetUV(uv)?.Length > 0 && options.uvs[key].Item1;
+                iMesh.uvType[uv] = options.uvs[key].Item2;
             }
             iMesh.hasTangent = mesh.m_Tangents != null && mesh.m_Tangents.Length == mesh.m_VertexCount * 4;
             iMesh.hasColor = mesh.m_Colors?.Length > 0;
@@ -720,7 +711,7 @@ namespace AssetStudio
                     iMat.Textures.Add(texture);
 
                     int dest = -1;
-                    if (texs.TryGetValue(texEnv.Key, out var targetDest))
+                    if (options.texs.TryGetValue(texEnv.Key, out var targetDest))
                         dest = targetDest;
                     else if (texEnv.Key == "_MainTex")
                         dest = 0;
@@ -733,7 +724,7 @@ namespace AssetStudio
 
                     texture.Dest = dest;
 
-                    var ext = $".{imageFormat.ToString().ToLower()}";
+                    var ext = $".{options.imageFormat.ToString().ToLower()}";
                     if (textureNameDictionary.TryGetValue(m_Texture2D, out var textureName))
                     {
                         texture.Name = textureName;
@@ -779,7 +770,7 @@ namespace AssetStudio
                 return;
             }
 
-            var stream = m_Texture2D.ConvertToStream(imageFormat, true);
+            var stream = m_Texture2D.ConvertToStream(options.imageFormat, true);
             if (stream != null)
             {
                 using (stream)
@@ -909,9 +900,9 @@ namespace AssetStudio
                     var m_ClipBindingConstant = animationClip.m_ClipBindingConstant ?? m_Clip.ConvertValueArrayToGenericBinding();
                     var m_ACLClip = m_Clip.m_ACLClip;
                     var aclCount = m_ACLClip.CurveCount;
-                    if (m_ACLClip.IsSet && !Game.Type.IsSRGroup())
+                    if (m_ACLClip.IsSet && !options.game.Type.IsSRGroup())
                     {
-                        m_ACLClip.Process(Game, out var values, out var times);
+                        m_ACLClip.Process(options.game, out var values, out var times);
                         for (int frameIndex = 0; frameIndex < times.Length; frameIndex++)
                         {
                             var time = times[frameIndex];
@@ -931,7 +922,7 @@ namespace AssetStudio
                         for (int curveIndex = 0; curveIndex < frame.keyList.Count;)
                         {
                             var index = frame.keyList[curveIndex].index;
-                            if (!Game.Type.IsSRGroup())
+                            if (!options.game.Type.IsSRGroup())
                                 index += (int)aclCount;
                             ReadCurveData(iAnim, m_ClipBindingConstant, index, frame.time, streamedValues, 0, ref curveIndex);
                         }
@@ -945,14 +936,14 @@ namespace AssetStudio
                         for (int curveIndex = 0; curveIndex < m_DenseClip.m_CurveCount;)
                         {
                             var index = streamCount + curveIndex;
-                            if (!Game.Type.IsSRGroup())
+                            if (!options.game.Type.IsSRGroup())
                                 index += (int)aclCount;
                             ReadCurveData(iAnim, m_ClipBindingConstant, (int)index, time, m_DenseClip.m_SampleArray, (int)frameOffset, ref curveIndex);
                         }
                     }
-                    if (m_ACLClip.IsSet && Game.Type.IsSRGroup())
+                    if (m_ACLClip.IsSet && options.game.Type.IsSRGroup())
                     {
-                        m_ACLClip.Process(Game, out var values, out var times);
+                        m_ACLClip.Process(options.game, out var values, out var times);
                         for (int frameIndex = 0; frameIndex < times.Length; frameIndex++)
                         {
                             var time = times[frameIndex];
@@ -1173,6 +1164,15 @@ namespace AssetStudio
             {
                 return null;
             }
+        }
+
+        public record Options
+        {
+            public ImageFormat imageFormat;
+            public Game game;
+            public bool collectAnimations;
+            public Dictionary<string, (bool, int)> uvs;
+            public Dictionary<string, int> texs; 
         }
     }
 }

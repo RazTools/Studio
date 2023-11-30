@@ -1290,12 +1290,28 @@ namespace AssetStudio.GUI
 
         private void PreviewGameObject(GameObject m_GameObject)
         {
-            var model = new ModelConverter(m_GameObject, Properties.Settings.Default.convertType, Properties.Settings.Default.texs, Properties.Settings.Default.uvs, Studio.Game, false, Array.Empty<AnimationClip>());
+            var options = new ModelConverter.Options()
+            {
+                imageFormat = Properties.Settings.Default.convertType,
+                game = Studio.Game,
+                collectAnimations = Properties.Settings.Default.collectAnimations,
+                uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(Properties.Settings.Default.uvs),
+                texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(Properties.Settings.Default.texs),
+            };
+            var model = new ModelConverter(m_GameObject, options, Array.Empty<AnimationClip>());
             PreviewModel(model);
         }
         private void PreviewAnimator(Animator m_Animator)
         {
-            var model = new ModelConverter(m_Animator, Properties.Settings.Default.convertType, Properties.Settings.Default.texs, Properties.Settings.Default.uvs, Studio.Game, false, Array.Empty<AnimationClip>());
+            var options = new ModelConverter.Options()
+            {
+                imageFormat = Properties.Settings.Default.convertType,
+                game = Studio.Game,
+                collectAnimations = Properties.Settings.Default.collectAnimations,
+                uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(Properties.Settings.Default.uvs),
+                texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(Properties.Settings.Default.texs),
+            };
+            var model = new ModelConverter(m_Animator, options, Array.Empty<AnimationClip>());
             PreviewModel(model);
         }
 
