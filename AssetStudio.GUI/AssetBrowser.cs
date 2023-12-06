@@ -163,8 +163,7 @@ namespace AssetStudio.GUI
                     _ => x => ""
                 };
 
-                _assetEntries.Clear();
-                _assetEntries.AddRange(direction == ListSortDirection.Ascending ? _assetEntries.OrderBy(keySelector).ToList() : _assetEntries.OrderByDescending(keySelector).ToList());
+                _assetEntries = direction == ListSortDirection.Ascending ? _assetEntries.OrderBy(keySelector).ToList() : _assetEntries.OrderByDescending(keySelector).ToList();
 
                 assetDataGridView.CurrentCell = assetDataGridView[0, 0];
                 assetDataGridView.Rows.Clear();
