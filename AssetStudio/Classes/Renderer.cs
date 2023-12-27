@@ -24,7 +24,7 @@ namespace AssetStudio
         public uint[] m_SubsetIndices;
         private bool isNewHeader = false;
 
-        public static bool HasPrope(SerializedType type) => type.Match("F622BC5EE0E86D7BDF8C912DD94DCBF5");
+        public static bool HasPrope(SerializedType type) => type.Match("F622BC5EE0E86D7BDF8C912DD94DCBF5") || type.Match("9255FA54269ADD294011FDA525B5FCAC");
 
         protected Renderer(ObjectReader reader) : base(reader)
         {
