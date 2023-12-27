@@ -24,6 +24,8 @@ namespace AssetStudio
         public uint[] m_SubsetIndices;
         private bool isNewHeader = false;
 
+        public static bool HasPrope(SerializedType type) => type.Match("F622BC5EE0E86D7BDF8C912DD94DCBF5");
+
         protected Renderer(ObjectReader reader) : base(reader)
         {
             if (version[0] < 5) //5.0 down
@@ -192,6 +194,8 @@ namespace AssetStudio
                 var m_MatLayers = reader.ReadInt32();
             }
 
+            if (!reader.Game.Type.IsSR() || !HasPrope(reader.serializedType))
+            {
             if (version[0] > 5 || (version[0] == 5 && version[1] >= 4)) //5.4 and up
             {
                 var m_ProbeAnchor = new PPtr<Transform>(reader);
@@ -208,6 +212,7 @@ namespace AssetStudio
                 }
 
                 var m_LightProbeAnchor = new PPtr<Transform>(reader); //5.0 and up m_ProbeAnchor
+            }
             }
 
             if (version[0] > 4 || (version[0] == 4 && version[1] >= 3)) //4.3 and up
