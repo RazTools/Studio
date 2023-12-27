@@ -1210,7 +1210,7 @@ namespace AssetStudio.GUI
             // glControl
             // 
             glControl.API = OpenTK.Windowing.Common.ContextAPI.OpenGL;
-            glControl.APIVersion = new Version(4, 5, 0, 0);
+            glControl.APIVersion = new Version(3, 3, 0, 0);
             glControl.BackColor = System.Drawing.SystemColors.ControlDarkDark;
             glControl.Dock = System.Windows.Forms.DockStyle.Fill;
             glControl.Flags = OpenTK.Windowing.Common.ContextFlags.Default;
