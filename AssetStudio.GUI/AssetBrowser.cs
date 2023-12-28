@@ -13,18 +13,18 @@ namespace AssetStudio.GUI
     partial class AssetBrowser : Form
     {
         private readonly MainForm _parent;
+        private readonly List<AssetEntry> _assetEntries;
+        private readonly List<string> _columnNames;
 
         private SortOrder _sortOrder;
         private DataGridViewColumn _sortedColumn;
-        private List<AssetEntry> _assetEntries;
-        private List<string> _columnNames;
-        
+
         public AssetBrowser(MainForm form)
         {
             InitializeComponent();
             _parent = form;
-            _assetEntries = new List<AssetEntry>();
             _columnNames = new List<string>();
+            _assetEntries = new List<AssetEntry>();
         }
 
         private async void loadAssetMap_Click(object sender, EventArgs e)
@@ -62,7 +62,7 @@ namespace AssetStudio.GUI
         }
         private void loadSelected_Click(object sender, EventArgs e)
         {
-            var files = assetDataGridView.SelectedRows.Cast<DataGridViewRow>().Select(x => _assetEntries[x.Index]).Select(x => x.Source).ToHashSet();
+            var files = assetDataGridView.SelectedRows.Cast<DataGridViewRow>().Select(x => _assetEntries[x.Index]?.Source).ToHashSet();
             var missingFiles = files.Where(x => !File.Exists(x));
             foreach (var file in missingFiles)
             {
@@ -92,13 +92,23 @@ namespace AssetStudio.GUI
                         Logger.Error($"Invalid argument at index {i + 1}");
                         continue;
                     }
+
                     var (name, regex) = (arguments[0], arguments[1]);
                     if (!_columnNames.Contains(name, StringComparer.OrdinalIgnoreCase))
                     {
                         Logger.Error($"Unknonw argument {name}");
                         continue;
                     }
-                    filters[name] = new Regex(regex, RegexOptions.IgnoreCase);
+
+                    try
+                    {
+                        filters[name] = new Regex(regex, RegexOptions.IgnoreCase);
+                    }
+                    catch (Exception)
+                    {
+                        Logger.Error($"Invalid regex {regex} at argument {name}");
+                        continue;
+                    }
                 }
 
                 _assetEntries.Clear();
@@ -111,7 +121,7 @@ namespace AssetStudio.GUI
         }
         private void AssetDataGridView_CellValueNeeded(object sender, DataGridViewCellValueEventArgs e)
         {
-            if (e.RowIndex <= _assetEntries.Count)
+            if (_assetEntries.Count != 0 && e.RowIndex <= _assetEntries.Count)
             {
                 var assetEntry = _assetEntries[e.RowIndex];
                 e.Value = e.ColumnIndex switch
@@ -159,14 +169,15 @@ namespace AssetStudio.GUI
                     1 => x => x.Container,
                     2 => x => x.Source,
                     3 => x => x.PathID,
-                    4 => x => x.Type,
+                    4 => x => x.Type.ToString(),
                     _ => x => ""
                 };
 
-                _assetEntries.Clear();
-                _assetEntries.AddRange(direction == ListSortDirection.Ascending ? _assetEntries.OrderBy(keySelector).ToList() : _assetEntries.OrderByDescending(keySelector).ToList());
+                var sorted = direction == ListSortDirection.Ascending ? _assetEntries.OrderBy(keySelector).ToList() : _assetEntries.OrderByDescending(keySelector).ToList();
 
-                assetDataGridView.CurrentCell = assetDataGridView[0, 0];
+                _assetEntries.Clear();
+                _assetEntries.AddRange(sorted);
+
                 assetDataGridView.Rows.Clear();
                 assetDataGridView.RowCount = _assetEntries.Count;
                 assetDataGridView.Refresh();
