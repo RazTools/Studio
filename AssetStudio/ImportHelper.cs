@@ -950,5 +950,71 @@ namespace AssetStudio
                 return (byte)(key + (byte)(2 * ((key & 1) + 1)));
             }
         }
+
+        public static FileReader DecryptJJKPhantomParade(FileReader reader)
+        {
+            Logger.Verbose($"Attempting to decrypt file {reader.FileName} with Jujutsu Kaisen: Phantom Parade encryption");
+
+            var key = reader.ReadBytes(2);
+            var signatureBytes = reader.ReadBytes(13);
+            var generation = reader.ReadByte();
+
+            for (int i = 0; i < 13; i++)
+            {
+                signatureBytes[i] ^= key[i % key.Length];
+            }
+
+            var signature = Encoding.UTF8.GetString(signatureBytes);
+            if (signature != "_GhostAssets_")
+            {
+                throw new Exception("Invalid signature");
+            }
+
+            generation ^= (byte)(key[0] ^ key[1]);
+
+            if (generation != 1)
+            {
+                throw new Exception("Invalid generation");
+            }
+
+
+            long value = 0;
+            var data = reader.ReadBytes((int)reader.Remaining);
+            var blockCount = data.Length / 0x10;
+
+            using var writerMS = new MemoryStream();
+            using var writer = new BinaryWriter(writerMS);
+            for (int i = 0; i <= blockCount; i++)
+            {
+                if (i % 0x40 == 0)
+                {
+                    value = 0x64 * ((i / 0x40) + 1);
+                }
+                writer.Write(value);
+                writer.Write((long)0);
+                value += 1;
+            }
+
+            using var aes = Aes.Create();
+            aes.Key = new byte[] { 0x36, 0x31, 0x35, 0x34, 0x65, 0x30, 0x30, 0x66, 0x39, 0x45, 0x39, 0x63, 0x65, 0x34, 0x36, 0x64, 0x63, 0x39, 0x30, 0x35, 0x34, 0x45, 0x30, 0x37, 0x31, 0x37, 0x33, 0x41, 0x61, 0x35, 0x34, 0x36 };
+            aes.Mode = CipherMode.ECB;
+            aes.Padding = PaddingMode.None;
+            var encryptor = aes.CreateEncryptor();
+
+            var keyBytes = writerMS.ToArray();
+            keyBytes = encryptor.TransformFinalBlock(keyBytes, 0, keyBytes.Length);
+
+            for (int i = 0; i < data.Length; i++)
+            {
+                data[i] ^= keyBytes[i];
+            }
+
+            Logger.Verbose("Decrypted Jujutsu Kaisen: Phantom Parade file successfully !!");
+
+            MemoryStream ms = new();
+            ms.Write(data);
+            ms.Position = 0;
+            return new FileReader(reader.FullPath, ms);
+        }
     }
 }

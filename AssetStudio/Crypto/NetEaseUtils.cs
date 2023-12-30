@@ -9,29 +9,38 @@ namespace AssetStudio
     public static class NetEaseUtils
     {
         private static readonly byte[] Signature = new byte[] { 0xEE, 0xDD };
-        public static void Decrypt(Span<byte> bytes)
+        public static void DecryptWithHeader(Span<byte> bytes)
+        {
+            var (encryptedOffset, encryptedSize) = ReadHeader(bytes);
+            var encrypted = bytes.Slice(encryptedOffset, encryptedSize);
+            Decrypt(encrypted);
+        }
+        public static void DecryptWithoutHeader(Span<byte> bytes)
+        {
+            var encrypted = bytes[..Math.Min(bytes.Length, 0x1000)];
+            Decrypt(encrypted);
+        }
+        private static void Decrypt(Span<byte> bytes)
         {
             Logger.Verbose($"Attempting to decrypt block with NetEase encryption...");
 
-            var (encryptedOffset, encryptedSize) = ReadHeader(bytes);
-            var encrypted = bytes.Slice(encryptedOffset, encryptedSize);
-            var encryptedInts = MemoryMarshal.Cast<byte, int>(encrypted);
+            var encryptedInts = MemoryMarshal.Cast<byte, int>(bytes);
 
-            var seedInts = new int[] { encryptedInts[3], encryptedInts[1], encryptedInts[4], encrypted.Length, encryptedInts[2] };
+            var seedInts = new int[] { encryptedInts[3], encryptedInts[1], encryptedInts[4], bytes.Length, encryptedInts[2] };
             var seedBytes = MemoryMarshal.AsBytes<int>(seedInts).ToArray();
             var seed = (int)CRC.CalculateDigest(seedBytes, 0, (uint)seedBytes.Length);
 
             var keyPart0 = seed ^ (encryptedInts[7] + 0x1981);
-            var keyPart1 = seed ^ (encrypted.Length + 0x2013);
+            var keyPart1 = seed ^ (bytes.Length + 0x2013);
             var keyPart2 = seed ^ (encryptedInts[5] + 0x1985);
             var keyPart3 = seed ^ (encryptedInts[6] + 0x2018);
 
             for (int i = 0; i < 0x20; i++)
             {
-                encrypted[i] ^= 0xA6;
+                bytes[i] ^= 0xA6;
             }
 
-            var block = encrypted[0x20..];
+            var block = bytes[0x20..];
             var keyVector = new int[] { keyPart2, keyPart0, keyPart1, keyPart3 };
             var keysVector = new int[] { 0x571, keyPart3, 0x892, 0x750, keyPart2, keyPart0, 0x746, keyPart1, 0x568 };
             if (block.Length >= 0x80)
@@ -65,7 +74,7 @@ namespace AssetStudio
                 var remainingCount = dataBlock.Length % 0x80;
                 if (remainingCount > 0)
                 {
-                    var remaining = encrypted[^remainingCount..];
+                    var remaining = bytes[^remainingCount..];
                     for (int i = 0; i < remainingCount; i++)
                     {
                         remaining[i] ^= (byte)(keyBlock[i] ^ ((uint)keysVector[(uint)keyVector[i % keyVector.Length] % keysVector.Length] % 0xFF) ^ i);

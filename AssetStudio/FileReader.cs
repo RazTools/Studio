@@ -212,6 +212,9 @@ namespace AssetStudio
                     case GameType.Reverse1999:
                         reader = DecryptReverse1999(reader);
                         break;
+                    case GameType.JJKPhantomParade:
+                        reader = DecryptReverse1999(reader);
+                        break;
                 }
             }
             if (reader.FileType == FileType.BundleFile && game.Type.IsBlockFile() || reader.FileType == FileType.ENCRFile || reader.FileType == FileType.BlbFile)

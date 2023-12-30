@@ -43,6 +43,7 @@ namespace AssetStudio
             Games.Add(index++, new Game(GameType.GirlsFrontline));
             Games.Add(index++, new Game(GameType.Reverse1999));
             Games.Add(index++, new Game(GameType.ArknightsEndfield));
+            Games.Add(index++, new Game(GameType.JJKPhantomParade));
         }
         public static Game GetGame(GameType gameType) => GetGame((int)gameType);
         public static Game GetGame(int index)
@@ -156,7 +157,9 @@ namespace AssetStudio
         CodenameJump,
         GirlsFrontline,
         Reverse1999,
-        ArknightsEndfield
+        ArknightsEndfield,
+        JJKPhantomParade,
+
     }
 
     public static class GameTypes

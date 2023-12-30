@@ -3,10 +3,9 @@ using System;
 using System.Data;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 
 namespace AssetStudio
 {
@@ -110,8 +109,7 @@ namespace AssetStudio
         private List<StorageBlock> m_BlocksInfo;
 
         public List<StreamFile> fileList;
-
-
+        
         private bool HasUncompressedDataHash = true;
         private bool HasBlockInfoNeedPaddingAtStart = true;
 
@@ -530,7 +528,15 @@ namespace AssetStudio
                         }
                     case CompressionType.Lzma: //LZMA
                         {
-                            SevenZipHelper.StreamDecompress(reader.BaseStream, blocksStream, blockInfo.compressedSize, blockInfo.uncompressedSize);
+                            var compressedStream = reader.BaseStream;
+                            if (Game.Type.IsNetEase() && i == 0)
+                            {
+                                var compressedBytesSpan = reader.ReadBytes((int)blockInfo.compressedSize).AsSpan();
+                                NetEaseUtils.DecryptWithoutHeader(compressedBytesSpan);
+                                var ms = new MemoryStream(compressedBytesSpan.ToArray());
+                                compressedStream = ms;
+                            }
+                            SevenZipHelper.StreamDecompress(compressedStream, blocksStream, blockInfo.compressedSize, blockInfo.uncompressedSize);
                             break;
                         }
                     case CompressionType.Lz4: //LZ4
@@ -553,7 +559,7 @@ namespace AssetStudio
                             }
                             if (Game.Type.IsNetEase() && i == 0)
                             {
-                                NetEaseUtils.Decrypt(compressedBytesSpan);
+                                NetEaseUtils.DecryptWithHeader(compressedBytesSpan);
                             }
                             if (Game.Type.IsArknightsEndfield() && i == 0)
                             {
