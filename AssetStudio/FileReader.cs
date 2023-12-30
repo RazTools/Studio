@@ -213,7 +213,7 @@ namespace AssetStudio
                         reader = DecryptReverse1999(reader);
                         break;
                     case GameType.JJKPhantomParade:
-                        reader = DecryptReverse1999(reader);
+                        reader = DecryptJJKPhantomParade(reader);
                         break;
                 }
             }
