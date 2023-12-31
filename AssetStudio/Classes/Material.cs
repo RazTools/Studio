@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace AssetStudio
 {
@@ -22,9 +23,13 @@ namespace AssetStudio
 
     public class UnityPropertySheet
     {
+        [JsonConverter(typeof(KVPConverter<UnityTexEnv>))]
         public List<KeyValuePair<string, UnityTexEnv>> m_TexEnvs;
+        [JsonConverter(typeof(KVPConverter<int>))]
         public List<KeyValuePair<string, int>> m_Ints;
+        [JsonConverter(typeof(KVPConverter<float>))]
         public List<KeyValuePair<string, float>> m_Floats;
+        [JsonConverter(typeof(KVPConverter<Color>))]
         public List<KeyValuePair<string, Color>> m_Colors;
 
         public UnityPropertySheet(ObjectReader reader)
