@@ -1854,7 +1854,9 @@ namespace AssetStudio
                     {
                         hasStreamingInfo = true;
                         m_MuscleClipSize = reader.ReadUInt32();
+                        var pos = reader.Position;
                         m_MuscleClip = ClipMuscleConstant.ParseGI(reader);
+                        reader.Position = pos + m_MuscleClipSize;
                     }
                     else if (muscleClipSize > 0)
                     {
