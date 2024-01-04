@@ -39,8 +39,8 @@ namespace AssetStudio.CLI
                 }
 
                 Studio.Game = game;
-                Logger.LogVerbose = o.Verbose;
                 Logger.Default = new ConsoleLogger();
+                Logger.LogVerbose = o.Verbose;
                 Logger.FileLogging = Settings.Default.enableFileLogging;
                 AssetsHelper.Minimal = Settings.Default.minimalAssetMap;
                 AssetsHelper.SetUnityVersion(o.UnityVersion);

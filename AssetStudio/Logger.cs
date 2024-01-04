@@ -23,7 +23,16 @@ namespace AssetStudio
                 _fileLogging = value;
                 if (_fileLogging)
                 {
-                    File = new FileLogger();
+                    try
+                    {
+                        File = new FileLogger();
+                    }
+                    catch
+                    {
+                        _fileLogging = false;
+                        Error("log file is already in use, disabling...");
+                        return;
+                    }
                 }
                 else
                 {

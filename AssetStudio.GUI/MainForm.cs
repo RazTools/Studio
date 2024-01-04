@@ -115,8 +115,6 @@ namespace AssetStudio.GUI
 
         private void InitializeLogger()
         {
-            Logger.LogVerbose = enableVerbose.Checked;
-            Logger.FileLogging = enableFileLogging.Checked;
             logger = new GUILogger(StatusStripUpdate);
             ConsoleHelper.AllocConsole();
             ConsoleHelper.SetConsoleTitle("Debug Console");
@@ -131,6 +129,8 @@ namespace AssetStudio.GUI
                 Logger.Default = logger;
                 ConsoleHelper.ShowWindow(handle, ConsoleHelper.SW_HIDE);
             }
+            Logger.LogVerbose = enableVerbose.Checked;
+            Logger.FileLogging = enableFileLogging.Checked;
         }
 
         private void InitializeProgressBar()
