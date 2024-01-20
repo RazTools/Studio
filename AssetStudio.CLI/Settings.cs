@@ -54,6 +54,7 @@ namespace AssetStudio.CLI.Properties {
         public bool restoreExtensionName => AppSettings.Get("restoreExtensionName", true);
         public bool enableFileLogging => AppSettings.Get("enableFileLogging", false);
         public bool minimalAssetMap => AppSettings.Get("minimalAssetMap", true);
+        public bool allowDuplicates => AppSettings.Get("allowDuplicates", false);
         public string texs => AppSettings.Get("texs", string.Empty);
         public string uvs => AppSettings.Get("uvs", string.Empty);
 

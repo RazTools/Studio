@@ -300,17 +300,44 @@ namespace AssetStudio.CLI
         private static bool TryExportFile(string dir, AssetItem item, string extension, out string fullPath)
         {
             var fileName = FixFileName(item.Text);
-            fullPath = Path.Combine(dir, fileName + extension);
+            fullPath = Path.Combine(dir, $"{fileName}{extension}");
             if (!File.Exists(fullPath))
             {
                 Directory.CreateDirectory(dir);
                 return true;
             }
-            fullPath = Path.Combine(dir, fileName + item.UniqueID + extension);
-            if (!File.Exists(fullPath))
+            if (Properties.Settings.Default.allowDuplicates)
             {
-                Directory.CreateDirectory(dir);
+                for (int i = 0; ; i++)
+                {
+                    fullPath = Path.Combine(dir, $"{fileName} ({i}){extension}");
+                    if (!File.Exists(fullPath))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private static bool TryExportFolder(string dir, AssetItem item, out string fullPath)
+        {
+            var fileName = FixFileName(item.Text);
+            fullPath = Path.Combine(dir, fileName);
+            if (!Directory.Exists(fullPath))
+            {
                 return true;
+            }
+            if (Properties.Settings.Default.allowDuplicates)
+            {
+                for (int i = 0; ; i++)
+                {
+                    fullPath = Path.Combine(dir, $"{fileName} ({i})");
+                    if (!Directory.Exists(fullPath))
+                    {
+                        return true;
+                    }
+                }
             }
             return false;
         }
@@ -329,11 +356,9 @@ namespace AssetStudio.CLI
 
         public static bool ExportAnimator(AssetItem item, string exportPath, List<AssetItem> animationList = null)
         {
-            var exportFullPath = Path.Combine(exportPath, item.Text, item.Text + ".fbx");
-            if (File.Exists(exportFullPath))
-            {
-                exportFullPath = Path.Combine(exportPath, item.Text + item.UniqueID, item.Text + ".fbx");
-            }
+            if (!TryExportFolder(exportPath, item, out var exportFullPath))
+                return false;
+
             var m_Animator = (Animator)item.Asset;
             var options = new ModelConverter.Options()
             {
@@ -352,8 +377,10 @@ namespace AssetStudio.CLI
 
         public static bool ExportGameObject(AssetItem item, string exportPath, List <AssetItem> animationList = null)
         {
+            if (!TryExportFolder(exportPath, item, out var exportFullPath))
+                return false;
+
             var m_GameObject = (GameObject)item.Asset;
-            exportPath = Path.Combine(exportPath, m_GameObject.m_Name) + Path.DirectorySeparatorChar;
             return ExportGameObject(m_GameObject, exportPath, animationList);
         }
 

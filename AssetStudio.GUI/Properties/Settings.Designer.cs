@@ -469,5 +469,17 @@ namespace AssetStudio.GUI.Properties {
                 this["uvs"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool allowDuplicates {
+            get {
+                return ((bool)(this["allowDuplicates"]));
+            }
+            set {
+                this["allowDuplicates"] = value;
+            }
+        }
     }
 }

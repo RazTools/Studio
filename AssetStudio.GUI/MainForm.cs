@@ -105,6 +105,7 @@ namespace AssetStudio.GUI
             enableModelPreview.Checked = Properties.Settings.Default.enableModelPreview;
             modelsOnly.Checked = Properties.Settings.Default.modelsOnly;
             enableResolveDependencies.Checked = Properties.Settings.Default.enableResolveDependencies;
+            allowDuplicates.Checked = Properties.Settings.Default.allowDuplicates;
             skipContainer.Checked = Properties.Settings.Default.skipContainer;
             assetsManager.ResolveDependencies = enableResolveDependencies.Checked;
             SkipContainer = Properties.Settings.Default.skipContainer;
@@ -2054,13 +2055,17 @@ namespace AssetStudio.GUI
 
             assetsManager.ResolveDependencies = enableResolveDependencies.Checked;
         }
+        private void allowDuplicates_CheckedChanged(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.allowDuplicates = allowDuplicates.Checked;
+            Properties.Settings.Default.Save();
+        }
         private void skipContainer_CheckedChanged(object sender, EventArgs e)
         {
             Properties.Settings.Default.skipContainer = skipContainer.Checked;
             Properties.Settings.Default.Save();
 
             SkipContainer = skipContainer.Checked;
-
         }
         private void assetMapTypeMenuItem_DropDownItemClicked(object sender, ToolStripItemClickedEventArgs e)
         {
