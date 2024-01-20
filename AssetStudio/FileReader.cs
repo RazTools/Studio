@@ -215,6 +215,18 @@ namespace AssetStudio
                     case GameType.JJKPhantomParade:
                         reader = DecryptJJKPhantomParade(reader);
                         break;
+                    case GameType.MuvLuvDimensions:
+                        reader = DecryptMuvLuvDimensions(reader);
+                        break;
+                    case GameType.PartyAnimals:
+                        reader = DecryptPartyAnimals(reader);
+                        break;
+                    case GameType.LoveAndDeepspace:
+                        reader = DecryptLoveAndDeepspace(reader);
+                        break;
+                    case GameType.SchoolGirlStrikers:
+                        reader = DecryptSchoolGirlStrikers(reader);
+                        break;
                 }
             }
             if (reader.FileType == FileType.BundleFile && game.Type.IsBlockFile() || reader.FileType == FileType.ENCRFile || reader.FileType == FileType.BlbFile)

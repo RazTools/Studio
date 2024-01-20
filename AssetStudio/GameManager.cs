@@ -44,6 +44,10 @@ namespace AssetStudio
             Games.Add(index++, new Game(GameType.Reverse1999));
             Games.Add(index++, new Game(GameType.ArknightsEndfield));
             Games.Add(index++, new Game(GameType.JJKPhantomParade));
+            Games.Add(index++, new Game(GameType.MuvLuvDimensions));
+            Games.Add(index++, new Game(GameType.PartyAnimals));
+            Games.Add(index++, new Game(GameType.LoveAndDeepspace));
+            Games.Add(index++, new Game(GameType.SchoolGirlStrikers));
         }
         public static Game GetGame(GameType gameType) => GetGame((int)gameType);
         public static Game GetGame(int index)
@@ -159,7 +163,10 @@ namespace AssetStudio
         Reverse1999,
         ArknightsEndfield,
         JJKPhantomParade,
-
+        MuvLuvDimensions,
+        PartyAnimals,
+        LoveAndDeepspace,
+        SchoolGirlStrikers,
     }
 
     public static class GameTypes

@@ -977,7 +977,6 @@ namespace AssetStudio
                 throw new Exception("Invalid generation");
             }
 
-
             long value = 0;
             var data = reader.ReadBytes((int)reader.Remaining);
             var blockCount = data.Length / 0x10;
@@ -1010,6 +1009,120 @@ namespace AssetStudio
             }
 
             Logger.Verbose("Decrypted Jujutsu Kaisen: Phantom Parade file successfully !!");
+
+            MemoryStream ms = new();
+            ms.Write(data);
+            ms.Position = 0;
+            return new FileReader(reader.FullPath, ms);
+        }
+
+        public static FileReader DecryptMuvLuvDimensions(FileReader reader)
+        {
+            Logger.Verbose($"Attempting to decrypt file {reader.FileName} with Muv Luv Dimensions encryption");
+
+            var key = new byte[] { 0xFD, 0x13, 0x7B, 0xEE, 0xC5, 0xFE, 0x50, 0x12, 0x4D, 0x38 };
+
+            var data = reader.ReadBytes((int)reader.Remaining);
+            for (int i = 0; i < data.Length; i++)
+            {
+                data[i] ^= key[i % key.Length];
+            }
+
+            Logger.Verbose("Decrypted Muv Luv Dimensions file successfully !!");
+
+            MemoryStream ms = new();
+            ms.Write(data);
+            ms.Position = 0;
+            return new FileReader(reader.FullPath, ms);
+        }
+
+        public static FileReader DecryptPartyAnimals(FileReader reader)
+        {
+            Logger.Verbose($"Attempting to decrypt file {reader.FileName} with Party Animals encryption");
+
+            var table = new int[] { 0x8C, 0xE8, 0x93, 0xEB, 0xD1, 0xF0, 0x82, 0xCF, 0x9A, 0xBB, 0xEF, 0xB8, 0xC7, 0xA8, 0x8E, 0xDB, 0x96, 0x80, 0xAD, 0xC2, 0x86, 0xD8, 0x81, 0xFA, 0xE6, 0xAF, 0xD0, 0x9E, 0x95, 0xFE, 0xF6, 0x88, 0xF8, 0x85, 0xE4, 0xBC, 0xB6, 0xA4, 0xCB, 0xE3, 0xE0, 0x9F, 0xD3, 0xA7, 0xA3, 0xFF, 0x9C, 0x9D, 0xEE, 0xDE, 0xC9, 0xB0, 0xD5, 0xBE, 0x89, 0xF4, 0xBF, 0xED, 0xD9, 0xBA, 0xA5, 0xCE, 0x94, 0xC5, 0xCC, 0x90, 0xC8, 0xBD, 0x92, 0xB7, 0xF7, 0x97, 0x9B, 0xAB, 0xB4, 0xE9, 0xA6, 0xAC, 0xA9, 0xB2, 0xC1, 0xE5, 0xA1, 0xA0, 0xC4, 0xDC, 0xEC, 0xFD, 0xC0, 0xF3, 0xD2, 0xB3, 0x98, 0x8B, 0xD6, 0xB5, 0xE7, 0xAE, 0xC3, 0xE1, 0xB1, 0xF5, 0xA2, 0xE2, 0xF2, 0xAA, 0xF9, 0x99, 0xD4, 0x84, 0xFC, 0x8D, 0xF1, 0xDF, 0xB9, 0xD7, 0xDA, 0x91, 0xCA, 0x83, 0xEA, 0x8F, 0xCD, 0xDD, 0xC6, 0x87, 0xFB, 0x8A };
+
+            var name = Path.GetFileNameWithoutExtension(reader.FileName);
+            var nameBytes = Encoding.UTF8.GetBytes(name);
+
+            var key = (byte)(0x7C ^ nameBytes.Aggregate((a, b) => (byte)(a ^ b)));
+            var pos = table[nameBytes.Aggregate((a, b) => (byte)(a + b)) % table.Length];
+
+            var data = reader.ReadBytes((int)reader.Remaining);
+
+            for (int i = pos; i < data.Length; i++)
+            {
+                data[i] ^= (byte)(key ^ (i / 8) + 1);
+            }
+
+            Logger.Verbose("Decrypted Party Animals file successfully !!");
+
+            MemoryStream ms = new();
+            ms.Write(data);
+            ms.Position = 0;
+            return new FileReader(reader.FullPath, ms);
+        }
+
+        public static FileReader DecryptLoveAndDeepspace(FileReader reader)
+        {
+            Logger.Verbose($"Attempting to decrypt file {reader.FileName} with Love And Deepspace encryption");
+
+            var vector = new byte[] { 0x35, 0x6B, 0x05, 0x00 };
+            var originalHeader = new byte[] { 0x55, 0x6E, 0x69, 0x74, 0x79, 0x46, 0x53, 0x00, 0x00, 0x00, 0x00, 0x07, 0x35, 0x2E, 0x78, 0x2E };
+
+            var seed = reader.ReadBytes(0x10);
+            for (int i = 0; i < seed.Length; i++)
+            {
+                var b = (byte)(seed[i] ^ originalHeader[i] ^ vector[0]);
+                seed[i] = b != originalHeader[i] ? b : originalHeader[i];
+            }
+
+            var key = new byte[0x40];
+            for (int i = 0; i < vector.Length; i++)
+            {
+                for (int j = 0; j < seed.Length; j++)
+                {
+                    var offset = i * 0x10;
+                    key[offset + j] = (byte)(seed[j] ^ vector[i]);
+                }
+            }
+
+            reader.Position = 0;
+            var data = reader.ReadBytes((int)reader.Remaining);
+            for (int i = 0; i < data.Length; i++)
+            {
+                data[i] ^= key[i % key.Length];
+            }
+
+            Logger.Verbose("Decrypted Love And Deepspace file successfully !!");
+
+            MemoryStream ms = new();
+            ms.Write(data);
+            ms.Position = 0;
+            return new FileReader(reader.FullPath, ms);
+        }
+
+        public static FileReader DecryptSchoolGirlStrikers(FileReader reader)
+        {
+            Logger.Verbose($"Attempting to decrypt file {reader.FileName} with School Girl Strikers encryption");
+
+            var data = reader.ReadBytes((int)reader.Remaining);
+
+            byte key = 0xFF;
+            var stride = data.Length % 7 + 3;
+            for (int i = 1; i < data.Length; i++)
+            {
+                if (i % stride != 0)
+                {
+                    data[i] ^= key;
+                }
+                else
+                {
+                    key = (byte)~key;
+                }
+            }
+
+            Logger.Verbose("Decrypted School Girl Strikers file successfully !!");
 
             MemoryStream ms = new();
             ms.Write(data);
