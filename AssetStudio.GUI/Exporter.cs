@@ -308,7 +308,7 @@ namespace AssetStudio.GUI
             }
             if (Properties.Settings.Default.allowDuplicates)
             {
-                for (int i = 0; ; i++)
+                for (int i = 1; i < int.MaxValue; i++)
                 {
                     fullPath = Path.Combine(dir, $"{fileName} ({i}){extension}");
                     if (!File.Exists(fullPath))
@@ -329,7 +329,7 @@ namespace AssetStudio.GUI
             }
             if (Properties.Settings.Default.allowDuplicates)
             {
-                for (int i = 0; ; i++)
+                for (int i = 1; i < int.MaxValue; i++)
                 {
                     fullPath = Path.Combine(dir, $"{fileName} ({i})");
                     if (!Directory.Exists(fullPath))
