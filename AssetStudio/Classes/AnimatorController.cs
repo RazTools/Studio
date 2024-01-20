@@ -71,6 +71,10 @@ namespace AssetStudio
             m_StateMachineMotionSetIndex = reader.ReadUInt32();
             m_BodyMask = new HumanPoseMask(reader);
             m_SkeletonMask = new SkeletonMask(reader);
+            if (reader.Game.Type.IsLoveAndDeepspace())
+            {
+                var m_GenericMask = new SkeletonMask(reader);
+            }
             m_Binding = reader.ReadUInt32();
             m_LayerBlendingMode = reader.ReadInt32();
             if (version[0] > 4 || (version[0] == 4 && version[1] >= 2)) //4.2 and up

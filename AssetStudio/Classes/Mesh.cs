@@ -313,7 +313,7 @@ namespace AssetStudio
             }
             hasNormals = reader.ReadBoolean();
             hasTangents = reader.ReadBoolean();
-            if (version[0] > 4 || (version[0] == 4 && version[1] >= 3)) //4.3 and up
+            if (!reader.Game.Type.IsLoveAndDeepspace() && version[0] > 4 || (version[0] == 4 && version[1] >= 3)) //4.3 and up
             {
                 reader.AlignStream();
             }
@@ -371,6 +371,11 @@ namespace AssetStudio
                 }
 
                 fullWeights = reader.ReadSingleArray();
+                if (reader.Game.Type.IsLoveAndDeepspace())
+                {
+                    var varintVertices = reader.ReadUInt8Array();
+                    reader.AlignStream();
+                }
             }
             else
             {

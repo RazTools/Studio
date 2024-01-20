@@ -110,6 +110,11 @@ namespace AssetStudio
                 var m_CustomRenderQueue = reader.ReadInt32();
             }
 
+            if (reader.Game.Type.IsLoveAndDeepspace())
+            {
+                var m_MaterialType = reader.ReadUInt32();
+            }
+
             if (version[0] > 5 || (version[0] == 5 && version[1] >= 1)) //5.1 and up
             {
                 var stringTagMapSize = reader.ReadInt32();

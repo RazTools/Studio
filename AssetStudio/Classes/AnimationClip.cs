@@ -842,6 +842,49 @@ namespace AssetStudio
         }
     }
 
+    public class AclTransformTrackIDToBindingCurveID
+    {
+        public uint rotationIDToBindingCurveID;
+        public uint positionIDToBindingCurveID;
+        public uint scaleIDToBindingCurveID;
+        public AclTransformTrackIDToBindingCurveID(ObjectReader reader)
+        {
+            rotationIDToBindingCurveID = reader.ReadUInt32();
+            positionIDToBindingCurveID = reader.ReadUInt32();
+            scaleIDToBindingCurveID = reader.ReadUInt32();
+        }
+    }
+
+    public class LnDACLClip : ACLClip
+    {
+        public uint m_CurveCount;
+        public byte[] m_ClipData;
+
+        public override bool IsSet => !m_ClipData.IsNullOrEmpty();
+        public override uint CurveCount => m_CurveCount;
+        public override void Read(ObjectReader reader)
+        {
+            m_CurveCount = reader.ReadUInt32();
+            var compressedTransformTracksSize = reader.ReadUInt32();
+            var compressedScalarTracksSize = reader.ReadUInt32();
+            var aclTransformCount = reader.ReadUInt32();
+            var aclScalarCount = reader.ReadUInt32();
+
+            var compressedTransformTracksCount = reader.ReadInt32() * 0x10;
+            var compressedTransformTracks = reader.ReadBytes(compressedTransformTracksCount);
+            var compressedScalarTracksCount = reader.ReadInt32() * 0x10;
+            var compressedScalarTracks = reader.ReadBytes(compressedScalarTracksCount);
+
+            int numaclTransformTrackIDToBindingCurveID = reader.ReadInt32();
+            var aclTransformTrackIDToBindingCurveID = new List<AclTransformTrackIDToBindingCurveID>();
+            for (int i = 0; i < numaclTransformTrackIDToBindingCurveID; i++)
+            {
+                aclTransformTrackIDToBindingCurveID.Add(new AclTransformTrackIDToBindingCurveID(reader));
+            }
+            var aclScalarTrackIDToBindingCurveID = reader.ReadUInt32Array();
+        }
+    }
+
     public class GIACLClip : ACLClip
     {
         public uint m_CurveCount;
@@ -1278,6 +1321,11 @@ namespace AssetStudio
                 m_ACLClip = new MHYACLClip();
                 m_ACLClip.Read(reader);
             }
+            if (reader.Game.Type.IsLoveAndDeepspace())
+            {
+                m_ACLClip = new LnDACLClip();
+                m_ACLClip.Read(reader);
+            }
             if (version[0] < 2018 || (version[0] == 2018 && version[1] < 3)) //2018.3 down
             {
                 m_Binding = new ValueArrayConstant(reader);
@@ -1400,18 +1448,29 @@ namespace AssetStudio
         public ClipMuscleConstant(ObjectReader reader)
         {
             var version = reader.version;
-            m_DeltaPose = new HumanPose(reader);
-            m_StartX = reader.ReadXForm();
-            if (version[0] > 5 || (version[0] == 5 && version[1] >= 5))//5.5 and up
+            if (reader.Game.Type.IsLoveAndDeepspace())
             {
-                m_StopX = reader.ReadXForm();
+                m_StartX = reader.ReadXForm();
+                if (version[0] > 5 || (version[0] == 5 && version[1] >= 5))//5.5 and up
+                {
+                    m_StopX = reader.ReadXForm();
+                }
             }
-            m_LeftFootStartX = reader.ReadXForm();
-            m_RightFootStartX = reader.ReadXForm();
-            if (version[0] < 5)//5.0 down
+            else
             {
-                m_MotionStartX = reader.ReadXForm();
-                m_MotionStopX = reader.ReadXForm();
+                m_DeltaPose = new HumanPose(reader);
+                m_StartX = reader.ReadXForm();
+                if (version[0] > 5 || (version[0] == 5 && version[1] >= 5))//5.5 and up
+                {
+                    m_StopX = reader.ReadXForm();
+                }
+                m_LeftFootStartX = reader.ReadXForm();
+                m_RightFootStartX = reader.ReadXForm();
+                if (version[0] < 5)//5.0 down
+                {
+                    m_MotionStartX = reader.ReadXForm();
+                    m_MotionStopX = reader.ReadXForm();
+                }
             }
             m_AverageSpeed = version[0] > 5 || (version[0] == 5 && version[1] >= 4) ? reader.ReadVector3() : (Vector3)reader.ReadVector4();//5.4 and up
             m_Clip = new Clip(reader);
@@ -1773,6 +1832,19 @@ namespace AssetStudio
             else
             {
                 m_Legacy = true;
+            }
+            if (reader.Game.Type.IsLoveAndDeepspace())
+            {
+                reader.AlignStream();
+                var m_aclTransformCache = reader.ReadUInt8Array();
+                var m_aclScalarCache = reader.ReadUInt8Array();
+                int numaclTransformTrackId2CurveId = reader.ReadInt32();
+                var m_aclTransformTrackId2CurveId = new List<AclTransformTrackIDToBindingCurveID>();
+                for (int i = 0; i < numaclTransformTrackId2CurveId; i++)
+                {
+                    m_aclTransformTrackId2CurveId.Add(new AclTransformTrackIDToBindingCurveID(reader));
+                }
+                var m_aclScalarTrackId2CurveId = reader.ReadUInt32Array();
             }
             m_Compressed = reader.ReadBoolean();
             if (version[0] > 4 || (version[0] == 4 && version[1] >= 3))//4.3 and up

@@ -272,6 +272,15 @@ namespace AssetStudio
             gpuProgramID = reader.ReadInt32();
             m_Tags = new SerializedTagMap(reader);
             m_LOD = reader.ReadInt32();
+            if (reader.Game.Type.IsLoveAndDeepspace())
+            {
+                int numOverrideKeywordAndStage = reader.ReadInt32();
+                var m_OverrideKeywordAndStage = new List<KeyValuePair<string, uint>>();
+                for (int i = 0; i < numOverrideKeywordAndStage; i++)
+                {
+                    m_OverrideKeywordAndStage.Add(new KeyValuePair<string, uint>(reader.ReadAlignedString(), reader.ReadUInt32()));
+                }
+            }
             lighting = reader.ReadBoolean();
             reader.AlignStream();
         }
@@ -584,6 +593,11 @@ namespace AssetStudio
         public SerializedSubProgram(ObjectReader reader)
         {
             var version = reader.version;
+            
+            if (reader.Game.Type.IsLoveAndDeepspace())
+            {
+                var m_CodeHash = new Hash128(reader);
+            }
 
             m_BlobIndex = reader.ReadUInt32();
             m_Channels = new ParserBindChannels(reader);
@@ -1072,6 +1086,15 @@ namespace AssetStudio
                         compressedBlob = reader.ReadUInt8Array(); //blobDataBlocks
                         reader.AlignStream();
                     }
+                }
+
+                if (reader.Game.Type.IsLoveAndDeepspace())
+                {
+                    var codeOffsets = reader.ReadUInt32ArrayArray();
+                    var codeCompressedLengths = reader.ReadUInt32ArrayArray();
+                    var codeDecompressedLengths = reader.ReadUInt32ArrayArray();
+                    var codeCompressedBlob = reader.ReadUInt8Array();
+                    reader.AlignStream();
                 }
 
                 if ((version[0] == 2021 && version[1] > 3) ||

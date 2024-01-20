@@ -190,6 +190,7 @@ namespace AssetStudio
         public static bool IsOPFP(this GameType type) => type == GameType.OPFP;
         public static bool IsNetEase(this GameType type) => type == GameType.NetEase;
         public static bool IsArknightsEndfield(this GameType type) => type == GameType.ArknightsEndfield;
+        public static bool IsLoveAndDeepspace(this GameType type) => type == GameType.LoveAndDeepspace;
         public static bool IsGIGroup(this GameType type) => type switch
         {
             GameType.GI or GameType.GI_Pack or GameType.GI_CB1 or GameType.GI_CB2 or GameType.GI_CB3 or GameType.GI_CB3Pre => true,
