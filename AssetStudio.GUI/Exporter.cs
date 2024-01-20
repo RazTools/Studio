@@ -349,12 +349,13 @@ namespace AssetStudio.GUI
             return true;
         }
 
-        public static bool ExportGameObject(AssetItem item, string exportPath, List <AssetItem> animationList = null)
+        public static bool ExportGameObject(AssetItem item, string exportPath, List<AssetItem> animationList = null)
         {
-            var exportFullPath = Path.Combine(exportPath, item.Text, item.Text + ".fbx");
-            if (File.Exists(exportFullPath))
+            item.Text = FixFileName(item.Text);
+            var exportFullPath = Path.Combine(exportPath, item.Text) + Path.DirectorySeparatorChar;
+            if (Directory.Exists(exportFullPath))
             {
-                exportFullPath = Path.Combine(exportPath, item.Text + item.UniqueID, item.Text + ".fbx");
+                exportFullPath = Path.Combine(exportPath, item.Text + item.UniqueID) + Path.DirectorySeparatorChar;
             }
             var m_GameObject = (GameObject)item.Asset;
             ExportGameObject(m_GameObject, exportFullPath, animationList);
