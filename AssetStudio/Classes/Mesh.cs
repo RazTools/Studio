@@ -279,6 +279,8 @@ namespace AssetStudio
         public Vector3 tangent;
         public uint index;
 
+        public BlendShapeVertex() { }
+
         public BlendShapeVertex(ObjectReader reader)
         {
             vertex = reader.ReadVector3();
@@ -378,8 +380,32 @@ namespace AssetStudio
                 fullWeights = reader.ReadSingleArray();
                 if (reader.Game.Type.IsLoveAndDeepspace())
                 {
-                    var varintVertices = reader.ReadUInt8Array();
-                    reader.AlignStream();
+                    var varintVerticesSize = reader.ReadInt32();
+                    if (varintVerticesSize > 0)
+                    {
+                        var pos = reader.Position;
+                        while (reader.Position < pos + varintVerticesSize)
+                        {
+                            var value = reader.ReadUInt32();
+                            var index = value & 0x0FFFFFFF;
+                            var flags = value >> 0x1D;
+                            var blendShapeVertex = new BlendShapeVertex
+                            {
+                                index = index,
+                                vertex = (flags & 4) != 0 ? reader.ReadVector3() : Vector3.Zero,
+                                normal = (flags & 2) != 0 ? reader.ReadVector3() : Vector3.Zero,
+                                tangent = (flags & 1) != 0 ? reader.ReadVector3() : Vector3.Zero,
+                            };
+                            vertices.Add(blendShapeVertex);
+                        }
+                        reader.AlignStream();
+
+                        var stride = (uint)(varintVerticesSize / vertices.Count);
+                        foreach (var shape in shapes)
+                        {
+                            shape.firstVertex /= stride;
+                        }
+                    }
                 }
             }
             else
