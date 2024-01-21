@@ -363,6 +363,11 @@ namespace AssetStudio
                     shapes.Add(new MeshBlendShape(reader));
                 }
 
+                if (reader.Game.Type.IsLoveAndDeepspace())
+                {
+                    reader.AlignStream();
+                }
+
                 int numChannels = reader.ReadInt32();
                 channels = new List<MeshBlendShapeChannel>();
                 for (int i = 0; i < numChannels; i++)
