@@ -39,7 +39,7 @@ namespace AssetStudio.CLI
                 }
 
                 Studio.Game = game;
-                Logger.Default = new ConsoleLogger() { Flags = o.LoggerFlags };
+                Logger.Default = new ConsoleLogger() { Flags = o.LoggerFlags.Aggregate((e, x) => e |= x) };
                 Logger.FileLogging = Settings.Default.enableFileLogging;
                 AssetsHelper.Minimal = Settings.Default.minimalAssetMap;
                 AssetsHelper.SetUnityVersion(o.UnityVersion);

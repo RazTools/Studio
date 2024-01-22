@@ -15,7 +15,6 @@ namespace AssetStudio
         Info = 4,
         Warning = 8,
         Error = 16,
-        Default = Debug | Info | Warning | Error,
         All = Verbose | Debug | Info | Warning | Error,
     }
 

@@ -49,7 +49,7 @@ namespace AssetStudio.CLI
     public class Options
     {
         public bool Silent { get; set; }
-        public LoggerEvent LoggerFlags { get; set; }
+        public LoggerEvent[] LoggerFlags { get; set; }
         public ClassIDType[] TypeFilter { get; set; }
         public Regex[] NameFilter { get; set; }
         public Regex[] ContainerFilter { get; set; }
@@ -72,7 +72,7 @@ namespace AssetStudio.CLI
     public class OptionsBinder : BinderBase<Options>
     {
         public readonly Option<bool> Silent;
-        public readonly Option<LoggerEvent> LoggerFlags;
+        public readonly Option<LoggerEvent[]> LoggerFlags;
         public readonly Option<ClassIDType[]> TypeFilter;
         public readonly Option<Regex[]> NameFilter;
         public readonly Option<Regex[]> ContainerFilter;
@@ -94,7 +94,7 @@ namespace AssetStudio.CLI
         public OptionsBinder()
         {
             Silent = new Option<bool>("--silent", "Hide log messages.");
-            LoggerFlags = new Option<LoggerEvent>("--logger_flags", "Flags to control toggle log events.");
+            LoggerFlags = new Option<LoggerEvent[]>("--logger_flags", "Flags to control toggle log events.") { AllowMultipleArgumentsPerToken = true, ArgumentHelpName = "Verbose|Debug|Info|etc.." };
             TypeFilter = new Option<ClassIDType[]>("--types", "Specify unity class type(s)") { AllowMultipleArgumentsPerToken = true, ArgumentHelpName = "Texture2D|Sprite|etc.." };
             NameFilter = new Option<Regex[]>("--names", result => result.Tokens.Select(x => new Regex(x.Value, RegexOptions.IgnoreCase)).ToArray(), false, "Specify name regex filter(s).") { AllowMultipleArgumentsPerToken = true };
             ContainerFilter = new Option<Regex[]>("--containers", result => result.Tokens.Select(x => new Regex(x.Value, RegexOptions.IgnoreCase)).ToArray(), false, "Specify container regex filter(s).") { AllowMultipleArgumentsPerToken = true };
@@ -126,6 +126,7 @@ namespace AssetStudio.CLI
                 }
             }, false, "XOR key to decrypt MiHoYoBinData.");
 
+            LoggerFlags.AddValidator(FilterValidator);
             TypeFilter.AddValidator(FilterValidator);
             NameFilter.AddValidator(FilterValidator);
             ContainerFilter.AddValidator(FilterValidator);
@@ -152,7 +153,7 @@ namespace AssetStudio.CLI
 
             GameName.FromAmong(GameManager.GetGameNames());
 
-            LoggerFlags.SetDefaultValue(LoggerEvent.Default);
+            LoggerFlags.SetDefaultValue(new LoggerEvent[] { LoggerEvent.Debug, LoggerEvent.Info, LoggerEvent.Warning, LoggerEvent.Error });
             GroupAssetsType.SetDefaultValue(AssetGroupOption.ByType);
             AssetExportType.SetDefaultValue(ExportType.Convert);
             MapOp.SetDefaultValue(MapOpType.None);
