@@ -12,8 +12,12 @@ namespace AssetStudio
 
         public static ILogger Default = new DummyLogger();
         public static ILogger File;
-        public static bool Silent = false;
-        public static bool LogVerbose = false;
+
+        public static bool Silent
+        {
+            get => Default.Silent;
+            set => Default.Silent = value;
+        }
 
         public static bool FileLogging
         {
@@ -36,7 +40,7 @@ namespace AssetStudio
                 }
                 else
                 {
-                    ((FileLogger)File)?.Writer?.Dispose();
+                    ((FileLogger)File)?.Dispose();
                     File = null;
                 }
             }
@@ -44,41 +48,38 @@ namespace AssetStudio
 
         public static void Verbose(string message)
         {
-            if (LogVerbose)
+            try
             {
-                try
+                var callerMethod = new StackTrace().GetFrame(1).GetMethod();
+                var callerMethodClass = callerMethod.ReflectedType.Name;
+                if (!string.IsNullOrEmpty(callerMethodClass))
                 {
-                    var callerMethod = new StackTrace().GetFrame(1).GetMethod();
-                    var callerMethodClass = callerMethod.ReflectedType.Name;
-                    if (!string.IsNullOrEmpty(callerMethodClass))
-                    {
-                        message = $"[{callerMethodClass}] {message}";
-                    }
+                    message = $"[{callerMethodClass}] {message}";
                 }
-                catch (Exception) { }
-                if (FileLogging) File.Log(LoggerEvent.Verbose, message);
-                Default.Log(LoggerEvent.Verbose, message, Silent);
             }
+            catch (Exception) { }
+            if (FileLogging) File.Log(LoggerEvent.Verbose, message);
+            Default.Log(LoggerEvent.Verbose, message);
         }
         public static void Debug(string message)
         {
             if (FileLogging) File.Log(LoggerEvent.Debug, message);
-            Default.Log(LoggerEvent.Debug, message, Silent);
+            Default.Log(LoggerEvent.Debug, message);
         }
         public static void Info(string message)
         {
             if (FileLogging) File.Log(LoggerEvent.Info, message);
-            Default.Log(LoggerEvent.Info, message, Silent);
+            Default.Log(LoggerEvent.Info, message);
         }
         public static void Warning(string message)
         {
             if (FileLogging) File.Log(LoggerEvent.Warning, message);
-            Default.Log(LoggerEvent.Warning, message, Silent);
+            Default.Log(LoggerEvent.Warning, message);
         }
         public static void Error(string message)
         {
             if (FileLogging) File.Log(LoggerEvent.Error, message);
-            Default.Log(LoggerEvent.Error, message, Silent);
+            Default.Log(LoggerEvent.Error, message);
         }
 
         public static void Error(string message, Exception e)
@@ -89,7 +90,7 @@ namespace AssetStudio
 
             message = sb.ToString();
             if (FileLogging) File.Log(LoggerEvent.Error, message);
-            Default.Log(LoggerEvent.Error, message, Silent);
+            Default.Log(LoggerEvent.Error, message);
         }
     }
 }

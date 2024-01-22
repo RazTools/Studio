@@ -433,18 +433,6 @@ namespace AssetStudio.GUI.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool enableVerbose {
-            get {
-                return ((bool)(this["enableVerbose"]));
-            }
-            set {
-                this["enableVerbose"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("{}")]
         public string texs {
             get {
@@ -479,6 +467,18 @@ namespace AssetStudio.GUI.Properties {
             }
             set {
                 this["allowDuplicates"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("30")]
+        public int loggerEventType {
+            get {
+                return ((int)(this["loggerEventType"]));
+            }
+            set {
+                this["loggerEventType"] = value;
             }
         }
     }

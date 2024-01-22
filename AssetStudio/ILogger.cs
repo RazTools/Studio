@@ -6,30 +6,40 @@ using System.Text;
 
 namespace AssetStudio
 {
+    [Flags]
     public enum LoggerEvent
     {
-        Verbose,
-        Debug,
-        Info,
-        Warning,
-        Error,
+        None = 0,
+        Verbose = 1,
+        Debug = 2,
+        Info = 4,
+        Warning = 8,
+        Error = 16,
+        Default = Debug | Info | Warning | Error,
+        All = Verbose | Debug | Info | Warning | Error,
     }
 
     public interface ILogger
     {
-        void Log(LoggerEvent loggerEvent, string message, bool silent = false);
+        public bool Silent { get; set; }
+        public LoggerEvent Flags { get; set; }
+        void Log(LoggerEvent loggerEvent, string message);
     }
 
     public sealed class DummyLogger : ILogger
     {
-        public void Log(LoggerEvent loggerEvent, string message, bool silent = false) { }
+        public bool Silent { get; set; }
+        public LoggerEvent Flags { get; set; }
+        public void Log(LoggerEvent loggerEvent, string message) { }
     }
 
     public sealed class ConsoleLogger : ILogger
     {
-        public void Log(LoggerEvent loggerEvent, string message, bool silent = false)
+        public bool Silent { get; set; }
+        public LoggerEvent Flags { get; set; }
+        public void Log(LoggerEvent loggerEvent, string message)
         {
-            if (silent)
+            if (!Flags.HasFlag(loggerEvent) || Silent)
                 return;
 
             Console.WriteLine("[{0}] {1}", loggerEvent, message);
@@ -41,9 +51,10 @@ namespace AssetStudio
         private const string LogFileName = "log.txt";
         private const string PrevLogFileName = "log_prev.txt";
         private readonly object LockWriter = new object();
+        private StreamWriter Writer;
 
-        public StreamWriter Writer;
-
+        public bool Silent { get; set; }
+        public LoggerEvent Flags { get; set; }
         public FileLogger()
         {
             var logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, LogFileName);
@@ -57,17 +68,22 @@ namespace AssetStudio
         }
         ~FileLogger()
         {
-            Writer?.Dispose();
+            Dispose();
         }
-        public void Log(LoggerEvent loggerEvent, string message, bool silent = false)
+        public void Log(LoggerEvent loggerEvent, string message)
         {
-            if (silent)
+            if (!Flags.HasFlag(loggerEvent) || Silent)
                 return;
 
             lock (LockWriter)
             {
                 Writer.WriteLine($"[{DateTime.Now}][{loggerEvent}] {message}");
             }
+        }
+
+        public void Dispose()
+        {
+            Writer?.Dispose();
         }
     }
 }

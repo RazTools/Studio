@@ -8,14 +8,17 @@ namespace AssetStudio.GUI
         public bool ShowErrorMessage = true;
         private Action<string> action;
 
+        public bool Silent { get; set; }
+        public LoggerEvent Flags { get; set; }
+
         public GUILogger(Action<string> action)
         {
             this.action = action;
         }
 
-        public void Log(LoggerEvent loggerEvent, string message, bool silent = false)
+        public void Log(LoggerEvent loggerEvent, string message)
         {
-            if (silent)
+            if (!Flags.HasFlag(loggerEvent) || Silent)
                 return;
 
             switch (loggerEvent)

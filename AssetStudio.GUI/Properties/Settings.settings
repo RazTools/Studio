@@ -104,9 +104,6 @@
     <Setting Name="enableFileLogging" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
-    <Setting Name="enableVerbose" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">False</Value>
-    </Setting>
     <Setting Name="texs" Type="System.String" Scope="User">
       <Value Profile="(Default)">{}</Value>
     </Setting>
@@ -115,6 +112,9 @@
     </Setting>
     <Setting Name="allowDuplicates" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="loggerEventType" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">30</Value>
     </Setting>
   </Settings>
 </SettingsFile>

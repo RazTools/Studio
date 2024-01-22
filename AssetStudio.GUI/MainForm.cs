@@ -98,7 +98,6 @@ namespace AssetStudio.GUI
         {
             enableConsole.Checked = Properties.Settings.Default.enableConsole;
             enableFileLogging.Checked = Properties.Settings.Default.enableFileLogging;
-            enableVerbose.Checked = Properties.Settings.Default.enableVerbose;
             displayAll.Checked = Properties.Settings.Default.displayAll;
             displayInfo.Checked = Properties.Settings.Default.displayInfo;
             enablePreview.Checked = Properties.Settings.Default.enablePreview;
@@ -130,7 +129,14 @@ namespace AssetStudio.GUI
                 Logger.Default = logger;
                 ConsoleHelper.ShowWindow(handle, ConsoleHelper.SW_HIDE);
             }
-            Logger.LogVerbose = enableVerbose.Checked;
+            var loggerEventType = (LoggerEvent)Properties.Settings.Default.loggerEventType;
+            var loggerEventTypes = Enum.GetValues<LoggerEvent>().ToArray()[1..^2];
+            foreach (var loggerEvent in loggerEventTypes)
+            {
+                var menuItem = new ToolStripMenuItem(loggerEvent.ToString()) { CheckOnClick = true, Checked = loggerEventType.HasFlag(loggerEvent), Tag = (int)loggerEvent };
+                loggedEventsMenuItem.DropDownItems.Add(menuItem);
+            }
+            Logger.Default.Flags = loggerEventType;
             Logger.FileLogging = enableFileLogging.Checked;
         }
 
@@ -2325,12 +2331,20 @@ namespace AssetStudio.GUI
             Logger.FileLogging = enableFileLogging.Checked;
         }
 
-        private void enableVerbose_Click(object sender, EventArgs e)
+        private void loggedEventsMenuItem_DropDownClosing(object sender, ToolStripDropDownClosingEventArgs e)
         {
-            Properties.Settings.Default.enableVerbose = enableVerbose.Checked;
+            if (e.CloseReason == ToolStripDropDownCloseReason.ItemClicked)
+            {
+                e.Cancel = true;
+            }
+        }
+
+        private void loggedEventsMenuItem_DropDownClosed(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.loggerEventType = loggedEventsMenuItem.DropDownItems.Cast<ToolStripMenuItem>().Select(x => x.Checked ? (int)x.Tag : 0).Sum();
             Properties.Settings.Default.Save();
 
-            Logger.LogVerbose = enableVerbose.Checked;
+            Logger.Default.Flags = (LoggerEvent)Properties.Settings.Default.loggerEventType;
         }
 
         private void abortStripMenuItem_Click(object sender, EventArgs e)
