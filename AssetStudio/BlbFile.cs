@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -124,22 +125,28 @@ namespace AssetStudio
                 var compressedSize = (int)blockInfo.compressedSize;
                 var uncompressedSize = (int)blockInfo.uncompressedSize;
 
-                var compressedBytes = BigArrayPool<byte>.Shared.Rent(compressedSize);
-                var uncompressedBytes = BigArrayPool<byte>.Shared.Rent(uncompressedSize);
-                reader.Read(compressedBytes, 0, compressedSize);
-
-                var compressedBytesSpan = compressedBytes.AsSpan(0, compressedSize);
-                var uncompressedBytesSpan = uncompressedBytes.AsSpan(0, uncompressedSize);
-
-                var numWrite = LZ4.Decompress(compressedBytesSpan, uncompressedBytesSpan);
-                if (numWrite != uncompressedSize)
+                var compressedBytes = ArrayPool<byte>.Shared.Rent(compressedSize);
+                var uncompressedBytes = ArrayPool<byte>.Shared.Rent(uncompressedSize);
+                try
                 {
-                    throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
-                }
+                    reader.Read(compressedBytes, 0, compressedSize);
 
-                blocksStream.Write(uncompressedBytes, 0, uncompressedSize);
-                BigArrayPool<byte>.Shared.Return(compressedBytes);
-                BigArrayPool<byte>.Shared.Return(uncompressedBytes);
+                    var compressedBytesSpan = compressedBytes.AsSpan(0, compressedSize);
+                    var uncompressedBytesSpan = uncompressedBytes.AsSpan(0, uncompressedSize);
+
+                    var numWrite = LZ4.Decompress(compressedBytesSpan, uncompressedBytesSpan);
+                    if (numWrite != uncompressedSize)
+                    {
+                        throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
+                    }
+
+                    blocksStream.Write(uncompressedBytes, 0, uncompressedSize);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(compressedBytes, true);
+                    ArrayPool<byte>.Shared.Return(uncompressedBytes, true);
+                }
             }
         }
 

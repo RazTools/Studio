@@ -1981,7 +1981,7 @@ namespace AssetStudio
                     var aclClip = m_MuscleClip.m_Clip.m_ACLClip as GIACLClip;
 
                     var resourceReader = new ResourceReader(m_StreamData.path, assetsFile, m_StreamData.offset, m_StreamData.size);
-                    var ms = new MemoryStream();
+                    using var ms = new MemoryStream();
                     ms.Write(aclClip.m_DatabaseData);
 
                     ms.Write(resourceReader.GetData());

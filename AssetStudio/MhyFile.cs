@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -46,59 +47,65 @@ namespace AssetStudio
 
         private void ReadBlocksInfoAndDirectory(FileReader reader)
         {
-            int offset = 0x20;
             var blocksInfo = reader.ReadBytes((int)m_Header.compressedBlocksInfoSize);
             DescrambleHeader(blocksInfo);
 
             Logger.Verbose($"Descrambled blocksInfo signature {Convert.ToHexString(blocksInfo, 0 , 4)}");
-            using var blocksInfoStream = new MemoryStream(blocksInfo, offset, (int)m_Header.compressedBlocksInfoSize - offset);
+            using var blocksInfoStream = new MemoryStream(blocksInfo, 0x20, (int)m_Header.compressedBlocksInfoSize - 0x20);
             using var blocksInfoReader = new EndianBinaryReader(blocksInfoStream);
             m_Header.uncompressedBlocksInfoSize = blocksInfoReader.ReadMhyUInt();
             Logger.Verbose($"uncompressed blocksInfo size: 0x{m_Header.uncompressedBlocksInfoSize:X8}");
             var compressedBlocksInfo = blocksInfoReader.ReadBytes((int)blocksInfoReader.Remaining);
-            var uncompressedBlocksInfo = BigArrayPool<byte>.Shared.Rent((int)m_Header.uncompressedBlocksInfoSize);
+
+            var uncompressedBlocksInfo = ArrayPool<byte>.Shared.Rent((int)m_Header.uncompressedBlocksInfoSize);
             var uncompressedBlocksInfoSpan = uncompressedBlocksInfo.AsSpan(0, (int)m_Header.uncompressedBlocksInfoSize);
-            var numWrite = LZ4.Decompress(compressedBlocksInfo, uncompressedBlocksInfoSpan);
-            if (numWrite != m_Header.uncompressedBlocksInfoSize)
-            {
-                throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {m_Header.uncompressedBlocksInfoSize} bytes");
-            }
 
-            Logger.Verbose($"Writing block and directory to blocks stream...");
-            using var blocksInfoUncompressedStream = new MemoryStream(uncompressedBlocksInfo);
-            using var blocksInfoUncompressedReader = new EndianBinaryReader(blocksInfoUncompressedStream);
-            var nodesCount = blocksInfoUncompressedReader.ReadMhyInt();
-            m_DirectoryInfo = new List<BundleFile.Node>();
-            Logger.Verbose($"Directory count: {nodesCount}");
-            for (int i = 0; i < nodesCount; i++)
+            try
             {
-                m_DirectoryInfo.Add(new BundleFile.Node
+                var numWrite = LZ4.Decompress(compressedBlocksInfo, uncompressedBlocksInfoSpan);
+                if (numWrite != m_Header.uncompressedBlocksInfoSize)
                 {
-                    path = blocksInfoUncompressedReader.ReadMhyString(),
-                    flags = blocksInfoUncompressedReader.ReadBoolean() ? 4u : 0,
-                    offset = blocksInfoUncompressedReader.ReadMhyInt(),
-                    size = blocksInfoUncompressedReader.ReadMhyUInt()
-                });
+                    throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {m_Header.uncompressedBlocksInfoSize} bytes");
+                }
 
-                Logger.Verbose($"Directory {i} Info: {m_DirectoryInfo[i]}");
-            }
-
-            var blocksInfoCount = blocksInfoUncompressedReader.ReadMhyInt();
-            m_BlocksInfo = new List<BundleFile.StorageBlock>();
-            Logger.Verbose($"Blocks count: {blocksInfoCount}");
-            for (int i = 0; i < blocksInfoCount; i++)
-            {
-                m_BlocksInfo.Add(new BundleFile.StorageBlock
+                Logger.Verbose($"Writing block and directory to blocks stream...");
+                using var blocksInfoUncompressedStream = new MemoryStream(uncompressedBlocksInfo, 0, (int)m_Header.uncompressedBlocksInfoSize);
+                using var blocksInfoUncompressedReader = new EndianBinaryReader(blocksInfoUncompressedStream);
+                var nodesCount = blocksInfoUncompressedReader.ReadMhyInt();
+                m_DirectoryInfo = new List<BundleFile.Node>();
+                Logger.Verbose($"Directory count: {nodesCount}");
+                for (int i = 0; i < nodesCount; i++)
                 {
-                    compressedSize = (uint)blocksInfoUncompressedReader.ReadMhyInt(),
-                    uncompressedSize = blocksInfoUncompressedReader.ReadMhyUInt(),
-                    flags = (StorageBlockFlags)0x43
-                });
+                    m_DirectoryInfo.Add(new BundleFile.Node
+                    {
+                        path = blocksInfoUncompressedReader.ReadMhyString(),
+                        flags = blocksInfoUncompressedReader.ReadBoolean() ? 4u : 0,
+                        offset = blocksInfoUncompressedReader.ReadMhyInt(),
+                        size = blocksInfoUncompressedReader.ReadMhyUInt()
+                    });
 
-                Logger.Verbose($"Block {i} Info: {m_BlocksInfo[i]}");
+                    Logger.Verbose($"Directory {i} Info: {m_DirectoryInfo[i]}");
+                }
+
+                var blocksInfoCount = blocksInfoUncompressedReader.ReadMhyInt();
+                m_BlocksInfo = new List<BundleFile.StorageBlock>();
+                Logger.Verbose($"Blocks count: {blocksInfoCount}");
+                for (int i = 0; i < blocksInfoCount; i++)
+                {
+                    m_BlocksInfo.Add(new BundleFile.StorageBlock
+                    {
+                        compressedSize = (uint)blocksInfoUncompressedReader.ReadMhyInt(),
+                        uncompressedSize = blocksInfoUncompressedReader.ReadMhyUInt(),
+                        flags = (StorageBlockFlags)0x43
+                    });
+
+                    Logger.Verbose($"Block {i} Info: {m_BlocksInfo[i]}");
+                }
             }
-
-            BigArrayPool<byte>.Shared.Return(uncompressedBlocksInfo);
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(uncompressedBlocksInfo, true);
+            }    
         }
 
         private Stream CreateBlocksStream(string path)
@@ -124,25 +131,31 @@ namespace AssetStudio
                     throw new Exception($"Wrong compressed length: {compressedSize}");
                 }
 
-                var compressedBytes = BigArrayPool<byte>.Shared.Rent(compressedSize);
-                var uncompressedBytes = BigArrayPool<byte>.Shared.Rent(uncompressedSize);
-                reader.Read(compressedBytes, 0, compressedSize);
+                var compressedBytes = ArrayPool<byte>.Shared.Rent(compressedSize);
+                var uncompressedBytes = ArrayPool<byte>.Shared.Rent(uncompressedSize);
 
-                var offset = 0xC;
-                var compressedBytesSpan = compressedBytes.AsSpan(0, compressedSize);
-                var uncompressedBytesSpan = uncompressedBytes.AsSpan(0, uncompressedSize);
-                DescrambleEntry(compressedBytesSpan);
-
-                Logger.Verbose($"Descrambled block signature {Convert.ToHexString(compressedBytes, 0, 4)}");
-                var numWrite = LZ4.Decompress(compressedBytesSpan[offset..], uncompressedBytesSpan);
-                if (numWrite != uncompressedSize)
+                try
                 {
-                    throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
-                }
+                    var compressedBytesSpan = compressedBytes.AsSpan(0, compressedSize);
+                    var uncompressedBytesSpan = uncompressedBytes.AsSpan(0, uncompressedSize);
 
-                blocksStream.Write(uncompressedBytes, 0, uncompressedSize);
-                BigArrayPool<byte>.Shared.Return(compressedBytes);
-                BigArrayPool<byte>.Shared.Return(uncompressedBytes);
+                    reader.Read(compressedBytesSpan);
+                    DescrambleEntry(compressedBytesSpan);
+
+                    Logger.Verbose($"Descrambled block signature {Convert.ToHexString(compressedBytes, 0, 4)}");
+                    var numWrite = LZ4.Decompress(compressedBytesSpan[0xC..], uncompressedBytesSpan);
+                    if (numWrite != uncompressedSize)
+                    {
+                        throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
+                    }
+
+                    blocksStream.Write(uncompressedBytesSpan);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(compressedBytes, true);
+                    ArrayPool<byte>.Shared.Return(uncompressedBytes, true);
+                }
             }
         }
 

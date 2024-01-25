@@ -815,7 +815,7 @@ namespace AssetStudio
                 return reader;
             }
 
-            MemoryStream ms = new MemoryStream();
+            MemoryStream ms = new();
             if (version == 0x10)
             {
                 var buffer = (stackalloc byte[8]);
@@ -929,7 +929,7 @@ namespace AssetStudio
                 }
 
                 Logger.Verbose("Decrypted Reverse: 1999 file successfully !!");
-                var stream = new MemoryStream();
+                MemoryStream stream = new();
                 stream.Write(signatureBytes);
                 stream.Write(remaining);
                 stream.Position = 0;

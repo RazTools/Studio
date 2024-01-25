@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -94,23 +95,29 @@ namespace AssetStudio
                 Logger.Verbose($"Prased signature: {signature}");
 
                 var signatureBytes = Encoding.UTF8.GetBytes(signature);
-                var buffer = BigArrayPool<byte>.Shared.Rent(BufferSize);
-                while (Remaining > 0)
+                var buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
+                try
                 {
-                    var index = 0;
-                    var absOffset = AbsolutePosition;
-                    var read = Read(buffer);
-                    while (index < read)
+                    while (Remaining > 0)
                     {
-                        index = buffer.AsSpan(0, read).Search(signatureBytes, index);
-                        if (index == -1) break;
-                        var offset = absOffset + index;
-                        Offset = offset;
-                        yield return offset;
-                        index++;
+                        var index = 0;
+                        var absOffset = AbsolutePosition;
+                        var read = Read(buffer);
+                        while (index < read)
+                        {
+                            index = buffer.AsSpan(0, read).Search(signatureBytes, index);
+                            if (index == -1) break;
+                            var offset = absOffset + index;
+                            Offset = offset;
+                            yield return offset;
+                            index++;
+                        }
                     }
                 }
-                BigArrayPool<byte>.Shared.Return(buffer);
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer, true);
+                }
             }
         }
     }

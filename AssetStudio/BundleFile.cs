@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
+using System.Buffers;
 
 namespace AssetStudio
 {
@@ -445,15 +446,21 @@ namespace AssetStudio
                 case CompressionType.Lz4: //LZ4
                 case CompressionType.Lz4HC: //LZ4HC
                     {
-                        var uncompressedBytes = BigArrayPool<byte>.Shared.Rent((int)uncompressedSize);
-                        var uncompressedBytesSpan = uncompressedBytes.AsSpan(0, (int)uncompressedSize);
-                        var numWrite = LZ4.Decompress(blocksInfoBytesSpan, uncompressedBytesSpan);
-                        if (numWrite != uncompressedSize)
+                        var uncompressedBytes = ArrayPool<byte>.Shared.Rent((int)uncompressedSize);
+                        try
                         {
-                            throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
+                            var uncompressedBytesSpan = uncompressedBytes.AsSpan(0, (int)uncompressedSize);
+                            var numWrite = LZ4.Decompress(blocksInfoBytesSpan, uncompressedBytesSpan);
+                            if (numWrite != uncompressedSize)
+                            {
+                                throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
+                            }
+                            blocksInfoUncompresseddStream = new MemoryStream(uncompressedBytesSpan.ToArray());
                         }
-                        blocksInfoUncompresseddStream = new MemoryStream(uncompressedBytesSpan.ToArray());
-                        BigArrayPool<byte>.Shared.Return(uncompressedBytes);
+                        finally
+                        {
+                            ArrayPool<byte>.Shared.Return(uncompressedBytes, true);
+                        }
                         break;
                     }
                 case CompressionType.Lz4Mr0k: //Lz4Mr0k
@@ -544,94 +551,114 @@ namespace AssetStudio
                     case CompressionType.Lz4Mr0k when Game.Type.IsMhyGroup(): //Lz4Mr0k
                         {
                             var compressedSize = (int)blockInfo.compressedSize;
-                            var compressedBytes = BigArrayPool<byte>.Shared.Rent(compressedSize);
-                            reader.Read(compressedBytes, 0, compressedSize);
-                            var compressedBytesSpan = compressedBytes.AsSpan(0, compressedSize);
-                            if (compressionType == CompressionType.Lz4Mr0k && Mr0kUtils.IsMr0k(compressedBytes))
-                            {
-                                Logger.Verbose($"Block encrypted with mr0k, decrypting...");
-                                compressedBytesSpan = Mr0kUtils.Decrypt(compressedBytesSpan, (Mr0k)Game);
-                            }
-                            if (Game.Type.IsUnityCN() && ((int)blockInfo.flags & 0x100) != 0)
-                            {
-                                Logger.Verbose($"Decrypting block with UnityCN...");
-                                UnityCN.DecryptBlock(compressedBytes, compressedSize, i);
-                            }
-                            if (Game.Type.IsNetEase() && i == 0)
-                            {
-                                NetEaseUtils.DecryptWithHeader(compressedBytesSpan);
-                            }
-                            if (Game.Type.IsArknightsEndfield() && i == 0)
-                            {
-                                FairGuardUtils.Decrypt(compressedBytesSpan);
-                            }
-                            if (Game.Type.IsOPFP())
-                            { 
-                                OPFPUtils.Decrypt(compressedBytesSpan, reader.FullPath);
-                            }
                             var uncompressedSize = (int)blockInfo.uncompressedSize;
-                            var uncompressedBytes = BigArrayPool<byte>.Shared.Rent(uncompressedSize);
-                            var uncompressedBytesSpan = uncompressedBytes.AsSpan(0, uncompressedSize);
-                            var numWrite = LZ4.Decompress(compressedBytesSpan, uncompressedBytesSpan);
-                            if (numWrite != uncompressedSize)
+
+                            var compressedBytes = ArrayPool<byte>.Shared.Rent(compressedSize);
+                            var uncompressedBytes = ArrayPool<byte>.Shared.Rent(uncompressedSize);
+
+                            try
                             {
-                                throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
+                                var compressedBytesSpan = compressedBytes.AsSpan(0, compressedSize);
+                                var uncompressedBytesSpan = uncompressedBytes.AsSpan(0, uncompressedSize);
+
+                                reader.Read(compressedBytesSpan);
+                                if (compressionType == CompressionType.Lz4Mr0k && Mr0kUtils.IsMr0k(compressedBytes))
+                                {
+                                    Logger.Verbose($"Block encrypted with mr0k, decrypting...");
+                                    compressedBytesSpan = Mr0kUtils.Decrypt(compressedBytesSpan, (Mr0k)Game);
+                                }
+                                if (Game.Type.IsUnityCN() && ((int)blockInfo.flags & 0x100) != 0)
+                                {
+                                    Logger.Verbose($"Decrypting block with UnityCN...");
+                                    UnityCN.DecryptBlock(compressedBytes, compressedSize, i);
+                                }
+                                if (Game.Type.IsNetEase() && i == 0)
+                                {
+                                    NetEaseUtils.DecryptWithHeader(compressedBytesSpan);
+                                }
+                                if (Game.Type.IsArknightsEndfield() && i == 0)
+                                {
+                                    FairGuardUtils.Decrypt(compressedBytesSpan);
+                                }
+                                if (Game.Type.IsOPFP())
+                                {
+                                    OPFPUtils.Decrypt(compressedBytesSpan, reader.FullPath);
+                                }
+                                var numWrite = LZ4.Decompress(compressedBytesSpan, uncompressedBytesSpan);
+                                if (numWrite != uncompressedSize)
+                                {
+                                    throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
+                                }
+                                blocksStream.Write(uncompressedBytesSpan);
                             }
-                            blocksStream.Write(uncompressedBytes, 0, uncompressedSize);
-                            BigArrayPool<byte>.Shared.Return(compressedBytes);
-                            BigArrayPool<byte>.Shared.Return(uncompressedBytes);
+                            finally
+                            {
+                                ArrayPool<byte>.Shared.Return(compressedBytes, true);
+                                ArrayPool<byte>.Shared.Return(uncompressedBytes, true);
+                            }
                             break;
                         }
                     case CompressionType.Lz4Inv when Game.Type.IsArknightsEndfield():
                         {
                             var compressedSize = (int)blockInfo.compressedSize;
-                            var compressedBytes = BigArrayPool<byte>.Shared.Rent(compressedSize);
-                            reader.Read(compressedBytes, 0, compressedSize);
-                            var compressedBytesSpan = compressedBytes.AsSpan(0, compressedSize);
-                            if (i == 0)
-                            {
-                                FairGuardUtils.Decrypt(compressedBytesSpan);
-
-                            }
                             var uncompressedSize = (int)blockInfo.uncompressedSize;
-                            var uncompressedBytes = BigArrayPool<byte>.Shared.Rent(uncompressedSize);
+
+                            var compressedBytes = ArrayPool<byte>.Shared.Rent(compressedSize);
+                            var uncompressedBytes = ArrayPool<byte>.Shared.Rent(uncompressedSize);
+
+                            var compressedBytesSpan = compressedBytes.AsSpan(0, compressedSize);
                             var uncompressedBytesSpan = uncompressedBytes.AsSpan(0, uncompressedSize);
-                            var numWrite = LZ4Inv.Decompress(compressedBytesSpan, uncompressedBytesSpan);
-                            if (numWrite != uncompressedSize)
+
+                            try
                             {
-                                throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
+                                reader.Read(compressedBytesSpan);
+                                if (i == 0)
+                                {
+                                    FairGuardUtils.Decrypt(compressedBytesSpan);
+
+                                }
+                                var numWrite = LZ4Inv.Decompress(compressedBytesSpan, uncompressedBytesSpan);
+                                if (numWrite != uncompressedSize)
+                                {
+                                    throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
+                                }
+                                blocksStream.Write(uncompressedBytesSpan);
                             }
-                            blocksStream.Write(uncompressedBytes, 0, uncompressedSize);
-                            BigArrayPool<byte>.Shared.Return(compressedBytes);
-                            BigArrayPool<byte>.Shared.Return(uncompressedBytes);
+                            finally
+                            {
+                                ArrayPool<byte>.Shared.Return(compressedBytes, true);
+                                ArrayPool<byte>.Shared.Return(uncompressedBytes, true);
+                            }
                             break;
                         }
                     case CompressionType.Zstd when !Game.Type.IsMhyGroup(): //Zstd
                         {
                             var compressedSize = (int)blockInfo.compressedSize;
-                            var compressedBytes = BigArrayPool<byte>.Shared.Rent(compressedSize);
-                            reader.Read(compressedBytes, 0, compressedSize);
-
                             var uncompressedSize = (int)blockInfo.uncompressedSize;
-                            var uncompressedBytes = BigArrayPool<byte>.Shared.Rent(uncompressedSize);
+
+                            var compressedBytes = ArrayPool<byte>.Shared.Rent(compressedSize);
+                            var uncompressedBytes = ArrayPool<byte>.Shared.Rent(uncompressedSize);
 
                             try
                             {
+                                reader.Read(compressedBytes, 0, compressedSize);
                                 using var decompressor = new Decompressor();
                                 var numWrite = decompressor.Unwrap(compressedBytes, 0, compressedSize, uncompressedBytes, 0, uncompressedSize);
                                 if (numWrite != uncompressedSize)
                                 {
                                     throw new IOException($"Zstd decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
                                 }
+                                blocksStream.Write(uncompressedBytes.ToArray(), 0, uncompressedSize);
                             }
-                            catch(Exception ex)
+                            catch (Exception ex)
                             {
                                 Console.WriteLine($"Zstd decompression error:\n{ex}");
                             }
-                            
-                            blocksStream.Write(uncompressedBytes.ToArray(), 0, uncompressedSize);
-                            BigArrayPool<byte>.Shared.Return(compressedBytes);
-                            BigArrayPool<byte>.Shared.Return(uncompressedBytes);
+                            finally
+                            {
+                                ArrayPool<byte>.Shared.Return(compressedBytes, true);
+                                ArrayPool<byte>.Shared.Return(uncompressedBytes, true);
+                            }
                             break;
                         }
                     default:
