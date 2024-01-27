@@ -34,22 +34,20 @@ namespace AssetStudio.GUI
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
-            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle6 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle7 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle8 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle4 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle5 = new DataGridViewCellStyle();
             OKbutton = new Button();
             Cancel = new Button();
             groupBox1 = new GroupBox();
+            texNameTextBox = new TextBox();
+            label10 = new Label();
+            texTypeComboBox = new ComboBox();
+            uvTypesComboBox = new ComboBox();
+            uvEnabledCheckBox = new CheckBox();
+            uvsComboBox = new ComboBox();
+            canExportCheckBox = new CheckBox();
+            label8 = new Label();
+            canParseCheckBox = new CheckBox();
+            typesComboBox = new ComboBox();
             label6 = new Label();
-            uvsGridView = new DataGridView();
-            UVName = new DataGridViewTextBoxColumn();
-            UVEnabled = new DataGridViewCheckBoxColumn();
-            UVType = new DataGridViewComboBoxColumn();
             minimalAssetMap = new CheckBox();
             assetGroupOptions = new ComboBox();
             label7 = new Label();
@@ -66,10 +64,6 @@ namespace AssetStudio.GUI
             converttexture = new CheckBox();
             collectAnimations = new CheckBox();
             groupBox2 = new GroupBox();
-            label9 = new Label();
-            texsGridView = new DataGridView();
-            TexName = new DataGridViewTextBoxColumn();
-            TexType = new DataGridViewComboBoxColumn();
             exportBlendShape = new CheckBox();
             exportAnimations = new CheckBox();
             scaleFactor = new NumericUpDown();
@@ -89,11 +83,9 @@ namespace AssetStudio.GUI
             exportUvsTooltip = new ToolTip(components);
             keyToolTip = new ToolTip(components);
             groupBox1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)uvsGridView).BeginInit();
             ((System.ComponentModel.ISupportInitialize)key).BeginInit();
             panel1.SuspendLayout();
             groupBox2.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)texsGridView).BeginInit();
             ((System.ComponentModel.ISupportInitialize)scaleFactor).BeginInit();
             ((System.ComponentModel.ISupportInitialize)boneSize).BeginInit();
             ((System.ComponentModel.ISupportInitialize)filterPrecision).BeginInit();
@@ -101,7 +93,7 @@ namespace AssetStudio.GUI
             // 
             // OKbutton
             // 
-            OKbutton.Location = new System.Drawing.Point(480, 439);
+            OKbutton.Location = new System.Drawing.Point(480, 428);
             OKbutton.Margin = new Padding(4);
             OKbutton.Name = "OKbutton";
             OKbutton.Size = new System.Drawing.Size(88, 26);
@@ -113,7 +105,7 @@ namespace AssetStudio.GUI
             // Cancel
             // 
             Cancel.DialogResult = DialogResult.Cancel;
-            Cancel.Location = new System.Drawing.Point(576, 439);
+            Cancel.Location = new System.Drawing.Point(576, 428);
             Cancel.Margin = new Padding(4);
             Cancel.Name = "Cancel";
             Cancel.Size = new System.Drawing.Size(88, 26);
@@ -125,8 +117,17 @@ namespace AssetStudio.GUI
             // groupBox1
             // 
             groupBox1.AutoSize = true;
+            groupBox1.Controls.Add(texNameTextBox);
+            groupBox1.Controls.Add(label10);
+            groupBox1.Controls.Add(texTypeComboBox);
+            groupBox1.Controls.Add(uvTypesComboBox);
+            groupBox1.Controls.Add(uvEnabledCheckBox);
+            groupBox1.Controls.Add(uvsComboBox);
+            groupBox1.Controls.Add(canExportCheckBox);
+            groupBox1.Controls.Add(label8);
+            groupBox1.Controls.Add(canParseCheckBox);
+            groupBox1.Controls.Add(typesComboBox);
             groupBox1.Controls.Add(label6);
-            groupBox1.Controls.Add(uvsGridView);
             groupBox1.Controls.Add(minimalAssetMap);
             groupBox1.Controls.Add(assetGroupOptions);
             groupBox1.Controls.Add(label7);
@@ -141,56 +142,125 @@ namespace AssetStudio.GUI
             groupBox1.Margin = new Padding(4);
             groupBox1.Name = "groupBox1";
             groupBox1.Padding = new Padding(4);
-            groupBox1.Size = new System.Drawing.Size(271, 419);
+            groupBox1.Size = new System.Drawing.Size(271, 420);
             groupBox1.TabIndex = 9;
             groupBox1.TabStop = false;
             groupBox1.Text = "Export";
             // 
+            // texNameTextBox
+            // 
+            texNameTextBox.Location = new System.Drawing.Point(119, 374);
+            texNameTextBox.Name = "texNameTextBox";
+            texNameTextBox.Size = new System.Drawing.Size(141, 23);
+            texNameTextBox.TabIndex = 37;
+            texNameTextBox.LostFocus += TexNameTextBox_LostFocus;
+            // 
+            // label10
+            // 
+            label10.AutoSize = true;
+            label10.Location = new System.Drawing.Point(7, 356);
+            label10.Margin = new Padding(4, 0, 4, 0);
+            label10.Name = "label10";
+            label10.Size = new System.Drawing.Size(142, 15);
+            label10.TabIndex = 36;
+            label10.Text = "Texture mapping options:";
+            // 
+            // texTypeComboBox
+            // 
+            texTypeComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            texTypeComboBox.FormattingEnabled = true;
+            texTypeComboBox.Items.AddRange(new object[] { "Diffuse", "NormalMap", "Specular", "Bump", "Ambient", "Emissive", "Reflection", "Displacement" });
+            texTypeComboBox.Location = new System.Drawing.Point(7, 374);
+            texTypeComboBox.Name = "texTypeComboBox";
+            texTypeComboBox.Size = new System.Drawing.Size(106, 23);
+            texTypeComboBox.TabIndex = 35;
+            texTypeComboBox.SelectedIndexChanged += TexTypeComboBox_SelectedIndexChanged;
+            // 
+            // uvTypesComboBox
+            // 
+            uvTypesComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            uvTypesComboBox.FormattingEnabled = true;
+            uvTypesComboBox.Items.AddRange(new object[] { "Diffuse", "NormalMap", "Specular", "Bump", "Ambient", "Emissive", "Reflection", "Displacement" });
+            uvTypesComboBox.Location = new System.Drawing.Point(88, 330);
+            uvTypesComboBox.Name = "uvTypesComboBox";
+            uvTypesComboBox.Size = new System.Drawing.Size(106, 23);
+            uvTypesComboBox.TabIndex = 34;
+            uvTypesComboBox.SelectedIndexChanged += uvTypesComboBox_SelectedIndexChanged;
+            // 
+            // uvEnabledCheckBox
+            // 
+            uvEnabledCheckBox.AutoSize = true;
+            uvEnabledCheckBox.Location = new System.Drawing.Point(200, 334);
+            uvEnabledCheckBox.Name = "uvEnabledCheckBox";
+            uvEnabledCheckBox.Size = new System.Drawing.Size(60, 19);
+            uvEnabledCheckBox.TabIndex = 33;
+            uvEnabledCheckBox.Text = "Export";
+            uvEnabledCheckBox.UseVisualStyleBackColor = true;
+            uvEnabledCheckBox.CheckedChanged += uvEnabledCheckBox_CheckedChanged;
+            // 
+            // uvsComboBox
+            // 
+            uvsComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            uvsComboBox.FormattingEnabled = true;
+            uvsComboBox.Items.AddRange(new object[] { "UV0", "UV1", "UV2", "UV3", "UV4", "UV5", "UV6", "UV7" });
+            uvsComboBox.Location = new System.Drawing.Point(7, 330);
+            uvsComboBox.Name = "uvsComboBox";
+            uvsComboBox.Size = new System.Drawing.Size(75, 23);
+            uvsComboBox.TabIndex = 32;
+            uvsComboBox.SelectedIndexChanged += uvsComboBox_SelectedIndexChanged;
+            // 
+            // canExportCheckBox
+            // 
+            canExportCheckBox.AutoSize = true;
+            canExportCheckBox.Location = new System.Drawing.Point(200, 290);
+            canExportCheckBox.Name = "canExportCheckBox";
+            canExportCheckBox.Size = new System.Drawing.Size(60, 19);
+            canExportCheckBox.TabIndex = 31;
+            canExportCheckBox.Text = "Export";
+            canExportCheckBox.UseVisualStyleBackColor = true;
+            canExportCheckBox.CheckedChanged += CanExportCheckBox_CheckedChanged;
+            // 
+            // label8
+            // 
+            label8.AutoSize = true;
+            label8.Location = new System.Drawing.Point(7, 268);
+            label8.Margin = new Padding(4, 0, 4, 0);
+            label8.Name = "label8";
+            label8.Size = new System.Drawing.Size(132, 15);
+            label8.TabIndex = 30;
+            label8.Text = "Selected unity type can:";
+            // 
+            // canParseCheckBox
+            // 
+            canParseCheckBox.AutoSize = true;
+            canParseCheckBox.Location = new System.Drawing.Point(140, 290);
+            canParseCheckBox.Name = "canParseCheckBox";
+            canParseCheckBox.Size = new System.Drawing.Size(54, 19);
+            canParseCheckBox.TabIndex = 29;
+            canParseCheckBox.Text = "Parse";
+            canParseCheckBox.UseVisualStyleBackColor = true;
+            canParseCheckBox.CheckedChanged += CanParseCheckBox_CheckedChanged;
+            // 
+            // typesComboBox
+            // 
+            typesComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            typesComboBox.FormattingEnabled = true;
+            typesComboBox.Items.AddRange(new object[] { ClassIDType.Animation, ClassIDType.AnimationClip, ClassIDType.Animator, ClassIDType.AnimatorController, ClassIDType.AnimatorOverrideController, ClassIDType.AssetBundle, ClassIDType.AudioClip, ClassIDType.Avatar, ClassIDType.Font, ClassIDType.GameObject, ClassIDType.IndexObject, ClassIDType.Material, ClassIDType.Mesh, ClassIDType.MeshFilter, ClassIDType.MeshRenderer, ClassIDType.MiHoYoBinData, ClassIDType.MonoBehaviour, ClassIDType.MonoScript, ClassIDType.MovieTexture, ClassIDType.PlayerSettings, ClassIDType.RectTransform, ClassIDType.Shader, ClassIDType.SkinnedMeshRenderer, ClassIDType.Sprite, ClassIDType.SpriteAtlas, ClassIDType.TextAsset, ClassIDType.Texture2D, ClassIDType.Transform, ClassIDType.VideoClip, ClassIDType.ResourceManager });
+            typesComboBox.Location = new System.Drawing.Point(7, 286);
+            typesComboBox.Name = "typesComboBox";
+            typesComboBox.Size = new System.Drawing.Size(127, 23);
+            typesComboBox.TabIndex = 28;
+            typesComboBox.SelectedIndexChanged += TypesComboBox_SelectedIndexChanged;
+            // 
             // label6
             // 
             label6.AutoSize = true;
-            label6.Location = new System.Drawing.Point(101, 275);
+            label6.Location = new System.Drawing.Point(9, 312);
             label6.Margin = new Padding(4, 0, 4, 0);
             label6.Name = "label6";
-            label6.Size = new System.Drawing.Size(73, 15);
+            label6.Size = new System.Drawing.Size(119, 15);
             label6.TabIndex = 27;
-            label6.Text = "UV Mapping";
-            // 
-            // uvsGridView
-            // 
-            uvsGridView.AllowUserToAddRows = false;
-            uvsGridView.AllowUserToDeleteRows = false;
-            uvsGridView.AllowUserToResizeRows = false;
-            uvsGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            uvsGridView.Columns.AddRange(new DataGridViewColumn[] { UVName, UVEnabled, UVType });
-            uvsGridView.Location = new System.Drawing.Point(8, 293);
-            uvsGridView.Name = "uvsGridView";
-            uvsGridView.RowHeadersVisible = false;
-            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            uvsGridView.RowsDefaultCellStyle = dataGridViewCellStyle1;
-            uvsGridView.RowTemplate.Height = 25;
-            uvsGridView.Size = new System.Drawing.Size(255, 103);
-            uvsGridView.TabIndex = 18;
-            // 
-            // UVName
-            // 
-            UVName.HeaderText = "Name";
-            UVName.Name = "UVName";
-            UVName.ReadOnly = true;
-            UVName.Width = 50;
-            // 
-            // UVEnabled
-            // 
-            UVEnabled.HeaderText = "Enabled";
-            UVEnabled.Name = "UVEnabled";
-            UVEnabled.Width = 60;
-            // 
-            // UVType
-            // 
-            UVType.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-            UVType.HeaderText = "Type";
-            UVType.Name = "UVType";
-            UVType.Items.AddRange(typeMap.Values.ToArray());
+            label6.Text = "UV mapping options:";
             // 
             // minimalAssetMap
             // 
@@ -373,8 +443,6 @@ namespace AssetStudio.GUI
             // groupBox2
             // 
             groupBox2.AutoSize = true;
-            groupBox2.Controls.Add(label9);
-            groupBox2.Controls.Add(texsGridView);
             groupBox2.Controls.Add(collectAnimations);
             groupBox2.Controls.Add(exportBlendShape);
             groupBox2.Controls.Add(exportAnimations);
@@ -396,79 +464,10 @@ namespace AssetStudio.GUI
             groupBox2.Margin = new Padding(4);
             groupBox2.Name = "groupBox2";
             groupBox2.Padding = new Padding(4);
-            groupBox2.Size = new System.Drawing.Size(379, 419);
+            groupBox2.Size = new System.Drawing.Size(380, 236);
             groupBox2.TabIndex = 11;
             groupBox2.TabStop = false;
             groupBox2.Text = "Fbx";
-            // 
-            // label9
-            // 
-            label9.AutoSize = true;
-            label9.Location = new System.Drawing.Point(133, 230);
-            label9.Margin = new Padding(4, 0, 4, 0);
-            label9.Name = "label9";
-            label9.Size = new System.Drawing.Size(96, 15);
-            label9.TabIndex = 28;
-            label9.Text = "Texture Mapping";
-            // 
-            // texsGridView
-            // 
-            texsGridView.AllowUserToResizeColumns = false;
-            texsGridView.AllowUserToResizeRows = false;
-            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            texsGridView.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle2;
-            dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle3.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle3.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            dataGridViewCellStyle3.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle3.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle3.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle3.WrapMode = DataGridViewTriState.True;
-            texsGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle3;
-            texsGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
-            texsGridView.Columns.AddRange(new DataGridViewColumn[] { TexName, TexType });
-            dataGridViewCellStyle6.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle6.BackColor = System.Drawing.SystemColors.Window;
-            dataGridViewCellStyle6.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            dataGridViewCellStyle6.ForeColor = System.Drawing.SystemColors.ControlText;
-            dataGridViewCellStyle6.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle6.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle6.WrapMode = DataGridViewTriState.False;
-            texsGridView.DefaultCellStyle = dataGridViewCellStyle6;
-            texsGridView.Location = new System.Drawing.Point(7, 248);
-            texsGridView.Name = "texsGridView";
-            dataGridViewCellStyle7.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle7.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle7.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            dataGridViewCellStyle7.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle7.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle7.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle7.WrapMode = DataGridViewTriState.True;
-            texsGridView.RowHeadersDefaultCellStyle = dataGridViewCellStyle7;
-            texsGridView.RowHeadersWidthSizeMode = DataGridViewRowHeadersWidthSizeMode.DisableResizing;
-            dataGridViewCellStyle8.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            texsGridView.RowsDefaultCellStyle = dataGridViewCellStyle8;
-            texsGridView.RowTemplate.Height = 25;
-            texsGridView.Size = new System.Drawing.Size(365, 148);
-            texsGridView.TabIndex = 27;
-            // 
-            // TexName
-            // 
-            TexName.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-            dataGridViewCellStyle4.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            TexName.DefaultCellStyle = dataGridViewCellStyle4;
-            TexName.HeaderText = "Name";
-            TexName.Name = "TexName";
-            TexName.Resizable = DataGridViewTriState.False;
-            // 
-            // TexType
-            // 
-            dataGridViewCellStyle5.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            TexType.DefaultCellStyle = dataGridViewCellStyle5;
-            TexType.HeaderText = "Type";
-            TexType.Name = "TexType";
-            TexType.Items.AddRange(typeMap.Values.ToArray());
-            TexType.Resizable = DataGridViewTriState.False;
             // 
             // exportBlendShape
             // 
@@ -500,7 +499,7 @@ namespace AssetStudio.GUI
             // 
             scaleFactor.DecimalPlaces = 2;
             scaleFactor.Increment = new decimal(new int[] { 1, 0, 0, 131072 });
-            scaleFactor.Location = new System.Drawing.Point(103, 185);
+            scaleFactor.Location = new System.Drawing.Point(102, 189);
             scaleFactor.Margin = new Padding(4);
             scaleFactor.Name = "scaleFactor";
             scaleFactor.Size = new System.Drawing.Size(59, 23);
@@ -511,7 +510,7 @@ namespace AssetStudio.GUI
             // label5
             // 
             label5.AutoSize = true;
-            label5.Location = new System.Drawing.Point(9, 189);
+            label5.Location = new System.Drawing.Point(8, 193);
             label5.Margin = new Padding(4, 0, 4, 0);
             label5.Name = "label5";
             label5.Size = new System.Drawing.Size(67, 15);
@@ -523,7 +522,7 @@ namespace AssetStudio.GUI
             fbxFormat.DropDownStyle = ComboBoxStyle.DropDownList;
             fbxFormat.FormattingEnabled = true;
             fbxFormat.Items.AddRange(new object[] { "Binary", "Ascii" });
-            fbxFormat.Location = new System.Drawing.Point(272, 121);
+            fbxFormat.Location = new System.Drawing.Point(271, 125);
             fbxFormat.Margin = new Padding(4);
             fbxFormat.Name = "fbxFormat";
             fbxFormat.Size = new System.Drawing.Size(70, 23);
@@ -532,7 +531,7 @@ namespace AssetStudio.GUI
             // label4
             // 
             label4.AutoSize = true;
-            label4.Location = new System.Drawing.Point(189, 125);
+            label4.Location = new System.Drawing.Point(188, 129);
             label4.Margin = new Padding(4, 0, 4, 0);
             label4.Name = "label4";
             label4.Size = new System.Drawing.Size(65, 15);
@@ -544,7 +543,7 @@ namespace AssetStudio.GUI
             fbxVersion.DropDownStyle = ComboBoxStyle.DropDownList;
             fbxVersion.FormattingEnabled = true;
             fbxVersion.Items.AddRange(new object[] { "6.1", "7.1", "7.2", "7.3", "7.4", "7.5" });
-            fbxVersion.Location = new System.Drawing.Point(272, 153);
+            fbxVersion.Location = new System.Drawing.Point(271, 157);
             fbxVersion.Margin = new Padding(4);
             fbxVersion.Name = "fbxVersion";
             fbxVersion.Size = new System.Drawing.Size(70, 23);
@@ -553,7 +552,7 @@ namespace AssetStudio.GUI
             // label3
             // 
             label3.AutoSize = true;
-            label3.Location = new System.Drawing.Point(189, 157);
+            label3.Location = new System.Drawing.Point(188, 161);
             label3.Margin = new Padding(4, 0, 4, 0);
             label3.Name = "label3";
             label3.Size = new System.Drawing.Size(65, 15);
@@ -562,7 +561,7 @@ namespace AssetStudio.GUI
             // 
             // boneSize
             // 
-            boneSize.Location = new System.Drawing.Point(103, 153);
+            boneSize.Location = new System.Drawing.Point(102, 157);
             boneSize.Margin = new Padding(4);
             boneSize.Name = "boneSize";
             boneSize.Size = new System.Drawing.Size(59, 23);
@@ -572,7 +571,7 @@ namespace AssetStudio.GUI
             // label2
             // 
             label2.AutoSize = true;
-            label2.Location = new System.Drawing.Point(9, 157);
+            label2.Location = new System.Drawing.Point(8, 161);
             label2.Margin = new Padding(4, 0, 4, 0);
             label2.Name = "label2";
             label2.Size = new System.Drawing.Size(54, 15);
@@ -584,7 +583,7 @@ namespace AssetStudio.GUI
             exportSkins.AutoSize = true;
             exportSkins.Checked = true;
             exportSkins.CheckState = CheckState.Checked;
-            exportSkins.Location = new System.Drawing.Point(94, 17);
+            exportSkins.Location = new System.Drawing.Point(154, 17);
             exportSkins.Margin = new Padding(4);
             exportSkins.Name = "exportSkins";
             exportSkins.Size = new System.Drawing.Size(89, 19);
@@ -595,7 +594,7 @@ namespace AssetStudio.GUI
             // label1
             // 
             label1.AutoSize = true;
-            label1.Location = new System.Drawing.Point(9, 125);
+            label1.Location = new System.Drawing.Point(8, 129);
             label1.Margin = new Padding(4, 0, 4, 0);
             label1.Name = "label1";
             label1.Size = new System.Drawing.Size(81, 15);
@@ -606,7 +605,7 @@ namespace AssetStudio.GUI
             // 
             filterPrecision.DecimalPlaces = 2;
             filterPrecision.Increment = new decimal(new int[] { 1, 0, 0, 131072 });
-            filterPrecision.Location = new System.Drawing.Point(103, 123);
+            filterPrecision.Location = new System.Drawing.Point(102, 127);
             filterPrecision.Margin = new Padding(4);
             filterPrecision.Name = "filterPrecision";
             filterPrecision.Size = new System.Drawing.Size(59, 23);
@@ -629,7 +628,7 @@ namespace AssetStudio.GUI
             exportAllNodes.AutoSize = true;
             exportAllNodes.Checked = true;
             exportAllNodes.CheckState = CheckState.Checked;
-            exportAllNodes.Location = new System.Drawing.Point(191, 17);
+            exportAllNodes.Location = new System.Drawing.Point(7, 96);
             exportAllNodes.Margin = new Padding(4);
             exportAllNodes.Name = "exportAllNodes";
             exportAllNodes.Size = new System.Drawing.Size(110, 19);
@@ -656,7 +655,7 @@ namespace AssetStudio.GUI
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             CancelButton = Cancel;
-            ClientSize = new System.Drawing.Size(677, 480);
+            ClientSize = new System.Drawing.Size(677, 467);
             Controls.Add(groupBox2);
             Controls.Add(groupBox1);
             Controls.Add(Cancel);
@@ -673,13 +672,11 @@ namespace AssetStudio.GUI
             TopMost = true;
             groupBox1.ResumeLayout(false);
             groupBox1.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)uvsGridView).EndInit();
             ((System.ComponentModel.ISupportInitialize)key).EndInit();
             panel1.ResumeLayout(false);
             panel1.PerformLayout();
             groupBox2.ResumeLayout(false);
             groupBox2.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)texsGridView).EndInit();
             ((System.ComponentModel.ISupportInitialize)scaleFactor).EndInit();
             ((System.ComponentModel.ISupportInitialize)boneSize).EndInit();
             ((System.ComponentModel.ISupportInitialize)filterPrecision).EndInit();
@@ -725,14 +722,16 @@ namespace AssetStudio.GUI
         private System.Windows.Forms.ToolTip keyToolTip;
         private System.Windows.Forms.CheckBox minimalAssetMap;
         private System.Windows.Forms.Label label7;
-        private System.Windows.Forms.DataGridView texsGridView;
-        private Label label9;
-        private DataGridViewTextBoxColumn TexName;
-        private DataGridViewComboBoxColumn TexType;
         private Label label6;
-        private DataGridView uvsGridView;
-        private DataGridViewTextBoxColumn UVName;
-        private DataGridViewCheckBoxColumn UVEnabled;
-        private DataGridViewComboBoxColumn UVType;
+        private Label label8;
+        private CheckBox canParseCheckBox;
+        private ComboBox typesComboBox;
+        private CheckBox canExportCheckBox;
+        private ComboBox uvTypesComboBox;
+        private CheckBox uvEnabledCheckBox;
+        private ComboBox uvsComboBox;
+        private Label label10;
+        private ComboBox texTypeComboBox;
+        private TextBox texNameTextBox;
     }
 }

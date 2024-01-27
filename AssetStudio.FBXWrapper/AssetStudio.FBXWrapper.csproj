@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0;net7.0</TargetFrameworks>
+    <TargetFrameworks>net7.0;net8.0</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Version>1.00.00</Version>
-    <AssemblyVersion>1.00.00</AssemblyVersion>
-    <FileVersion>1.00.00</FileVersion>
+    <Version>1.36.00</Version>
+    <AssemblyVersion>1.36.00</AssemblyVersion>
+    <FileVersion>1.36.00</FileVersion>
     <Copyright>Copyright © Perfare 2018-2022; Copyright © hozuki 2020</Copyright>
     <DebugType>embedded</DebugType>
   </PropertyGroup>

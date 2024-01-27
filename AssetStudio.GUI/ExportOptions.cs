@@ -8,17 +8,9 @@ namespace AssetStudio.GUI
 {
     public partial class ExportOptions : Form
     {
-        private Dictionary<int, string> typeMap = new Dictionary<int, string>()
-        {
-            { 0, "Diffuse" },
-            { 1, "NormalMap" },
-            { 2, "Specular" },
-            { 3, "Bump" },
-            { 4, "Ambient" },
-            { 5, "Emissive" },
-            { 6, "Reflection" },
-            { 7, "Displacement" },
-        };
+        private Dictionary<ClassIDType, (bool, bool)> types = new Dictionary<ClassIDType, (bool, bool)>();
+        private Dictionary<string, (bool, int)> uvs = new Dictionary<string, (bool, int)>();
+        private Dictionary<int, string> texs = new Dictionary<int, string>();
         public ExportOptions()
         {
             InitializeComponent();
@@ -51,23 +43,12 @@ namespace AssetStudio.GUI
             encrypted.Checked = Properties.Settings.Default.encrypted;
             key.Value = Properties.Settings.Default.key;
             minimalAssetMap.Checked = Properties.Settings.Default.minimalAssetMap;
-            var uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(Properties.Settings.Default.uvs);
-            foreach (var uv in uvs)
-            {
-                var rowIdx = uvsGridView.Rows.Add();
-
-                uvsGridView.Rows[rowIdx].Cells["UVName"].Value = uv.Key;
-                uvsGridView.Rows[rowIdx].Cells["UVEnabled"].Value = uv.Value.Item1;
-                uvsGridView.Rows[rowIdx].Cells["UVType"].Value = typeMap[uv.Value.Item2];
-            }
-            var texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(Properties.Settings.Default.texs);
-            foreach (var tex in texs)
-            {
-                var rowIdx = texsGridView.Rows.Add();
-
-                texsGridView.Rows[rowIdx].Cells["TexName"].Value = tex.Key;
-                texsGridView.Rows[rowIdx].Cells["TexType"].Value = typeMap[tex.Value];
-            }
+            types = JsonConvert.DeserializeObject<Dictionary<ClassIDType, (bool, bool)>>(Properties.Settings.Default.types);
+            uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(Properties.Settings.Default.uvs);
+            texs = JsonConvert.DeserializeObject<Dictionary<int, string>>(Properties.Settings.Default.texs);
+            typesComboBox.SelectedIndex = 0;
+            uvsComboBox.SelectedIndex = 0;
+            texTypeComboBox.SelectedIndex = 0;
         }
 
         private void OKbutton_Click(object sender, EventArgs e)
@@ -100,31 +81,86 @@ namespace AssetStudio.GUI
             Properties.Settings.Default.encrypted = encrypted.Checked;
             Properties.Settings.Default.key = (byte)key.Value;
             Properties.Settings.Default.minimalAssetMap = minimalAssetMap.Checked;
-            var uvs = new Dictionary<string, (bool, int)>();
-            foreach (DataGridViewRow row in uvsGridView.Rows)
-            {
-                var name = row.Cells["UVName"].Value as string;
-                var enabled = (bool)row.Cells["UVEnabled"].Value;
-                var type = row.Cells["UVType"].Value as string;
-                if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(type)) continue;
-                uvs.Add(name, (enabled, typeMap.FirstOrDefault(x => x.Value == type).Key));
-            }
+            Properties.Settings.Default.types = JsonConvert.SerializeObject(types);
             Properties.Settings.Default.uvs = JsonConvert.SerializeObject(uvs);
-            var texs = new Dictionary<string, int>();
-            foreach (DataGridViewRow row in texsGridView.Rows)
-            {
-                var name = row.Cells["TexName"].Value as string;
-                var type = row.Cells["TexType"].Value as string;
-                if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(type)) continue;
-                texs.Add(name, typeMap.FirstOrDefault(x => x.Value == type).Key);
-            }
             Properties.Settings.Default.texs = JsonConvert.SerializeObject(texs);
             Properties.Settings.Default.Save();
             MiHoYoBinData.Key = (byte)key.Value;
             MiHoYoBinData.Encrypted = encrypted.Checked;
             AssetsHelper.Minimal = Properties.Settings.Default.minimalAssetMap;
+            TypeFlags.SetTypes(types);
             DialogResult = DialogResult.OK;
             Close();
+        }
+
+        private void TypesComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (sender is ComboBox comboBox && types.TryGetValue((ClassIDType)comboBox.SelectedItem, out var param))
+            {
+                canParseCheckBox.Checked = param.Item1;
+                canExportCheckBox.Checked = param.Item2;
+            }
+        }
+
+        private void CanParseCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            if (sender is CheckBox checkBox && types.TryGetValue((ClassIDType)typesComboBox.SelectedItem, out var param))
+            {
+                param.Item1 = checkBox.Checked;
+                types[(ClassIDType)typesComboBox.SelectedItem] = (param.Item1, param.Item2);
+            }
+        }
+
+        private void CanExportCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            if (sender is CheckBox checkBox && types.TryGetValue((ClassIDType)typesComboBox.SelectedItem, out var param))
+            {
+                param.Item2 = checkBox.Checked;
+                types[(ClassIDType)typesComboBox.SelectedItem] = (param.Item1, param.Item2);
+            }
+        }
+
+        private void uvsComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (sender is ComboBox comboBox && uvs.TryGetValue(comboBox.SelectedItem.ToString(), out var param))
+            {
+                uvEnabledCheckBox.Checked = param.Item1;
+                uvTypesComboBox.SelectedIndex = param.Item2;
+            }
+        }
+
+        private void uvEnabledCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            if (sender is CheckBox checkBox && uvs.TryGetValue(uvsComboBox.SelectedItem.ToString(), out var param))
+            {
+                param.Item1 = checkBox.Checked;
+                uvs[uvsComboBox.SelectedItem.ToString()] = (param.Item1, param.Item2);
+            }
+        }
+
+        private void uvTypesComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (sender is ComboBox comboBox && uvs.TryGetValue(uvsComboBox.SelectedItem.ToString(), out var param))
+            {
+                param.Item2 = comboBox.SelectedIndex;
+                uvs[uvsComboBox.SelectedItem.ToString()] = (param.Item1, param.Item2);
+            }
+        }
+
+        private void TexTypeComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (sender is ComboBox comboBox && texs.TryGetValue(comboBox.SelectedIndex, out var name))
+            {
+                texNameTextBox.Text = name;
+            }
+        }
+
+        private void TexNameTextBox_LostFocus(object sender, EventArgs e)
+        {
+            if (sender is TextBox textBox && texs.ContainsKey(texTypeComboBox.SelectedIndex))
+            {
+                texs[texTypeComboBox.SelectedIndex] = textBox.Text;
+            }
         }
 
         private void Cancel_Click(object sender, EventArgs e)

@@ -160,6 +160,7 @@ namespace AssetStudio.GUI
             specifyGame.SelectedIndex = Properties.Settings.Default.selectedGame;
             specifyGame.SelectedIndexChanged += new EventHandler(specifyGame_SelectedIndexChanged);
             Studio.Game = GameManager.GetGame(Properties.Settings.Default.selectedGame);
+            TypeFlags.SetTypes(JsonConvert.DeserializeObject<Dictionary<ClassIDType, (bool, bool)>>(Properties.Settings.Default.types));
             Logger.Info($"Target Game type is {Studio.Game.Type}");
 
             if (Studio.Game.Type.IsUnityCN())
@@ -174,6 +175,10 @@ namespace AssetStudio.GUI
                 {
                     Properties.Settings.Default.selectedCABMapName = "";
                     Properties.Settings.Default.Save();
+                }
+                else
+                {
+                    MapNameComboBox.Text = Properties.Settings.Default.selectedCABMapName;
                 }
             }
         }
@@ -1303,7 +1308,7 @@ namespace AssetStudio.GUI
                 game = Studio.Game,
                 collectAnimations = Properties.Settings.Default.collectAnimations,
                 uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(Properties.Settings.Default.uvs),
-                texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(Properties.Settings.Default.texs),
+                texs = JsonConvert.DeserializeObject<Dictionary<int, string>>(Properties.Settings.Default.texs),
             };
             var model = new ModelConverter(m_GameObject, options, Array.Empty<AnimationClip>());
             PreviewModel(model);
@@ -1316,7 +1321,7 @@ namespace AssetStudio.GUI
                 game = Studio.Game,
                 collectAnimations = Properties.Settings.Default.collectAnimations,
                 uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(Properties.Settings.Default.uvs),
-                texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(Properties.Settings.Default.texs),
+                texs = JsonConvert.DeserializeObject<Dictionary<int, string>>(Properties.Settings.Default.texs),
             };
             var model = new ModelConverter(m_Animator, options, Array.Empty<AnimationClip>());
             PreviewModel(model);

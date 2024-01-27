@@ -25,7 +25,6 @@ namespace AssetStudio.CLI
     internal static class Studio
     {
         public static Game Game;
-        public static bool ModelOnly = false;
         public static bool SkipContainer = false;
         public static AssetsManager assetsManager = new AssetsManager() { ResolveDependencies = false };
         public static AssemblyLoader assemblyLoader = new AssemblyLoader();
@@ -286,25 +285,25 @@ namespace AssetStudio.CLI
             switch (asset)
             {
                 case GameObject m_GameObject:
-                    exportable = ModelOnly && m_GameObject.HasModel();
+                    exportable = ClassIDType.GameObject.CanExport() && m_GameObject.HasModel();
                     break;
                 case Texture2D m_Texture2D:
                     if (!string.IsNullOrEmpty(m_Texture2D.m_StreamData?.path))
                         assetItem.FullSize = asset.byteSize + m_Texture2D.m_StreamData.size;
-                    exportable = !ModelOnly;
+                    exportable = ClassIDType.Texture2D.CanExport();
                     break;
                 case AudioClip m_AudioClip:
                     if (!string.IsNullOrEmpty(m_AudioClip.m_Source))
                         assetItem.FullSize = asset.byteSize + m_AudioClip.m_Size;
-                    exportable = !ModelOnly;
+                    exportable = ClassIDType.AudioClip.CanExport();
                     break;
                 case VideoClip m_VideoClip:
                     if (!string.IsNullOrEmpty(m_VideoClip.m_OriginalPath))
-                        assetItem.FullSize = asset.byteSize + (long)m_VideoClip.m_ExternalResources.m_Size;
-                    exportable = !ModelOnly;
+                        assetItem.FullSize = asset.byteSize + m_VideoClip.m_ExternalResources.m_Size;
+                    exportable = ClassIDType.VideoClip.CanExport();
                     break;
                 case MonoBehaviour m_MonoBehaviour:
-                    exportable = !ModelOnly && assemblyLoader.Loaded;
+                    exportable = ClassIDType.MonoBehaviour.CanExport();
                     break;
                 case AssetBundle m_AssetBundle:
                     foreach (var m_Container in m_AssetBundle.m_Container)
@@ -317,30 +316,36 @@ namespace AssetStudio.CLI
                             containers.Add((m_AssetBundle.m_PreloadTable[k], m_Container.Key));
                         }
                     }
+
+                    exportable = ClassIDType.AssetBundle.CanExport();
                     break;
                 case IndexObject m_IndexObject:
                     foreach (var index in m_IndexObject.AssetMap)
                     {
                         mihoyoBinDataNames.Add((index.Value.Object, index.Key));
                     }
+
+                    exportable = ClassIDType.IndexObject.CanExport();
                     break;
                 case ResourceManager m_ResourceManager:
                     foreach (var m_Container in m_ResourceManager.m_Container)
                     {
                         containers.Add((m_Container.Value, m_Container.Key));
                     }
+
+                    exportable = ClassIDType.GameObject.CanExport();
                     break;
-                case Mesh _:
-                case TextAsset _:
-                case AnimationClip _:
-                case Font _:
-                case MovieTexture _:
-                case Sprite _:
-                case Material _:
-                case MiHoYoBinData _:
-                case Shader _:
-                case Animator _:
-                    exportable = !ModelOnly;
+                case Mesh _ when ClassIDType.Mesh.CanExport():
+                case TextAsset _ when ClassIDType.TextAsset.CanExport():
+                case AnimationClip _ when ClassIDType.Font.CanExport():
+                case Font _ when ClassIDType.GameObject.CanExport():
+                case MovieTexture _ when ClassIDType.MovieTexture.CanExport():
+                case Sprite _ when ClassIDType.Sprite.CanExport():
+                case Material _ when ClassIDType.Material.CanExport():
+                case MiHoYoBinData _ when ClassIDType.MiHoYoBinData.CanExport():
+                case Shader _ when ClassIDType.Shader.CanExport():
+                case Animator _ when ClassIDType.Animator.CanExport():
+                    exportable = true;
                     break;
             }
             if (assetItem.Text == "")

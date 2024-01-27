@@ -361,12 +361,12 @@ namespace AssetStudio
                         Container = ""
                     };
 
-                    var exportable = true;
+                    var exportable = false;
                     try
                     {
                         switch (objectReader.type)
                         {
-                            case ClassIDType.AssetBundle:
+                            case ClassIDType.AssetBundle when ClassIDType.AssetBundle.CanParse():
                                 var assetBundle = new AssetBundle(objectReader);
                                 foreach (var m_Container in assetBundle.m_Container)
                                 {
@@ -378,33 +378,38 @@ namespace AssetStudio
                                         containers.Add((assetBundle.m_PreloadTable[k], m_Container.Key));
                                     }
                                 }
+
                                 obj = null;
                                 asset.Name = assetBundle.m_Name;
-                                exportable = !Minimal;
+                                exportable = ClassIDType.AssetBundle.CanExport();
                                 break;
-                            case ClassIDType.GameObject:
+                            case ClassIDType.GameObject when ClassIDType.GameObject.CanParse():
                                 var gameObject = new GameObject(objectReader);
                                 obj = gameObject;
                                 asset.Name = gameObject.m_Name;
-                                exportable = !Minimal;
+                                exportable = ClassIDType.GameObject.CanExport();
                                 break;
-                            case ClassIDType.Shader:
+                            case ClassIDType.Shader when ClassIDType.Shader.CanParse():
                                 asset.Name = objectReader.ReadAlignedString();
                                 if (string.IsNullOrEmpty(asset.Name))
                                 {
                                     var m_parsedForm = new SerializedShader(objectReader);
                                     asset.Name = m_parsedForm.m_Name;
                                 }
+
+                                exportable = ClassIDType.Shader.CanExport();
                                 break;
-                            case ClassIDType.Animator:
+                            case ClassIDType.Animator when ClassIDType.Animator.CanParse():
                                 var component = new PPtr<Object>(objectReader);
                                 animators.Add((component, asset));
+                                exportable = ClassIDType.Animator.CanExport();
                                 break;
-                            case ClassIDType.MiHoYoBinData:
+                            case ClassIDType.MiHoYoBinData when ClassIDType.MiHoYoBinData.CanParse():
                                 var MiHoYoBinData = new MiHoYoBinData(objectReader);
                                 obj = MiHoYoBinData;
+                                exportable = ClassIDType.MiHoYoBinData.CanExport();
                                 break;
-                            case ClassIDType.IndexObject:
+                            case ClassIDType.IndexObject when ClassIDType.IndexObject.CanParse():
                                 var indexObject = new IndexObject(objectReader);
                                 obj = null;
                                 foreach (var index in indexObject.AssetMap)
@@ -412,19 +417,20 @@ namespace AssetStudio
                                     mihoyoBinDataNames.Add((index.Value.Object, index.Key));
                                 }
                                 asset.Name = "IndexObject";
-                                exportable = !Minimal;
+                                exportable = ClassIDType.IndexObject.CanExport();
                                 break;
-                            case ClassIDType.Font:
-                            case ClassIDType.Material:
-                            case ClassIDType.Texture:
-                            case ClassIDType.Mesh:
-                            case ClassIDType.Sprite:
-                            case ClassIDType.TextAsset:
-                            case ClassIDType.Texture2D:
-                            case ClassIDType.VideoClip:
-                            case ClassIDType.AudioClip:
-                            case ClassIDType.AnimationClip:
+                            case ClassIDType.Font when ClassIDType.Font.CanExport():
+                            case ClassIDType.Material when ClassIDType.Material.CanExport():
+                            case ClassIDType.Texture when ClassIDType.Texture.CanExport():
+                            case ClassIDType.Mesh when ClassIDType.Mesh.CanExport():
+                            case ClassIDType.Sprite when ClassIDType.Sprite.CanExport():
+                            case ClassIDType.TextAsset when ClassIDType.TextAsset.CanExport():
+                            case ClassIDType.Texture2D when ClassIDType.Texture2D.CanExport():
+                            case ClassIDType.VideoClip when ClassIDType.VideoClip.CanExport():
+                            case ClassIDType.AudioClip when ClassIDType.AudioClip.CanExport():
+                            case ClassIDType.AnimationClip when ClassIDType.AnimationClip.CanExport():
                                 asset.Name = objectReader.ReadAlignedString();
+                                exportable = true;
                                 break;
                             default:
                                 asset.Name = objectReader.type.ToString();

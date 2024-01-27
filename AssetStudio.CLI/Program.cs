@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using AssetStudio.CLI.Properties;
+using Newtonsoft.Json;
 using static AssetStudio.CLI.Studio;
 
 namespace AssetStudio.CLI 
@@ -44,10 +45,34 @@ namespace AssetStudio.CLI
                 AssetsHelper.Minimal = Settings.Default.minimalAssetMap;
                 AssetsHelper.SetUnityVersion(o.UnityVersion);
 
+                if (o.TypeFilter == null)
+                {
+                    TypeFlags.SetTypes(JsonConvert.DeserializeObject<Dictionary<ClassIDType, (bool, bool)>>(Settings.Default.types));
+                }
+                else
+                {
+                    foreach (var type in o.TypeFilter)
+                    {
+                        TypeFlags.SetType(type, true, true);
+                    }
+
+                    if (ClassIDType.GameObject.CanExport() || ClassIDType.Animator.CanExport())
+                    {
+                        TypeFlags.SetType(ClassIDType.Texture2D, true, false);
+                        if (ClassIDType.GameObject.CanExport())
+                        {
+                            TypeFlags.SetType(ClassIDType.Animator, true, false);
+                        }
+                        else if(ClassIDType.Animator.CanExport())
+                        {
+                            TypeFlags.SetType(ClassIDType.GameObject, true, false);
+                        }
+                    }
+                }
+
                 assetsManager.Silent = o.Silent;
                 assetsManager.Game = game;
                 assetsManager.SpecifyUnityVersion = o.UnityVersion;
-                ModelOnly = o.Model;
                 o.Output.Create();
 
                 if (o.Key != default)
