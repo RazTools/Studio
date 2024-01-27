@@ -81,42 +81,10 @@ namespace AssetStudio
             }
             else
             {
-                using var reader = new FileReader(path, this, true);
-                var signature = reader.FileType switch
+                while (Remaining > 0)
                 {
-                    FileType.BundleFile => "UnityFS\x00",
-                    FileType.BlbFile => "Blb\x02",
-                    FileType.MhyFile => Encoding.UTF8.GetString(reader.ReadBytes(4)),
-                    FileType.ENCRFile => "ENCR\x00",
-                    _ => throw new InvalidOperationException()
-                };
-                reader.Position = 0;
-
-                Logger.Verbose($"Prased signature: {signature}");
-
-                var signatureBytes = Encoding.UTF8.GetBytes(signature);
-                var buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
-                try
-                {
-                    while (Remaining > 0)
-                    {
-                        var index = 0;
-                        var absOffset = AbsolutePosition;
-                        var read = Read(buffer);
-                        while (index < read)
-                        {
-                            index = buffer.AsSpan(0, read).Search(signatureBytes, index);
-                            if (index == -1) break;
-                            var offset = absOffset + index;
-                            Offset = offset;
-                            yield return offset;
-                            index++;
-                        }
-                    }
-                }
-                finally
-                {
-                    ArrayPool<byte>.Shared.Return(buffer, true);
+                    Offset = AbsolutePosition;
+                    yield return AbsolutePosition;
                 }
             }
         }

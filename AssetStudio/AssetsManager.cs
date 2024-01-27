@@ -512,8 +512,8 @@ namespace AssetStudio
             }
             try
             {
-                var mhyFile = new MhyFile(reader, reader.FullPath, (Mhy)Game);
-                Logger.Verbose($"mhy total size: {mhyFile.TotalSize:X8}");
+                var mhyFile = new MhyFile(reader, (Mhy)Game);
+                Logger.Verbose($"mhy total size: {mhyFile.m_Header.size:X8}");
                 foreach (var file in mhyFile.fileList)
                 {
                     var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), file.fileName);

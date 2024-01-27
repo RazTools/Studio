@@ -14,15 +14,11 @@ namespace AssetStudio
 
         public BundleFile.Header m_Header;
         public List<StreamFile> fileList;
-        public long Offset;
         public Mhy mhy;
 
-        public long TotalSize => 8 + m_Header.compressedBlocksInfoSize + m_BlocksInfo.Sum(x => x.compressedSize);
-
-        public MhyFile(FileReader reader, string path, Mhy mhy)
+        public MhyFile(FileReader reader, Mhy mhy)
         {
             this.mhy = mhy;
-            Offset = reader.Position;
             reader.Endian = EndianType.LittleEndian;
 
             signature = reader.ReadStringToNull(4);
@@ -40,9 +36,14 @@ namespace AssetStudio
             };
             Logger.Verbose($"Header: {m_Header}");
             ReadBlocksInfoAndDirectory(reader);
-            using var blocksStream = CreateBlocksStream(path);
+            using var blocksStream = CreateBlocksStream(reader.FullPath);
             ReadBlocks(reader, blocksStream);
-            ReadFiles(blocksStream, path);
+            ReadFiles(blocksStream, reader.FullPath);
+            m_Header.size = 8 + m_Header.compressedBlocksInfoSize + m_BlocksInfo.Sum(x => x.compressedSize);
+            while (reader.PeekChar() == '\0')
+            {
+                reader.Position++;
+            }
         }
 
         private void ReadBlocksInfoAndDirectory(FileReader reader)

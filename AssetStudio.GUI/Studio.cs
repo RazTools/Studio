@@ -160,7 +160,7 @@ namespace AssetStudio.GUI
             StatusStripUpdate($"Decompressing {reader.FileName} ...");
             try
             {
-                var mhy0File = new MhyFile(reader, reader.FullPath, (Mhy)Game);
+                var mhy0File = new MhyFile(reader, (Mhy)Game);
                 reader.Dispose();
                 if (mhy0File.fileList.Count > 0)
                 {
