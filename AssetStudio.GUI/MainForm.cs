@@ -130,7 +130,7 @@ namespace AssetStudio.GUI
                 ConsoleHelper.ShowWindow(handle, ConsoleHelper.SW_HIDE);
             }
             var loggerEventType = (LoggerEvent)Properties.Settings.Default.loggerEventType;
-            var loggerEventTypes = Enum.GetValues<LoggerEvent>().ToArray()[1..^2];
+            var loggerEventTypes = Enum.GetValues<LoggerEvent>().ToArray()[1..^1];
             foreach (var loggerEvent in loggerEventTypes)
             {
                 var menuItem = new ToolStripMenuItem(loggerEvent.ToString()) { CheckOnClick = true, Checked = loggerEventType.HasFlag(loggerEvent), Tag = (int)loggerEvent };
