@@ -37,7 +37,9 @@ namespace AssetStudio.GUI
             OKbutton = new Button();
             Cancel = new Button();
             groupBox1 = new GroupBox();
-            texNameTextBox = new TextBox();
+            removeTexNameButton = new Button();
+            addTexNameButton = new Button();
+            texNameComboBox = new ComboBox();
             label10 = new Label();
             texTypeComboBox = new ComboBox();
             uvTypesComboBox = new ComboBox();
@@ -81,6 +83,7 @@ namespace AssetStudio.GUI
             exportAllNodes = new CheckBox();
             eulerFilter = new CheckBox();
             toolTip = new ToolTip(components);
+            Reset = new Button();
             groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)key).BeginInit();
             panel1.SuspendLayout();
@@ -116,7 +119,9 @@ namespace AssetStudio.GUI
             // groupBox1
             // 
             groupBox1.AutoSize = true;
-            groupBox1.Controls.Add(texNameTextBox);
+            groupBox1.Controls.Add(removeTexNameButton);
+            groupBox1.Controls.Add(addTexNameButton);
+            groupBox1.Controls.Add(texNameComboBox);
             groupBox1.Controls.Add(label10);
             groupBox1.Controls.Add(texTypeComboBox);
             groupBox1.Controls.Add(uvTypesComboBox);
@@ -141,23 +146,44 @@ namespace AssetStudio.GUI
             groupBox1.Margin = new Padding(4);
             groupBox1.Name = "groupBox1";
             groupBox1.Padding = new Padding(4);
-            groupBox1.Size = new System.Drawing.Size(271, 420);
+            groupBox1.Size = new System.Drawing.Size(271, 433);
             groupBox1.TabIndex = 9;
             groupBox1.TabStop = false;
             groupBox1.Text = "Export";
             // 
-            // texNameTextBox
+            // removeTexNameButton
             // 
-            texNameTextBox.Location = new System.Drawing.Point(119, 374);
-            texNameTextBox.Name = "texNameTextBox";
-            texNameTextBox.Size = new System.Drawing.Size(141, 23);
-            texNameTextBox.TabIndex = 37;
-            texNameTextBox.LostFocus += TexNameTextBox_LostFocus;
+            removeTexNameButton.Location = new System.Drawing.Point(186, 387);
+            removeTexNameButton.Name = "removeTexNameButton";
+            removeTexNameButton.Size = new System.Drawing.Size(71, 23);
+            removeTexNameButton.TabIndex = 41;
+            removeTexNameButton.Text = "Remove";
+            removeTexNameButton.UseVisualStyleBackColor = true;
+            removeTexNameButton.Click += RemoveTexNameButton_Click;
+            // 
+            // addTexNameButton
+            // 
+            addTexNameButton.Location = new System.Drawing.Point(199, 358);
+            addTexNameButton.Name = "addTexNameButton";
+            addTexNameButton.Size = new System.Drawing.Size(42, 23);
+            addTexNameButton.TabIndex = 13;
+            addTexNameButton.Text = "Add";
+            addTexNameButton.UseVisualStyleBackColor = true;
+            addTexNameButton.Click += AddTexNameButton_Click;
+            // 
+            // texNameComboBox
+            // 
+            texNameComboBox.FormattingEnabled = true;
+            texNameComboBox.Location = new System.Drawing.Point(8, 373);
+            texNameComboBox.Name = "texNameComboBox";
+            texNameComboBox.Size = new System.Drawing.Size(81, 23);
+            texNameComboBox.TabIndex = 38;
+            texNameComboBox.SelectedIndexChanged += TexNameComboBox_SelectedIndexChanged;
             // 
             // label10
             // 
             label10.AutoSize = true;
-            label10.Location = new System.Drawing.Point(7, 356);
+            label10.Location = new System.Drawing.Point(9, 355);
             label10.Margin = new Padding(4, 0, 4, 0);
             label10.Name = "label10";
             label10.Size = new System.Drawing.Size(142, 15);
@@ -169,9 +195,9 @@ namespace AssetStudio.GUI
             texTypeComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
             texTypeComboBox.FormattingEnabled = true;
             texTypeComboBox.Items.AddRange(new object[] { "Diffuse", "NormalMap", "Specular", "Bump", "Ambient", "Emissive", "Reflection", "Displacement" });
-            texTypeComboBox.Location = new System.Drawing.Point(7, 374);
+            texTypeComboBox.Location = new System.Drawing.Point(95, 373);
             texTypeComboBox.Name = "texTypeComboBox";
-            texTypeComboBox.Size = new System.Drawing.Size(106, 23);
+            texTypeComboBox.Size = new System.Drawing.Size(79, 23);
             texTypeComboBox.TabIndex = 35;
             texTypeComboBox.SelectedIndexChanged += TexTypeComboBox_SelectedIndexChanged;
             texTypeComboBox.MouseHover += TexTypeComboBox_MouseHover;
@@ -181,7 +207,7 @@ namespace AssetStudio.GUI
             uvTypesComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
             uvTypesComboBox.FormattingEnabled = true;
             uvTypesComboBox.Items.AddRange(new object[] { "Diffuse", "NormalMap", "Specular", "Bump", "Ambient", "Emissive", "Reflection", "Displacement" });
-            uvTypesComboBox.Location = new System.Drawing.Point(88, 330);
+            uvTypesComboBox.Location = new System.Drawing.Point(89, 329);
             uvTypesComboBox.Name = "uvTypesComboBox";
             uvTypesComboBox.Size = new System.Drawing.Size(106, 23);
             uvTypesComboBox.TabIndex = 34;
@@ -190,7 +216,7 @@ namespace AssetStudio.GUI
             // uvEnabledCheckBox
             // 
             uvEnabledCheckBox.AutoSize = true;
-            uvEnabledCheckBox.Location = new System.Drawing.Point(200, 334);
+            uvEnabledCheckBox.Location = new System.Drawing.Point(201, 333);
             uvEnabledCheckBox.Name = "uvEnabledCheckBox";
             uvEnabledCheckBox.Size = new System.Drawing.Size(60, 19);
             uvEnabledCheckBox.TabIndex = 33;
@@ -203,7 +229,7 @@ namespace AssetStudio.GUI
             uvsComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
             uvsComboBox.FormattingEnabled = true;
             uvsComboBox.Items.AddRange(new object[] { "UV0", "UV1", "UV2", "UV3", "UV4", "UV5", "UV6", "UV7" });
-            uvsComboBox.Location = new System.Drawing.Point(7, 330);
+            uvsComboBox.Location = new System.Drawing.Point(8, 329);
             uvsComboBox.Name = "uvsComboBox";
             uvsComboBox.Size = new System.Drawing.Size(75, 23);
             uvsComboBox.TabIndex = 32;
@@ -213,7 +239,7 @@ namespace AssetStudio.GUI
             // canExportCheckBox
             // 
             canExportCheckBox.AutoSize = true;
-            canExportCheckBox.Location = new System.Drawing.Point(200, 290);
+            canExportCheckBox.Location = new System.Drawing.Point(200, 287);
             canExportCheckBox.Name = "canExportCheckBox";
             canExportCheckBox.Size = new System.Drawing.Size(60, 19);
             canExportCheckBox.TabIndex = 31;
@@ -224,7 +250,7 @@ namespace AssetStudio.GUI
             // label8
             // 
             label8.AutoSize = true;
-            label8.Location = new System.Drawing.Point(7, 268);
+            label8.Location = new System.Drawing.Point(8, 267);
             label8.Margin = new Padding(4, 0, 4, 0);
             label8.Name = "label8";
             label8.Size = new System.Drawing.Size(132, 15);
@@ -234,7 +260,7 @@ namespace AssetStudio.GUI
             // canParseCheckBox
             // 
             canParseCheckBox.AutoSize = true;
-            canParseCheckBox.Location = new System.Drawing.Point(140, 290);
+            canParseCheckBox.Location = new System.Drawing.Point(140, 287);
             canParseCheckBox.Name = "canParseCheckBox";
             canParseCheckBox.Size = new System.Drawing.Size(54, 19);
             canParseCheckBox.TabIndex = 29;
@@ -247,7 +273,7 @@ namespace AssetStudio.GUI
             typesComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
             typesComboBox.FormattingEnabled = true;
             typesComboBox.Items.AddRange(new object[] { ClassIDType.Animation, ClassIDType.AnimationClip, ClassIDType.Animator, ClassIDType.AnimatorController, ClassIDType.AnimatorOverrideController, ClassIDType.AssetBundle, ClassIDType.AudioClip, ClassIDType.Avatar, ClassIDType.Font, ClassIDType.GameObject, ClassIDType.IndexObject, ClassIDType.Material, ClassIDType.Mesh, ClassIDType.MeshFilter, ClassIDType.MeshRenderer, ClassIDType.MiHoYoBinData, ClassIDType.MonoBehaviour, ClassIDType.MonoScript, ClassIDType.MovieTexture, ClassIDType.PlayerSettings, ClassIDType.RectTransform, ClassIDType.Shader, ClassIDType.SkinnedMeshRenderer, ClassIDType.Sprite, ClassIDType.SpriteAtlas, ClassIDType.TextAsset, ClassIDType.Texture2D, ClassIDType.Transform, ClassIDType.VideoClip, ClassIDType.ResourceManager });
-            typesComboBox.Location = new System.Drawing.Point(7, 286);
+            typesComboBox.Location = new System.Drawing.Point(7, 285);
             typesComboBox.Name = "typesComboBox";
             typesComboBox.Size = new System.Drawing.Size(127, 23);
             typesComboBox.TabIndex = 28;
@@ -257,7 +283,7 @@ namespace AssetStudio.GUI
             // label6
             // 
             label6.AutoSize = true;
-            label6.Location = new System.Drawing.Point(9, 312);
+            label6.Location = new System.Drawing.Point(7, 311);
             label6.Margin = new Padding(4, 0, 4, 0);
             label6.Name = "label6";
             label6.Size = new System.Drawing.Size(119, 15);
@@ -279,7 +305,7 @@ namespace AssetStudio.GUI
             assetGroupOptions.DropDownStyle = ComboBoxStyle.DropDownList;
             assetGroupOptions.FormattingEnabled = true;
             assetGroupOptions.Items.AddRange(new object[] { "type name", "container path", "source file name", "do not group" });
-            assetGroupOptions.Location = new System.Drawing.Point(8, 241);
+            assetGroupOptions.Location = new System.Drawing.Point(7, 240);
             assetGroupOptions.Margin = new Padding(4);
             assetGroupOptions.Name = "assetGroupOptions";
             assetGroupOptions.Size = new System.Drawing.Size(173, 23);
@@ -288,7 +314,7 @@ namespace AssetStudio.GUI
             // label7
             // 
             label7.AutoSize = true;
-            label7.Location = new System.Drawing.Point(8, 222);
+            label7.Location = new System.Drawing.Point(8, 221);
             label7.Margin = new Padding(4, 0, 4, 0);
             label7.Name = "label7";
             label7.Size = new System.Drawing.Size(140, 15);
@@ -364,7 +390,7 @@ namespace AssetStudio.GUI
             panel1.Controls.Add(tojpg);
             panel1.Controls.Add(topng);
             panel1.Controls.Add(tobmp);
-            panel1.Location = new System.Drawing.Point(18, 180);
+            panel1.Location = new System.Drawing.Point(24, 174);
             panel1.Margin = new Padding(4);
             panel1.Name = "panel1";
             panel1.Size = new System.Drawing.Size(236, 38);
@@ -651,10 +677,21 @@ namespace AssetStudio.GUI
             eulerFilter.Text = "EulerFilter";
             eulerFilter.UseVisualStyleBackColor = true;
             // 
-            // typesToolTip
+            // toolTip
             // 
+            toolTip.AutomaticDelay = 1000;
             toolTip.UseAnimation = false;
             toolTip.UseFading = false;
+            // 
+            // Reset
+            // 
+            Reset.Location = new System.Drawing.Point(300, 428);
+            Reset.Name = "Reset";
+            Reset.Size = new System.Drawing.Size(88, 26);
+            Reset.TabIndex = 12;
+            Reset.Text = "Reset";
+            Reset.UseVisualStyleBackColor = true;
+            Reset.Click += Reset_Click;
             // 
             // ExportOptions
             // 
@@ -663,6 +700,7 @@ namespace AssetStudio.GUI
             AutoScaleMode = AutoScaleMode.Font;
             CancelButton = Cancel;
             ClientSize = new System.Drawing.Size(677, 467);
+            Controls.Add(Reset);
             Controls.Add(groupBox2);
             Controls.Add(groupBox1);
             Controls.Add(Cancel);
@@ -737,7 +775,10 @@ namespace AssetStudio.GUI
         private ComboBox uvsComboBox;
         private Label label10;
         private ComboBox texTypeComboBox;
-        private TextBox texNameTextBox;
         private ToolTip toolTip;
+        private Button Reset;
+        private ComboBox texNameComboBox;
+        private Button addTexNameButton;
+        private Button removeTexNameButton;
     }
 }

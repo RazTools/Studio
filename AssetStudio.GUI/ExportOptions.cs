@@ -9,9 +9,10 @@ namespace AssetStudio.GUI
 {
     public partial class ExportOptions : Form
     {
+        public bool Resetted = false;
         private Dictionary<ClassIDType, (bool, bool)> types = new Dictionary<ClassIDType, (bool, bool)>();
         private Dictionary<string, (bool, int)> uvs = new Dictionary<string, (bool, int)>();
-        private Dictionary<int, string> texs = new Dictionary<int, string>();
+        private Dictionary<string, int> texs = new Dictionary<string, int>();
         public ExportOptions()
         {
             InitializeComponent();
@@ -46,10 +47,22 @@ namespace AssetStudio.GUI
             minimalAssetMap.Checked = Properties.Settings.Default.minimalAssetMap;
             types = JsonConvert.DeserializeObject<Dictionary<ClassIDType, (bool, bool)>>(Properties.Settings.Default.types);
             uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(Properties.Settings.Default.uvs);
-            texs = JsonConvert.DeserializeObject<Dictionary<int, string>>(Properties.Settings.Default.texs);
+
+            texTypeComboBox.SelectedIndex = 0;
+            
+            if (!string.IsNullOrEmpty(Properties.Settings.Default.texs))
+            {
+                texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(Properties.Settings.Default.texs);
+                if (texs.Count > 0 )
+                {
+                    texNameComboBox.Items.AddRange(texs.Keys.ToArray());
+                    texNameComboBox.SelectedIndex = 0;
+                    texTypeComboBox.SelectedIndex = texs.ElementAt(0).Value;
+                }
+            }
+
             typesComboBox.SelectedIndex = 0;
             uvsComboBox.SelectedIndex = 0;
-            texTypeComboBox.SelectedIndex = 0;
         }
 
         private void OKbutton_Click(object sender, EventArgs e)
@@ -148,19 +161,49 @@ namespace AssetStudio.GUI
             }
         }
 
-        private void TexTypeComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        private void TexNameComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (sender is ComboBox comboBox && texs.TryGetValue(comboBox.SelectedIndex, out var name))
+            if (!string.IsNullOrEmpty(texNameComboBox.SelectedItem?.ToString()) && texs.TryGetValue(texNameComboBox.SelectedItem?.ToString(), out var type))
             {
-                texNameTextBox.Text = name;
+                texTypeComboBox.SelectedIndex = type;
             }
         }
 
-        private void TexNameTextBox_LostFocus(object sender, EventArgs e)
+        private void AddTexNameButton_Click(object sender, EventArgs e)
         {
-            if (sender is TextBox textBox && texs.ContainsKey(texTypeComboBox.SelectedIndex))
+            if (!string.IsNullOrEmpty(texNameComboBox.Text) && !texs.ContainsKey(texNameComboBox.Text))
             {
-                texs[texTypeComboBox.SelectedIndex] = textBox.Text;
+                texs[texNameComboBox.Text] = texTypeComboBox.SelectedIndex;
+                texNameComboBox.Items.Add(texNameComboBox.Text);
+                texNameComboBox.SelectedIndex = texNameComboBox.Items.Count - 1;
+                ActiveControl = null;
+            }
+        }
+
+        private void RemoveTexNameButton_Click(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrEmpty(texNameComboBox.SelectedItem?.ToString()) && texs.ContainsKey(texNameComboBox.SelectedItem?.ToString()))
+            {
+                texs.Remove(texNameComboBox.SelectedItem?.ToString());
+                texNameComboBox.Items.Remove(texNameComboBox.SelectedItem?.ToString());
+                ActiveControl = null;
+                if (texNameComboBox.Items.Count > 0)
+                {
+                    texNameComboBox.SelectedIndex = 0;
+                }
+                else
+                {
+                    texNameComboBox.Text = "";
+                    texTypeComboBox.SelectedIndex = 0;
+                }
+            }
+        }
+
+        private void TexTypeComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (sender is ComboBox comboBox && !string.IsNullOrEmpty(texNameComboBox.SelectedItem?.ToString()) && texs.ContainsKey(texNameComboBox.SelectedItem?.ToString()))
+            {
+                texs[texNameComboBox.SelectedItem?.ToString()] = comboBox.SelectedIndex;
             }
         }
 
@@ -193,7 +236,7 @@ namespace AssetStudio.GUI
             var sb = new StringBuilder();
             foreach (var tex in texs)
             {
-                sb.Append($"{texTypeComboBox.Items[tex.Key]}: {tex.Value}\n");
+                sb.Append($"{tex.Key}: {texTypeComboBox.Items[tex.Value]}\n");
             }
 
             toolTip.ToolTipTitle = "Texture options status:";
@@ -204,6 +247,14 @@ namespace AssetStudio.GUI
         {
             toolTip.ToolTipTitle = "Value";
             toolTip.SetToolTip(key, "Key in Hex");
+        }
+
+        private void Reset_Click(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.Reset();
+            DialogResult = DialogResult.Cancel;
+            Resetted = true;
+            Close();
         }
 
         private void Cancel_Click(object sender, EventArgs e)

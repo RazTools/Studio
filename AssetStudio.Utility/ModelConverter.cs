@@ -712,9 +712,8 @@ namespace AssetStudio
                     iMat.Textures.Add(texture);
 
                     int dest = -1;
-                    var entry = options.texs.FirstOrDefault(x => x.Value == texEnv.Key);
-                    if (!entry.Equals(default))
-                        dest = entry.Key;
+                    if (options.texs.TryGetValue(texEnv.Key, out var target))
+                        dest = target;
                     else if (texEnv.Key == "_MainTex")
                         dest = 0;
                     else if (texEnv.Key == "_BumpMap")
@@ -1174,7 +1173,7 @@ namespace AssetStudio
             public Game game;
             public bool collectAnimations;
             public Dictionary<string, (bool, int)> uvs;
-            public Dictionary<int, string> texs; 
+            public Dictionary<string, int> texs; 
         }
     }
 }

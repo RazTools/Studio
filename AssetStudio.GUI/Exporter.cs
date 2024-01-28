@@ -365,7 +365,7 @@ namespace AssetStudio.GUI
                 game = Studio.Game,
                 collectAnimations = Properties.Settings.Default.collectAnimations,
                 uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(Properties.Settings.Default.uvs),
-                texs = JsonConvert.DeserializeObject<Dictionary<int, string>>(Properties.Settings.Default.texs),
+                texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(Properties.Settings.Default.texs),
             };
             var convert = animationList != null
                 ? new ModelConverter(m_Animator, options, animationList.Select(x => (AnimationClip)x.Asset).ToArray())
@@ -391,7 +391,7 @@ namespace AssetStudio.GUI
                 game = Studio.Game,
                 collectAnimations = Properties.Settings.Default.collectAnimations,
                 uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(Properties.Settings.Default.uvs),
-                texs = JsonConvert.DeserializeObject<Dictionary<int, string>>(Properties.Settings.Default.texs),
+                texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(Properties.Settings.Default.texs),
             };
             var convert = animationList != null
                 ? new ModelConverter(gameObject, options, animationList.Select(x => (AnimationClip)x.Asset).ToArray())
@@ -416,7 +416,7 @@ namespace AssetStudio.GUI
                 game = Studio.Game,
                 collectAnimations = Properties.Settings.Default.collectAnimations,
                 uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(Properties.Settings.Default.uvs),
-                texs = JsonConvert.DeserializeObject<Dictionary<int, string>>(Properties.Settings.Default.texs),
+                texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(Properties.Settings.Default.texs),
             };
             var convert = animationList != null
                 ? new ModelConverter(rootName, gameObject, options, animationList.Select(x => (AnimationClip)x.Asset).ToArray())

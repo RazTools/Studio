@@ -550,7 +550,12 @@ namespace AssetStudio.GUI
         private void showExpOpt_Click(object sender, EventArgs e)
         {
             var exportOpt = new ExportOptions();
-            exportOpt.ShowDialog(this);
+            if (exportOpt.ShowDialog(this) == DialogResult.OK && exportOpt.Resetted)
+            {
+                InitializeExportOptions();
+                InitializeLogger();
+                InitalizeOptions();
+            }
         }
 
         private void assetListView_RetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
@@ -1308,7 +1313,7 @@ namespace AssetStudio.GUI
                 game = Studio.Game,
                 collectAnimations = Properties.Settings.Default.collectAnimations,
                 uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(Properties.Settings.Default.uvs),
-                texs = JsonConvert.DeserializeObject<Dictionary<int, string>>(Properties.Settings.Default.texs),
+                texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(Properties.Settings.Default.texs),
             };
             var model = new ModelConverter(m_GameObject, options, Array.Empty<AnimationClip>());
             PreviewModel(model);
@@ -1321,7 +1326,7 @@ namespace AssetStudio.GUI
                 game = Studio.Game,
                 collectAnimations = Properties.Settings.Default.collectAnimations,
                 uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(Properties.Settings.Default.uvs),
-                texs = JsonConvert.DeserializeObject<Dictionary<int, string>>(Properties.Settings.Default.texs),
+                texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(Properties.Settings.Default.texs),
             };
             var model = new ModelConverter(m_Animator, options, Array.Empty<AnimationClip>());
             PreviewModel(model);
