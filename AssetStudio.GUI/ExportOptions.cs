@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Windows.Forms;
 
 namespace AssetStudio.GUI
@@ -161,6 +162,48 @@ namespace AssetStudio.GUI
             {
                 texs[texTypeComboBox.SelectedIndex] = textBox.Text;
             }
+        }
+
+        private void TypesComboBox_MouseHover(object sender, EventArgs e)
+        {
+            var sb = new StringBuilder();
+            foreach (var type in types)
+            {
+                sb.Append($"{type.Key}: {(type.Value.Item1 ? '\x2713' : '\x2717')}, {(type.Value.Item2 ? '\x2713' : '\x2717')}\n");
+            }
+
+            toolTip.ToolTipTitle = "Type options status:";
+            toolTip.SetToolTip(typesComboBox, sb.ToString());
+        }
+
+        private void uvsComboBox_MouseHover(object sender, EventArgs e)
+        {
+            var sb = new StringBuilder();
+            foreach (var uv in uvs)
+            {
+                sb.Append($"{uv.Key}: {uvTypesComboBox.Items[uv.Value.Item2]}, {(uv.Value.Item1 ? '\x2713' : '\x2717')}\n");
+            }
+
+            toolTip.ToolTipTitle = "UVs options status:";
+            toolTip.SetToolTip(uvsComboBox, sb.ToString());
+        }
+
+        private void TexTypeComboBox_MouseHover(object sender, EventArgs e)
+        {
+            var sb = new StringBuilder();
+            foreach (var tex in texs)
+            {
+                sb.Append($"{texTypeComboBox.Items[tex.Key]}: {tex.Value}\n");
+            }
+
+            toolTip.ToolTipTitle = "Texture options status:";
+            toolTip.SetToolTip(texTypeComboBox, sb.ToString());
+        }
+
+        private void Key_MouseHover(object sender, EventArgs e)
+        {
+            toolTip.ToolTipTitle = "Value";
+            toolTip.SetToolTip(key, "Key in Hex");
         }
 
         private void Cancel_Click(object sender, EventArgs e)

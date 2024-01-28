@@ -85,6 +85,10 @@ namespace AssetStudio
                 {
                     Offset = AbsolutePosition;
                     yield return AbsolutePosition;
+                    if (Offset == AbsolutePosition)
+                    {
+                        break;
+                    }
                 }
             }
         }

@@ -80,8 +80,7 @@ namespace AssetStudio.GUI
             castToBone = new CheckBox();
             exportAllNodes = new CheckBox();
             eulerFilter = new CheckBox();
-            exportUvsTooltip = new ToolTip(components);
-            keyToolTip = new ToolTip(components);
+            toolTip = new ToolTip(components);
             groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)key).BeginInit();
             panel1.SuspendLayout();
@@ -175,6 +174,7 @@ namespace AssetStudio.GUI
             texTypeComboBox.Size = new System.Drawing.Size(106, 23);
             texTypeComboBox.TabIndex = 35;
             texTypeComboBox.SelectedIndexChanged += TexTypeComboBox_SelectedIndexChanged;
+            texTypeComboBox.MouseHover += TexTypeComboBox_MouseHover;
             // 
             // uvTypesComboBox
             // 
@@ -208,6 +208,7 @@ namespace AssetStudio.GUI
             uvsComboBox.Size = new System.Drawing.Size(75, 23);
             uvsComboBox.TabIndex = 32;
             uvsComboBox.SelectedIndexChanged += uvsComboBox_SelectedIndexChanged;
+            uvsComboBox.MouseHover += uvsComboBox_MouseHover;
             // 
             // canExportCheckBox
             // 
@@ -251,6 +252,7 @@ namespace AssetStudio.GUI
             typesComboBox.Size = new System.Drawing.Size(127, 23);
             typesComboBox.TabIndex = 28;
             typesComboBox.SelectedIndexChanged += TypesComboBox_SelectedIndexChanged;
+            typesComboBox.MouseHover += TypesComboBox_MouseHover;
             // 
             // label6
             // 
@@ -328,7 +330,7 @@ namespace AssetStudio.GUI
             key.Name = "key";
             key.Size = new System.Drawing.Size(55, 23);
             key.TabIndex = 8;
-            keyToolTip.SetToolTip(key, "Key in hex");
+            key.MouseHover += Key_MouseHover;
             // 
             // encrypted
             // 
@@ -649,6 +651,11 @@ namespace AssetStudio.GUI
             eulerFilter.Text = "EulerFilter";
             eulerFilter.UseVisualStyleBackColor = true;
             // 
+            // typesToolTip
+            // 
+            toolTip.UseAnimation = false;
+            toolTip.UseFading = false;
+            // 
             // ExportOptions
             // 
             AcceptButton = OKbutton;
@@ -715,11 +722,9 @@ namespace AssetStudio.GUI
         private System.Windows.Forms.ComboBox assetGroupOptions;
         private System.Windows.Forms.CheckBox restoreExtensionName;
         private System.Windows.Forms.CheckBox openAfterExport;
-        private System.Windows.Forms.ToolTip exportUvsTooltip;
         private System.Windows.Forms.CheckBox collectAnimations;
         private System.Windows.Forms.CheckBox encrypted;
         private System.Windows.Forms.NumericUpDown key;
-        private System.Windows.Forms.ToolTip keyToolTip;
         private System.Windows.Forms.CheckBox minimalAssetMap;
         private System.Windows.Forms.Label label7;
         private Label label6;
@@ -733,5 +738,6 @@ namespace AssetStudio.GUI
         private Label label10;
         private ComboBox texTypeComboBox;
         private TextBox texNameTextBox;
+        private ToolTip toolTip;
     }
 }
