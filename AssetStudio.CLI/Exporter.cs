@@ -365,12 +365,24 @@ namespace AssetStudio.CLI
                 imageFormat = Properties.Settings.Default.convertType,
                 game = Studio.Game,
                 collectAnimations = Properties.Settings.Default.collectAnimations,
+                exportMaterials = Properties.Settings.Default.exportMaterials,
+                materials = new HashSet<Material>(),
                 uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(Properties.Settings.Default.uvs),
                 texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(Properties.Settings.Default.texs),
             };
             var convert = animationList != null
                 ? new ModelConverter(m_Animator, options, animationList.Select(x => (AnimationClip)x.Asset).ToArray())
                 : new ModelConverter(m_Animator, options);
+            if (options.exportMaterials)
+            {
+                var materialExportPath = Path.Combine(exportFullPath, "Materials");
+                Directory.CreateDirectory(materialExportPath);
+                foreach (var material in options.materials)
+                {
+                    var matItem = new AssetItem(material);
+                    ExportJSONFile(matItem, materialExportPath);
+                }
+            }
             ExportFbx(convert, exportFullPath);
             return true;
         }
@@ -391,6 +403,8 @@ namespace AssetStudio.CLI
                 imageFormat = Properties.Settings.Default.convertType,
                 game = Studio.Game,
                 collectAnimations = Properties.Settings.Default.collectAnimations,
+                exportMaterials = Properties.Settings.Default.exportMaterials,
+                materials = new HashSet<Material>(),
                 uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(Properties.Settings.Default.uvs),
                 texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(Properties.Settings.Default.texs),
             };
@@ -402,6 +416,16 @@ namespace AssetStudio.CLI
             {
                 Logger.Info($"GameObject {gameObject.m_Name} has no mesh, skipping...");
                 return false;
+            }
+            if (options.exportMaterials)
+            {
+                var materialExportPath = Path.Combine(exportPath, "Materials");
+                Directory.CreateDirectory(materialExportPath);
+                foreach (var material in options.materials)
+                {
+                    var matItem = new AssetItem(material);
+                    ExportJSONFile(matItem, materialExportPath);
+                }
             }
             exportPath = exportPath + FixFileName(gameObject.m_Name) + ".fbx";
             ExportFbx(convert, exportPath);

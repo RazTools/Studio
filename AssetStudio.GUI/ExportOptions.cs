@@ -1,6 +1,8 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Configuration;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
@@ -34,6 +36,7 @@ namespace AssetStudio.GUI
             filterPrecision.Value = Properties.Settings.Default.filterPrecision;
             exportAllNodes.Checked = Properties.Settings.Default.exportAllNodes;
             exportSkins.Checked = Properties.Settings.Default.exportSkins;
+            exportMaterials.Checked = Properties.Settings.Default.exportMaterials;
             exportAnimations.Checked = Properties.Settings.Default.exportAnimations;
             exportBlendShape.Checked = Properties.Settings.Default.exportBlendShape;
             castToBone.Checked = Properties.Settings.Default.castToBone;
@@ -84,6 +87,7 @@ namespace AssetStudio.GUI
             Properties.Settings.Default.filterPrecision = filterPrecision.Value;
             Properties.Settings.Default.exportAllNodes = exportAllNodes.Checked;
             Properties.Settings.Default.exportSkins = exportSkins.Checked;
+            Properties.Settings.Default.exportMaterials = exportMaterials.Checked;
             Properties.Settings.Default.exportAnimations = exportAnimations.Checked;
             Properties.Settings.Default.exportBlendShape = exportBlendShape.Checked;
             Properties.Settings.Default.castToBone = castToBone.Checked;
@@ -251,7 +255,12 @@ namespace AssetStudio.GUI
 
         private void Reset_Click(object sender, EventArgs e)
         {
-            Properties.Settings.Default.Reset();
+            foreach(SettingsProperty settingsProperty in Properties.Settings.Default.Properties)
+            {
+                Properties.Settings.Default[settingsProperty.Name] = TypeDescriptor.GetConverter(settingsProperty.PropertyType).ConvertFrom(settingsProperty.DefaultValue);
+            }
+            Properties.Settings.Default.Save();
+
             DialogResult = DialogResult.Cancel;
             Resetted = true;
             Close();

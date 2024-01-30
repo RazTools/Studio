@@ -66,6 +66,7 @@ namespace AssetStudio.GUI
             converttexture = new CheckBox();
             collectAnimations = new CheckBox();
             groupBox2 = new GroupBox();
+            exportMaterials = new CheckBox();
             exportBlendShape = new CheckBox();
             exportAnimations = new CheckBox();
             scaleFactor = new NumericUpDown();
@@ -471,6 +472,7 @@ namespace AssetStudio.GUI
             // groupBox2
             // 
             groupBox2.AutoSize = true;
+            groupBox2.Controls.Add(exportMaterials);
             groupBox2.Controls.Add(collectAnimations);
             groupBox2.Controls.Add(exportBlendShape);
             groupBox2.Controls.Add(exportAnimations);
@@ -496,6 +498,17 @@ namespace AssetStudio.GUI
             groupBox2.TabIndex = 11;
             groupBox2.TabStop = false;
             groupBox2.Text = "Fbx";
+            // 
+            // exportMaterials
+            // 
+            exportMaterials.AutoSize = true;
+            exportMaterials.Location = new System.Drawing.Point(154, 96);
+            exportMaterials.Margin = new Padding(4);
+            exportMaterials.Name = "exportMaterials";
+            exportMaterials.Size = new System.Drawing.Size(111, 19);
+            exportMaterials.TabIndex = 25;
+            exportMaterials.Text = "Export materials";
+            exportMaterials.UseVisualStyleBackColor = true;
             // 
             // exportBlendShape
             // 
@@ -780,5 +793,6 @@ namespace AssetStudio.GUI
         private ComboBox texNameComboBox;
         private Button addTexNameButton;
         private Button removeTexNameButton;
+        private CheckBox exportMaterials;
     }
 }

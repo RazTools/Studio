@@ -20,27 +20,18 @@ namespace AssetStudio
 
     public interface ILogger
     {
-        public bool Silent { get; set; }
-        public LoggerEvent Flags { get; set; }
         void Log(LoggerEvent loggerEvent, string message);
     }
 
     public sealed class DummyLogger : ILogger
     {
-        public bool Silent { get; set; }
-        public LoggerEvent Flags { get; set; }
         public void Log(LoggerEvent loggerEvent, string message) { }
     }
 
     public sealed class ConsoleLogger : ILogger
     {
-        public bool Silent { get; set; }
-        public LoggerEvent Flags { get; set; }
         public void Log(LoggerEvent loggerEvent, string message)
         {
-            if (!Flags.HasFlag(loggerEvent) || Silent)
-                return;
-
             Console.WriteLine("[{0}] {1}", loggerEvent, message);
         }
     }
@@ -51,9 +42,6 @@ namespace AssetStudio
         private const string PrevLogFileName = "log_prev.txt";
         private readonly object LockWriter = new object();
         private StreamWriter Writer;
-
-        public bool Silent { get; set; }
-        public LoggerEvent Flags { get; set; }
         public FileLogger()
         {
             var logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, LogFileName);
@@ -71,9 +59,6 @@ namespace AssetStudio
         }
         public void Log(LoggerEvent loggerEvent, string message)
         {
-            if (!Flags.HasFlag(loggerEvent) || Silent)
-                return;
-
             lock (LockWriter)
             {
                 Writer.WriteLine($"[{DateTime.Now}][{loggerEvent}] {message}");

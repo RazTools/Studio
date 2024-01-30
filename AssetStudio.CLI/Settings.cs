@@ -43,6 +43,7 @@ namespace AssetStudio.CLI.Properties {
         public decimal filterPrecision => AppSettings.Get("filterPrecision", (decimal)0.25);
         public bool exportAllNodes => AppSettings.Get("exportAllNodes", true);
         public bool exportSkins => AppSettings.Get("exportSkins", true);
+        public bool exportMaterials => AppSettings.Get("exportMaterials", false);
         public bool collectAnimations => AppSettings.Get("collectAnimations", true);
         public bool exportAnimations => AppSettings.Get("exportAnimations", true);
         public decimal boneSize => AppSettings.Get("boneSize", (decimal)10);

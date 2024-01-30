@@ -364,12 +364,24 @@ namespace AssetStudio.GUI
                 imageFormat = Properties.Settings.Default.convertType,
                 game = Studio.Game,
                 collectAnimations = Properties.Settings.Default.collectAnimations,
+                exportMaterials = Properties.Settings.Default.exportMaterials,
+                materials = new HashSet<Material>(),
                 uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(Properties.Settings.Default.uvs),
                 texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(Properties.Settings.Default.texs),
             };
             var convert = animationList != null
                 ? new ModelConverter(m_Animator, options, animationList.Select(x => (AnimationClip)x.Asset).ToArray())
                 : new ModelConverter(m_Animator, options);
+            if (options.exportMaterials)
+            {
+                var materialExportPath = Path.Combine(exportFullPath, "Materials");
+                Directory.CreateDirectory(materialExportPath);
+                foreach (var material in options.materials)
+                {
+                    var matItem = new AssetItem(material);
+                    ExportJSONFile(matItem, materialExportPath);
+                }
+            }
             ExportFbx(convert, exportFullPath);
             return true;
         }
@@ -390,8 +402,10 @@ namespace AssetStudio.GUI
                 imageFormat = Properties.Settings.Default.convertType,
                 game = Studio.Game,
                 collectAnimations = Properties.Settings.Default.collectAnimations,
-                uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(Properties.Settings.Default.uvs),
-                texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(Properties.Settings.Default.texs),
+                exportMaterials = Properties.Settings.Default.exportMaterials,
+                materials = new HashSet<Material>(),
+                uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(Properties.Settings.Default.uvs, new JsonSerializerSettings() { DefaultValueHandling = DefaultValueHandling.Populate }),
+                texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(Properties.Settings.Default.texs, new JsonSerializerSettings() { DefaultValueHandling = DefaultValueHandling.Populate }),
             };
             var convert = animationList != null
                 ? new ModelConverter(gameObject, options, animationList.Select(x => (AnimationClip)x.Asset).ToArray())
@@ -401,6 +415,16 @@ namespace AssetStudio.GUI
             {
                 Logger.Info($"GameObject {gameObject.m_Name} has no mesh, skipping...");
                 return false;
+            }
+            if (options.exportMaterials)
+            {
+                var materialExportPath = Path.Combine(exportPath, "Materials");
+                Directory.CreateDirectory(materialExportPath);
+                foreach (var material in options.materials)
+                {
+                    var matItem = new AssetItem(material);
+                    ExportJSONFile(matItem, materialExportPath);
+                }
             }
             exportPath = exportPath + FixFileName(gameObject.m_Name) + ".fbx";
             ExportFbx(convert, exportPath);
@@ -415,12 +439,24 @@ namespace AssetStudio.GUI
                 imageFormat = Properties.Settings.Default.convertType,
                 game = Studio.Game,
                 collectAnimations = Properties.Settings.Default.collectAnimations,
+                exportMaterials = Properties.Settings.Default.exportMaterials,
+                materials = new HashSet<Material>(),
                 uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(Properties.Settings.Default.uvs),
                 texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(Properties.Settings.Default.texs),
             };
             var convert = animationList != null
                 ? new ModelConverter(rootName, gameObject, options, animationList.Select(x => (AnimationClip)x.Asset).ToArray())
                 : new ModelConverter(rootName, gameObject, options);
+            if (options.exportMaterials)
+            {
+                var materialExportPath = Path.Combine(exportPath, "Materials");
+                Directory.CreateDirectory(materialExportPath);
+                foreach (var material in options.materials)
+                {
+                    var matItem = new AssetItem(material);
+                    ExportJSONFile(matItem, materialExportPath);
+                }
+            }
             ExportFbx(convert, exportPath);
         }
 

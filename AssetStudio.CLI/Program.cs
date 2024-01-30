@@ -40,7 +40,8 @@ namespace AssetStudio.CLI
                 }
 
                 Studio.Game = game;
-                Logger.Default = new ConsoleLogger() { Flags = o.LoggerFlags.Aggregate((e, x) => e |= x) };
+                Logger.Default = new ConsoleLogger();
+                Logger.Flags = o.LoggerFlags.Aggregate((e, x) => e |= x);
                 Logger.FileLogging = Settings.Default.enableFileLogging;
                 AssetsHelper.Minimal = Settings.Default.minimalAssetMap;
                 AssetsHelper.SetUnityVersion(o.UnityVersion);
@@ -66,6 +67,10 @@ namespace AssetStudio.CLI
                         else if(ClassIDType.Animator.CanExport())
                         {
                             TypeFlags.SetType(ClassIDType.GameObject, true, false);
+                        }
+                        if (Settings.Default.exportMaterials)
+                        {
+                            TypeFlags.SetType(ClassIDType.Material, true, false);
                         }
                     }
                 }

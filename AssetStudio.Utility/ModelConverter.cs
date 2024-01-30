@@ -649,6 +649,10 @@ namespace AssetStudio
             ImportedMaterial iMat;
             if (mat != null)
             {
+                if (options.exportMaterials)
+                {
+                    options.materials.Add(mat);
+                }
                 iMat = ImportedHelpers.FindMaterial(mat.m_Name, MaterialList);
                 if (iMat != null)
                 {
@@ -1172,6 +1176,8 @@ namespace AssetStudio
             public ImageFormat imageFormat;
             public Game game;
             public bool collectAnimations;
+            public bool exportMaterials;
+            public HashSet<Material> materials;
             public Dictionary<string, (bool, int)> uvs;
             public Dictionary<string, int> texs; 
         }

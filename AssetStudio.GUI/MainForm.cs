@@ -136,7 +136,7 @@ namespace AssetStudio.GUI
                 var menuItem = new ToolStripMenuItem(loggerEvent.ToString()) { CheckOnClick = true, Checked = loggerEventType.HasFlag(loggerEvent), Tag = (int)loggerEvent };
                 loggedEventsMenuItem.DropDownItems.Add(menuItem);
             }
-            Logger.Default.Flags = loggerEventType;
+            Logger.Flags = loggerEventType;
             Logger.FileLogging = enableFileLogging.Checked;
         }
 
@@ -1312,6 +1312,8 @@ namespace AssetStudio.GUI
                 imageFormat = Properties.Settings.Default.convertType,
                 game = Studio.Game,
                 collectAnimations = Properties.Settings.Default.collectAnimations,
+                exportMaterials = false,
+                materials = new HashSet<Material>(),
                 uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(Properties.Settings.Default.uvs),
                 texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(Properties.Settings.Default.texs),
             };
@@ -1325,6 +1327,8 @@ namespace AssetStudio.GUI
                 imageFormat = Properties.Settings.Default.convertType,
                 game = Studio.Game,
                 collectAnimations = Properties.Settings.Default.collectAnimations,
+                exportMaterials = false,
+                materials = new HashSet<Material>(),
                 uvs = JsonConvert.DeserializeObject<Dictionary<string, (bool, int)>>(Properties.Settings.Default.uvs),
                 texs = JsonConvert.DeserializeObject<Dictionary<string, int>>(Properties.Settings.Default.texs),
             };
@@ -2354,7 +2358,7 @@ namespace AssetStudio.GUI
             Properties.Settings.Default.loggerEventType = loggedEventsMenuItem.DropDownItems.Cast<ToolStripMenuItem>().Select(x => x.Checked ? (int)x.Tag : 0).Sum();
             Properties.Settings.Default.Save();
 
-            Logger.Default.Flags = (LoggerEvent)Properties.Settings.Default.loggerEventType;
+            Logger.Flags = (LoggerEvent)Properties.Settings.Default.loggerEventType;
         }
 
         private void abortStripMenuItem_Click(object sender, EventArgs e)

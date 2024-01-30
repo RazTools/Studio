@@ -484,13 +484,25 @@ namespace AssetStudio.GUI.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        [global::System.Configuration.DefaultSettingValueAttribute("{}")]
         public string texs {
             get {
                 return ((string)(this["texs"]));
             }
             set {
                 this["texs"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool exportMaterials {
+            get {
+                return ((bool)(this["exportMaterials"]));
+            }
+            set {
+                this["exportMaterials"] = value;
             }
         }
     }
