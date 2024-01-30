@@ -1698,6 +1698,11 @@ namespace AssetStudio.GUI
                     saveDirectoryBackup = saveFolderDialog.Folder;
                     var exportPath = Path.Combine(saveFolderDialog.Folder, "GameObject") + Path.DirectorySeparatorChar;
                     var roots = sceneTreeView.Nodes.Cast<TreeNode>().Where(x => x.Level == 0 && x.Checked).ToList();
+                    if (roots.Count == 0)
+                    {
+                        Logger.Info("No root nodes found selected.");
+                        return;
+                    }
                     List<AssetItem> animationList = null;
                     if (animation)
                     {

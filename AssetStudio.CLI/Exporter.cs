@@ -375,7 +375,7 @@ namespace AssetStudio.CLI
                 : new ModelConverter(m_Animator, options);
             if (options.exportMaterials)
             {
-                var materialExportPath = Path.Combine(exportFullPath, "Materials");
+                var materialExportPath = Path.Combine(Path.GetDirectoryName(exportFullPath), "Materials");
                 Directory.CreateDirectory(materialExportPath);
                 foreach (var material in options.materials)
                 {
@@ -393,7 +393,7 @@ namespace AssetStudio.CLI
                 return false;
 
             var m_GameObject = (GameObject)item.Asset;
-            return ExportGameObject(m_GameObject, exportPath, animationList);
+            return ExportGameObject(m_GameObject, exportFullPath, animationList);
         }
 
         public static bool ExportGameObject(GameObject gameObject, string exportPath, List<AssetItem> animationList = null)
