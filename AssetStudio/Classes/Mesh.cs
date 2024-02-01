@@ -502,6 +502,8 @@ namespace AssetStudio
         private StreamingInfo m_StreamData;
         private bool m_CollisionMeshBaked = false;
 
+        public static bool HasVertexColorSkinning(SerializedType type) => type.Match("413A501B79022BF2DF389A82002FC81F");
+
         public List<uint> m_Indices = new List<uint>();
 
         public Mesh(ObjectReader reader) : base(reader)
@@ -579,6 +581,10 @@ namespace AssetStudio
                     }
                     var m_KeepVertices = reader.ReadBoolean();
                     var m_KeepIndices = reader.ReadBoolean();
+                    if (reader.Game.Type.IsBH3() && HasVertexColorSkinning(reader.serializedType)) 
+                    {
+                        var m_VertexColorSkinning = reader.ReadBoolean();
+                    }
                     if (reader.Game.Type.IsArknightsEndfield())
                     {
                         var m_CollisionMeshOnly = reader.ReadBoolean();
@@ -587,7 +593,7 @@ namespace AssetStudio
                     }
                 }
                 reader.AlignStream();
-                if (reader.Game.Type.IsGISubGroup())
+                if (reader.Game.Type.IsGISubGroup() || (reader.Game.Type.IsBH3() && HasVertexColorSkinning(reader.serializedType)))
                 {
                     var m_PackSkinDataToUV2UV3 = reader.ReadBoolean();
                     reader.AlignStream();

@@ -18,7 +18,6 @@ using System.Windows.Forms;
 using static AssetStudio.GUI.Studio;
 using OpenTK.Graphics;
 using OpenTK.Mathematics;
-using Newtonsoft.Json.Converters;
 using System.Text.RegularExpressions;
 using OpenTK.Audio.OpenAL;
 
@@ -870,12 +869,6 @@ namespace AssetStudio.GUI
                         break;
                     default:
                         var str = assetItem.Asset.Dump();
-                        if (Properties.Settings.Default.displayAll || string.IsNullOrEmpty(str))
-                        {
-                            var settings = new JsonSerializerSettings();
-                            settings.Converters.Add(new StringEnumConverter());
-                            str = JsonConvert.SerializeObject(assetItem.Asset, Formatting.Indented, settings);
-                        }
                         if (str != null)
                         {
                             textPreviewBox.Text = str;

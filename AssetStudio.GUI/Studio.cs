@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -934,6 +936,12 @@ namespace AssetStudio.GUI
             {
                 var type = MonoBehaviourToTypeTree(m_MonoBehaviour);
                 str = m_MonoBehaviour.Dump(type);
+            }
+            if (string.IsNullOrEmpty(str))
+            {
+                var settings = new JsonSerializerSettings();
+                settings.Converters.Add(new StringEnumConverter());
+                str = JsonConvert.SerializeObject(obj, Newtonsoft.Json.Formatting.Indented, settings);
             }
             return str;
         }
