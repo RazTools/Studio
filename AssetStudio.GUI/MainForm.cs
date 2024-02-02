@@ -879,7 +879,7 @@ namespace AssetStudio.GUI
             }
             catch (Exception e)
             {
-                MessageBox.Show($"Preview {assetItem.Type}:{assetItem.Text} error\r\n{e.Message}\r\n{e.StackTrace}");
+                Logger.Error($"Preview {assetItem.Type}:{assetItem.Text} error\r\n{e.Message}\r\n{e.StackTrace}");
             }
         }
 
@@ -2472,7 +2472,7 @@ namespace AssetStudio.GUI
             ERRCHECK(result);
             if (version < FMOD.VERSION.number)
             {
-                MessageBox.Show($"Error!  You are using an old version of FMOD {version:X}.  This program requires {FMOD.VERSION.number:X}.");
+                Logger.Error($"Error!  You are using an old version of FMOD {version:X}.  This program requires {FMOD.VERSION.number:X}.");
                 Application.Exit();
             }
 
