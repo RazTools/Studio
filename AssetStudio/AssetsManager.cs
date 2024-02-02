@@ -242,7 +242,7 @@ namespace AssetStudio
                 catch (Exception e)
                 {
                     Logger.Error($"Error while reading assets file {reader.FullPath} from {Path.GetFileName(originalPath)}", e);
-                    resourceFileReaders.Add(reader.FileName, reader);
+                    resourceFileReaders.TryAdd(reader.FileName, reader);
                 }
             }
             else
@@ -269,7 +269,7 @@ namespace AssetStudio
                     else
                     {
                         Logger.Verbose("Caching resource stream");
-                        resourceFileReaders[file.fileName] = subReader; //TODO
+                        resourceFileReaders.TryAdd(file.fileName, subReader); //TODO
                     }
                 }
             }
@@ -315,7 +315,7 @@ namespace AssetStudio
                             break;
                         case FileType.ResourceFile:
                             Logger.Verbose("Caching resource stream");
-                            resourceFileReaders[file.fileName] = subReader; //TODO
+                            resourceFileReaders.TryAdd(file.fileName, subReader); //TODO
                             break;
                     }
                 }
@@ -407,11 +407,8 @@ namespace AssetStudio
                             if (entryReader.FileType == FileType.ResourceFile)
                             {
                                 entryReader.Position = 0;
-                                if (!resourceFileReaders.ContainsKey(entry.Name))
-                                {
-                                    Logger.Verbose("Caching resource file");
-                                    resourceFileReaders.Add(entry.Name, entryReader);
-                                }
+                                Logger.Verbose("Caching resource file");
+                                resourceFileReaders.TryAdd(entry.Name, entryReader);
                             }
                         }
                         catch (Exception e)
@@ -525,7 +522,7 @@ namespace AssetStudio
                     else
                     {
                         Logger.Verbose("Caching resource stream");
-                        resourceFileReaders[file.fileName] = cabReader; //TODO
+                        resourceFileReaders.TryAdd(file.fileName, cabReader); //TODO
                     }
                 }
             }
@@ -568,7 +565,7 @@ namespace AssetStudio
                     else
                     {
                         Logger.Verbose("Caching resource stream");
-                        resourceFileReaders[file.fileName] = cabReader; //TODO
+                        resourceFileReaders.TryAdd(file.fileName, cabReader); //TODO
                     }
                 }
             }

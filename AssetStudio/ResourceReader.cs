@@ -53,7 +53,7 @@ namespace AssetStudio
                 {
                     needSearch = false;
                     reader = new BinaryReader(File.OpenRead(resourceFilePath));
-                    assetsFile.assetsManager.resourceFileReaders.Add(resourceFileName, reader);
+                    assetsFile.assetsManager.resourceFileReaders.TryAdd(resourceFileName, reader);
                     return reader;
                 }
                 throw new FileNotFoundException($"Can't find the resource file {resourceFileName}");
