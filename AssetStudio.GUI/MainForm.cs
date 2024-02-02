@@ -1475,7 +1475,7 @@ namespace AssetStudio.GUI
             }
         }
 
-        private void ResetForm()
+        public void ResetForm()
         {
             Text = $"Studio v{Application.ProductVersion}";
             assetsManager.Clear();
@@ -1883,7 +1883,7 @@ namespace AssetStudio.GUI
             assetListView.EndUpdate();
         }
 
-        private void ExportAssets(ExportFilter type, ExportType exportType)
+        private async void ExportAssets(ExportFilter type, ExportType exportType)
         {
             if (exportableAssets.Count > 0)
             {
@@ -1906,7 +1906,7 @@ namespace AssetStudio.GUI
                             toExportAssets = visibleAssets;
                             break;
                     }
-                    Studio.ExportAssets(saveFolderDialog.Folder, toExportAssets, exportType);
+                    await Studio.ExportAssets(saveFolderDialog.Folder, toExportAssets, exportType, Properties.Settings.Default.openAfterExport);
                 }
             }
             else

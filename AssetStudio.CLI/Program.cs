@@ -115,15 +115,11 @@ namespace AssetStudio.CLI
                     {
                         throw new Exception("Unable to build AssetMap with input_path as a file !!");
                     }
-                    var resetEvent = new ManualResetEvent(false);
-                    AssetsHelper.BuildAssetMap(files, o.MapName, game, o.Output.FullName, o.MapType, resetEvent, o.TypeFilter, o.NameFilter, o.ContainerFilter);
-                    resetEvent.WaitOne();
+                    AssetsHelper.BuildAssetMap(files, o.MapName, game, o.Output.FullName, o.MapType, o.TypeFilter, o.NameFilter, o.ContainerFilter);
                 }
                 if (o.MapOp.HasFlag(MapOpType.Both))
                 {
-                    var resetEvent = new ManualResetEvent(false);
-                    AssetsHelper.BuildBoth(files, o.MapName, o.Input.FullName, game, o.Output.FullName, o.MapType, resetEvent, o.TypeFilter, o.NameFilter, o.ContainerFilter);
-                    resetEvent.WaitOne();
+                    AssetsHelper.BuildBoth(files, o.MapName, o.Input.FullName, game, o.Output.FullName, o.MapType, o.TypeFilter, o.NameFilter, o.ContainerFilter);
                 }
                 if (o.MapOp.Equals(MapOpType.None) || o.MapOp.HasFlag(MapOpType.Load))
                 {

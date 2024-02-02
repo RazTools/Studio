@@ -7,6 +7,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
 using static AssetStudio.GUI.Exporter;
@@ -526,9 +527,9 @@ namespace AssetStudio.GUI
             return typeMap;
         }
 
-        public static void ExportAssets(string savePath, List<AssetItem> toExportAssets, ExportType exportType)
+        public static Task ExportAssets(string savePath, List<AssetItem> toExportAssets, ExportType exportType, bool openAfterExport)
         {
-            ThreadPool.QueueUserWorkItem(state =>
+            return Task.Run(() =>
             {
                 Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
 
@@ -617,16 +618,16 @@ namespace AssetStudio.GUI
 
                 StatusStripUpdate(statusText);
 
-                if (Properties.Settings.Default.openAfterExport && exportedCount > 0)
+                if (openAfterExport && exportedCount > 0)
                 {
                     OpenFolderInExplorer(savePath);
                 }
             });
         }
 
-        public static void ExportAssetsList(string savePath, List<AssetItem> toExportAssets, ExportListType exportListType)
+        public static Task ExportAssetsList(string savePath, List<AssetItem> toExportAssets, ExportListType exportListType)
         {
-            ThreadPool.QueueUserWorkItem(state =>
+            return Task.Run(() =>
             {
                 Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
 
@@ -674,9 +675,9 @@ namespace AssetStudio.GUI
             });
         }
 
-        public static void ExportSplitObjects(string savePath, TreeNodeCollection nodes)
+        public static Task ExportSplitObjects(string savePath, TreeNodeCollection nodes)
         {
-            ThreadPool.QueueUserWorkItem(state =>
+            return Task.Run(() =>
             {
                 var exportNodes = GetNodes(nodes);
                 var count = exportNodes.Cast<TreeNode>().Sum(x => x.Nodes.Count);
@@ -768,9 +769,9 @@ namespace AssetStudio.GUI
             }
         }
 
-        public static void ExportAnimatorWithAnimationClip(AssetItem animator, List<AssetItem> animationList, string exportPath)
+        public static Task ExportAnimatorWithAnimationClip(AssetItem animator, List<AssetItem> animationList, string exportPath)
         {
-            ThreadPool.QueueUserWorkItem(state =>
+            return Task.Run(() =>
             {
                 Progress.Reset();
                 StatusStripUpdate($"Exporting {animator.Text}");
@@ -792,9 +793,9 @@ namespace AssetStudio.GUI
             });
         }
 
-        public static void ExportObjectsWithAnimationClip(string exportPath, TreeNodeCollection nodes, List<AssetItem> animationList = null)
+        public static Task ExportObjectsWithAnimationClip(string exportPath, TreeNodeCollection nodes, List<AssetItem> animationList = null)
         {
-            ThreadPool.QueueUserWorkItem(state =>
+            return Task.Run(() =>
             {
                 var gameObjects = new List<GameObject>();
                 GetSelectedParentNode(nodes, gameObjects);
@@ -832,9 +833,9 @@ namespace AssetStudio.GUI
             });
         }
 
-        public static void ExportObjectsMergeWithAnimationClip(string exportPath, List<GameObject> gameObjects, List<AssetItem> animationList = null)
+        public static Task ExportObjectsMergeWithAnimationClip(string exportPath, List<GameObject> gameObjects, List<AssetItem> animationList = null)
         {
-            ThreadPool.QueueUserWorkItem(state =>
+            return Task.Run(() =>
             {
                 var name = Path.GetFileName(exportPath);
                 Progress.Reset();
@@ -857,9 +858,9 @@ namespace AssetStudio.GUI
             });
         }
 
-        public static void ExportNodesWithAnimationClip(string exportPath, List<TreeNode> nodes, List<AssetItem> animationList = null)
+        public static Task ExportNodesWithAnimationClip(string exportPath, List<TreeNode> nodes, List<AssetItem> animationList = null)
         {
-            ThreadPool.QueueUserWorkItem(state =>
+            return Task.Run(() =>
             {
                 int i = 0;
                 Progress.Reset();

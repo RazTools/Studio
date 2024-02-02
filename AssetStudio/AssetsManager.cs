@@ -28,23 +28,6 @@ namespace AssetStudio
         internal HashSet<string> noexistFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         internal HashSet<string> assetsFileListHash = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        public void LoadFiles(string file)
-        {
-            if (Silent)
-            {
-                Logger.Silent = true;
-                Progress.Silent = true;
-            }
-
-            Load(new string[] { file });
-
-            if (Silent)
-            {
-                Logger.Silent = false;
-                Progress.Silent = false;
-            }
-        }
-
         public void LoadFiles(params string[] files)
         {
             if (Silent)

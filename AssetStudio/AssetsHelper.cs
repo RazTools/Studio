@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using System.Text;
 using MessagePack;
+using System.Threading.Tasks;
 
 namespace AssetStudio
 {
@@ -312,7 +313,7 @@ namespace AssetStudio
             }
         } 
 
-        public static void BuildAssetMap(string[] files, string mapName, Game game, string savePath, ExportListType exportListType, ManualResetEvent resetEvent = null, ClassIDType[] typeFilters = null, Regex[] nameFilters = null, Regex[] containerFilters = null)
+        public static async void BuildAssetMap(string[] files, string mapName, Game game, string savePath, ExportListType exportListType, ClassIDType[] typeFilters = null, Regex[] nameFilters = null, Regex[] containerFilters = null)
         {
             Logger.Info("Building AssetMap...");
             try
@@ -327,7 +328,7 @@ namespace AssetStudio
 
                 UpdateContainers(assets, game);
 
-                ExportAssetsMap(assets, game, mapName, savePath, exportListType, resetEvent);
+                await ExportAssetsMap(assets, game, mapName, savePath, exportListType);
             }
             catch(Exception e)
             {
@@ -533,9 +534,9 @@ namespace AssetStudio
             }
         }
 
-        private static void ExportAssetsMap(List<AssetEntry> toExportAssets, Game game, string name, string savePath, ExportListType exportListType, ManualResetEvent resetEvent = null)
+        private static Task ExportAssetsMap(List<AssetEntry> toExportAssets, Game game, string name, string savePath, ExportListType exportListType, ManualResetEvent resetEvent = null)
         {
-            ThreadPool.QueueUserWorkItem(state =>
+            return Task.Run(() =>
             {
                 Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
 
@@ -599,7 +600,7 @@ namespace AssetStudio
                 resetEvent?.Set();
             });
         }
-        public static void BuildBoth(string[] files, string mapName, string baseFolder, Game game, string savePath, ExportListType exportListType, ManualResetEvent resetEvent = null, ClassIDType[] typeFilters = null, Regex[] nameFilters = null, Regex[] containerFilters = null)
+        public static async void BuildBoth(string[] files, string mapName, string baseFolder, Game game, string savePath, ExportListType exportListType, ClassIDType[] typeFilters = null, Regex[] nameFilters = null, Regex[] containerFilters = null)
         {
             Logger.Info($"Building Both...");
             CABMap.Clear();
@@ -618,7 +619,7 @@ namespace AssetStudio
             DumpCABMap(mapName);
 
             Logger.Info($"Map build successfully !! {collision} collisions found");
-            ExportAssetsMap(assets, game, mapName, savePath, exportListType, resetEvent);
+            await ExportAssetsMap(assets, game, mapName, savePath, exportListType);
         }
     }
 }
