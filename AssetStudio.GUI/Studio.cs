@@ -534,6 +534,8 @@ namespace AssetStudio.GUI
 
                 int toExportCount = toExportAssets.Count;
                 int exportedCount = 0;
+                string logFilePath = "";
+                bool ExportError = false;
                 int i = 0;
                 Progress.Reset();
                 foreach (var asset in toExportAssets)
@@ -602,9 +604,31 @@ namespace AssetStudio.GUI
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"Export {asset.Type}:{asset.Text} error\r\n{ex.Message}\r\n{ex.StackTrace}");
+                        try
+                        {
+                            string directory = AppDomain.CurrentDomain.BaseDirectory;
+                            logFilePath = Path.Combine(directory, "log_error.txt");
+                            string prevLogFilePath = Path.Combine(directory, "log_error_prev.txt");
+                            if (!ExportError)
+                            {
+                                if (File.Exists(logFilePath))
+                                {
+                                    if (File.Exists(prevLogFilePath))
+                                    {
+                                        File.Delete(prevLogFilePath);
+                                    }
+                                    File.Move(logFilePath, prevLogFilePath);
+                                }
+                                File.AppendAllText(logFilePath, $"Export Errors:" + $"Version {Application.ProductVersion}" + Environment.NewLine + $"----------" + Environment.NewLine);
+                                ExportError = true;
+                            };
+                            File.AppendAllText(logFilePath, $"Export {asset.Type}:{asset.Text} error\r\n{ex.Message}\r\n{ex.StackTrace}" + Environment.NewLine + Environment.NewLine);
+                        }
+                        catch (Exception ex2)
+                        {
+                            Console.WriteLine("Error saving to log file: " + ex2.Message);
+                        }
                     }
-
                     Progress.Report(++i, toExportCount);
                 }
 
@@ -614,6 +638,11 @@ namespace AssetStudio.GUI
                 {
                     statusText += $" {toExportCount - exportedCount} assets skipped (not extractable or files already exist)";
                 }
+                if (ExportError)
+                {
+                    Process.Start("notepad.exe", logFilePath);
+                }
+
 
                 StatusStripUpdate(statusText);
 
