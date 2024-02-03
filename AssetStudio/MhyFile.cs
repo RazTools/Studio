@@ -193,23 +193,23 @@ namespace AssetStudio
 
         private void DescrambleChunk(Span<byte> input)
         {
-            byte[] vector = new byte[0x10];
+            byte[] vector = new byte[input.Length];
             for (int i = 0; i < 3; i++)
             {
-                for (int j = 0; j < 0x10; j++)
+                for (int j = 0; j < input.Length; j++)
                 {
                     int k = mhy.MhyShiftRow[(2 - i) * 0x10 + j];
                     int idx = j % 8;
-                    vector[j] = (byte)(mhy.MhyKey[idx] ^ mhy.SBox[(j % 4 * 0x100) | GF256Mul(mhy.MhyMul[idx], input[k])]);
+                    vector[j] = (byte)(mhy.MhyKey[idx] ^ mhy.SBox[(j % 4 * 0x100) | GF256Mul(mhy.MhyMul[idx], input[k % input.Length])]);
                 }
-                vector.CopyTo(input);
+                vector.AsSpan(0, input.Length).CopyTo(input);
             }
         }
         private void Descramble(Span<byte> input, int blockSize, int entrySize)
         {
             var roundedEntrySize = (entrySize + 0xF) / 0x10 * 0x10;
             for (int i = 0; i < roundedEntrySize; i += 0x10)
-                DescrambleChunk(input.Slice(i + 4, 0x10));
+                DescrambleChunk(input.Slice(i + 4, Math.Min(input.Length - 4, 0x10)));
 
             for (int i = 0; i < 4; i++)
                 input[i] ^= input[i + 4];
