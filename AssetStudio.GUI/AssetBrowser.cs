@@ -147,17 +147,18 @@ namespace AssetStudio.GUI
                 if (pptr.TryGet(out var obj))
                 {
                     var item = objectAssetItemDic[obj];
-                    if (entries.Any(x => x.Container == container))
-                    {
-                        item.Container = container;
-                    }
-                    else
-                    {
-                        exportableAssets.Remove(item);
-                    }
+                    item.Container = container;
                 }
             }
             containers.Clear();
+            for (int i = exportableAssets.Count - 1; i >= 0; i--)
+            {
+                var asset = exportableAssets[i];
+                if (!entries.Any(x => x.Container == asset.Container && x.Name == asset.Text && x.Type == asset.Type && x.PathID == asset.m_PathID))
+                {
+                    exportableAssets.Remove(asset);
+                }
+            }
         }
         private void ProcessAssetData(Object asset, List<AssetItem> exportableAssets, AssetEntry[] entries, Dictionary<Object, AssetItem> objectAssetItemDic, List<(PPtr<Object>, string)> mihoyoBinDataNames, List<(PPtr<Object>, string)> containers)
         {
