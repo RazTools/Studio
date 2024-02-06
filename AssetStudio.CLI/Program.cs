@@ -147,6 +147,7 @@ namespace AssetStudio.CLI
                 {
                     if (o.MapOp.HasFlag(MapOpType.Load))
                     {
+                        files = AssetsHelper.ParseAssetMap(o.MapName, o.MapType, classTypeFilter, o.NameFilter, o.ContainerFilter);
                     }
                     else
                     {

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace AssetStudio;
 public static class TypeFlags
@@ -43,4 +44,13 @@ public static class TypeFlags
 
         return false;
     }
+}
+
+[Flags]
+public enum TypeFlag
+{
+    None,
+    Parse,
+    Export,
+    Both = Parse | Export,
 }
