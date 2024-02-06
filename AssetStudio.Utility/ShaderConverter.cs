@@ -1035,6 +1035,7 @@ namespace AssetStudio
                     case ShaderGpuProgramType.GLCore32:
                     case ShaderGpuProgramType.GLCore41:
                     case ShaderGpuProgramType.GLCore43:
+                        sb.Append($"// hash: {ComputeHash64(m_ProgramCode):x8}\n");
                         sb.Append(Encoding.UTF8.GetString(m_ProgramCode));
                         break;
                     case ShaderGpuProgramType.DX9VertexSM20:
@@ -1046,6 +1047,8 @@ namespace AssetStudio
                             {
                                 var programCodeSpan = m_ProgramCode.AsSpan();
                                 var g = Compiler.Disassemble(programCodeSpan.GetPinnableReference(), programCodeSpan.Length, DisasmFlags.None, "");
+
+                                sb.Append($"// hash: {ComputeHash64(programCodeSpan):x8}\n");
                                 sb.Append(g.AsString());
                             }
                             catch (Exception e)
@@ -1082,6 +1085,7 @@ namespace AssetStudio
 
                             var buffSpan = m_ProgramCode.AsSpan(start);
 
+                            sb.Append($"// hash: {ComputeHash64(buffSpan):x8}\n");
                             try
                             {
                                 HLSLDecompiler.DecompileShader(buffSpan.ToArray(), buffSpan.Length, out var hlslText);
@@ -1106,6 +1110,7 @@ namespace AssetStudio
                         }
                     case ShaderGpuProgramType.MetalVS:
                     case ShaderGpuProgramType.MetalFS:
+                        sb.Append($"// hash: {ComputeHash64(m_ProgramCode):x8}\n");
                         using (var reader = new EndianBinaryReader(new MemoryStream(m_ProgramCode), EndianType.LittleEndian))
                         {
                             var fourCC = reader.ReadUInt32();
@@ -1122,6 +1127,7 @@ namespace AssetStudio
                     case ShaderGpuProgramType.SPIRV:
                         try
                         {
+                            sb.Append($"// hash: {ComputeHash64(m_ProgramCode):x8}\n");
                             sb.Append(SpirVShaderConverter.Convert(m_ProgramCode));
                         }
                         catch (Exception e)
@@ -1134,15 +1140,27 @@ namespace AssetStudio
                     case ShaderGpuProgramType.ConsoleHS:
                     case ShaderGpuProgramType.ConsoleDS:
                     case ShaderGpuProgramType.ConsoleGS:
+                        sb.Append($"//hash: {ComputeHash64(m_ProgramCode):x8}\n");
                         sb.Append(Encoding.UTF8.GetString(m_ProgramCode));
                         break;
                     default:
+                        sb.Append($"//hash: {ComputeHash64(m_ProgramCode):x8}\n");
                         sb.Append($"//shader disassembly not supported on {m_ProgramType}");
                         break;
                 }
             }
             sb.Append('"');
             return sb.ToString();
+        }
+        public ulong ComputeHash64(Span<byte> data)
+        {
+            ulong hval = 0;
+            foreach (var b in data)
+            {
+                hval *= 0x100000001B3;
+                hval ^= b;
+            }
+            return hval;
         }
     }
 
