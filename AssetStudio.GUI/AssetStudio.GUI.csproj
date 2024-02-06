@@ -90,6 +90,25 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ContentWithTargetPath Include="Libraries\x86\HLSLDecompiler.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<TargetPath>x86\HLSLDecompiler.dll</TargetPath>
+		</ContentWithTargetPath>
+		<ContentWithTargetPath Include="Libraries\x64\HLSLDecompiler.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<TargetPath>x64\HLSLDecompiler.dll</TargetPath>
+		</ContentWithTargetPath>
+		<ContentWithTargetPath Include="Libraries\x86\BinaryDecompiler.lib">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<TargetPath>x86\BinaryDecompiler.lib</TargetPath>
+		</ContentWithTargetPath>
+		<ContentWithTargetPath Include="Libraries\x64\BinaryDecompiler.lib">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<TargetPath>x64\BinaryDecompiler.lib</TargetPath>
+		</ContentWithTargetPath>
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="OpenTK" Version="4.8.0" />
 		<Reference Include="OpenTK.WinForms">
