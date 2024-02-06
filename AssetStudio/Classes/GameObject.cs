@@ -40,27 +40,35 @@ namespace AssetStudio
         public bool HasModel() => HasMesh(m_Transform, new List<bool>());
         private static bool HasMesh(Transform m_Transform, List<bool> meshes)
         {
-            m_Transform.m_GameObject.TryGet(out var m_GameObject);
-
-            if (m_GameObject.m_MeshRenderer != null)
+            try
             {
-                var mesh = GetMesh(m_GameObject.m_MeshRenderer);
-                meshes.Add(mesh != null);
-            }
+                m_Transform.m_GameObject.TryGet(out var m_GameObject);
 
-            if (m_GameObject.m_SkinnedMeshRenderer != null)
+                if (m_GameObject.m_MeshRenderer != null)
+                {
+                    var mesh = GetMesh(m_GameObject.m_MeshRenderer);
+                    meshes.Add(mesh != null);
+                }
+
+                if (m_GameObject.m_SkinnedMeshRenderer != null)
+                {
+                    var mesh = GetMesh(m_GameObject.m_SkinnedMeshRenderer);
+                    meshes.Add(mesh != null);
+                }
+
+                foreach (var pptr in m_Transform.m_Children)
+                {
+                    if (pptr.TryGet(out var child))
+                        meshes.Add(HasMesh(child, meshes));
+                }
+
+                return meshes.Any(x => x == true);
+            }
+            catch(Exception e)
             {
-                var mesh = GetMesh(m_GameObject.m_SkinnedMeshRenderer);
-                meshes.Add(mesh != null);
+                Logger.Warning($"Unable to verify if {m_Transform?.Name} has meshes, skipping...");
+                return false;
             }
-
-            foreach (var pptr in m_Transform.m_Children)
-            {
-                if (pptr.TryGet(out var child))
-                    meshes.Add(HasMesh(child, meshes));
-            }
-
-            return meshes.Any(x => x == true);
         }
 
         private static Mesh GetMesh(Renderer meshR)
