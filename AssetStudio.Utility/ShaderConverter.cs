@@ -690,7 +690,10 @@ namespace AssetStudio
             {
                 sb.Append($"[{m_Attribute}] ");
             }
-            //TODO Flag
+            foreach (var flag in Enum.GetValues<SerializedPropertyFlag>().Where(x => m_Prop.m_Flags.HasFlag(x)))
+            {
+                sb.Append($"[{flag}] ");
+            }
             sb.Append($"{m_Prop.m_Name} (\"{m_Prop.m_Description}\", ");
             switch (m_Prop.m_Type)
             {
