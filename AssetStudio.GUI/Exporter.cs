@@ -392,7 +392,7 @@ namespace AssetStudio.GUI
                 return false;
 
             var m_GameObject = (GameObject)item.Asset;
-            return ExportGameObject(m_GameObject, exportFullPath, animationList);
+            return ExportGameObject(m_GameObject, exportFullPath + Path.DirectorySeparatorChar, animationList);
         }
 
         public static bool ExportGameObject(GameObject gameObject, string exportPath, List<AssetItem> animationList = null)
