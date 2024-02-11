@@ -8,8 +8,6 @@ namespace AssetStudio
 {
     public class BlbFile
     {
-        private const uint DefaultUncompressedSize = 0x20000;
-
         private List<BundleFile.StorageBlock> m_BlocksInfo;
         private List<BundleFile.Node> m_DirectoryInfo;
 
@@ -34,7 +32,7 @@ namespace AssetStudio
                 version = 6,
                 unityVersion = "5.x.x",
                 unityRevision = "2017.4.30f1",
-                flags = (ArchiveFlags)0x43
+                flags = 0
             };
             m_Header.compressedBlocksInfoSize = size;
             m_Header.uncompressedBlocksInfoSize = size;
@@ -57,9 +55,10 @@ namespace AssetStudio
             var lastUncompressedSize = reader.ReadUInt32();
 
             reader.Position += 4;
-            var offset = reader.ReadInt64();
+            var blobOffset = reader.ReadInt32();
+            var blobSize = reader.ReadUInt32();
             var compressionType = (CompressionType)reader.ReadByte();
-            var serializedFileVersion = (SerializedFileFormatVersion)reader.ReadByte();
+            var uncompressedSize = (uint)1 << reader.ReadByte();
             reader.AlignStream();
 
             var blocksInfoCount = reader.ReadInt32();
@@ -67,7 +66,7 @@ namespace AssetStudio
 
             var blocksInfoOffset = reader.Position + reader.ReadInt64();
             var nodesInfoOffset = reader.Position + reader.ReadInt64();
-            var bundleInfoOffset = reader.Position + reader.ReadInt64();
+            var flagInfoOffset = reader.Position + reader.ReadInt64();
 
             reader.Position = blocksInfoOffset;
             m_BlocksInfo = new List<BundleFile.StorageBlock>();
@@ -77,8 +76,8 @@ namespace AssetStudio
                 m_BlocksInfo.Add(new BundleFile.StorageBlock
                 {
                     compressedSize = reader.ReadUInt32(),
-                    uncompressedSize = i == blocksInfoCount - 1 ? lastUncompressedSize : DefaultUncompressedSize,
-                    flags = (StorageBlockFlags)0x43
+                    uncompressedSize = i == blocksInfoCount - 1 ? lastUncompressedSize : uncompressedSize,
+                    flags = (StorageBlockFlags)compressionType
                 });
 
                 Logger.Verbose($"Block {i} Info: {m_BlocksInfo[i]}");
@@ -95,9 +94,19 @@ namespace AssetStudio
                     size = reader.ReadInt32()
                 });
 
+                var pos = reader.Position;
+                reader.Position = flagInfoOffset;
+                var flag = reader.ReadUInt32();
+                if (i >= 0x20)
+                {
+                    flag = reader.ReadUInt32();
+                }
+                m_DirectoryInfo[i].flags = (uint)(flag & (1 << i)) * 4;
+                reader.Position = pos;
+
                 var pathOffset = reader.Position + reader.ReadInt64();
 
-                var pos = reader.Position;
+                pos = reader.Position;
                 reader.Position = pathOffset;
                 m_DirectoryInfo[i].path = reader.ReadStringToNull();
                 reader.Position = pos;
@@ -118,34 +127,55 @@ namespace AssetStudio
             return blocksStream;
         }
 
-        private void ReadBlocks(EndianBinaryReader reader, Stream blocksStream)
+        private void ReadBlocks(FileReader reader, Stream blocksStream)
         {
             foreach (var blockInfo in m_BlocksInfo)
             {
-                var compressedSize = (int)blockInfo.compressedSize;
-                var uncompressedSize = (int)blockInfo.uncompressedSize;
-
-                var compressedBytes = ArrayPool<byte>.Shared.Rent(compressedSize);
-                var uncompressedBytes = ArrayPool<byte>.Shared.Rent(uncompressedSize);
-                try
+                var compressionType = (CompressionType)(blockInfo.flags & StorageBlockFlags.CompressionTypeMask);
+                Logger.Verbose($"Block compression type {compressionType}");
+                switch (compressionType) //kStorageBlockCompressionTypeMask
                 {
-                    reader.Read(compressedBytes, 0, compressedSize);
+                    case CompressionType.None: //None
+                        {
+                            reader.BaseStream.CopyTo(blocksStream, blockInfo.compressedSize);
+                            break;
+                        }
+                    case CompressionType.Lzma: //LZMA
+                        {
+                            SevenZipHelper.StreamDecompress(reader.BaseStream, blocksStream, blockInfo.compressedSize, blockInfo.uncompressedSize);
+                            break;
+                        }
+                    case CompressionType.Lz4: //LZ4
+                    case CompressionType.Lz4HC: //LZ4HC
+                        {
+                            var compressedSize = (int)blockInfo.compressedSize;
+                            var uncompressedSize = (int)blockInfo.uncompressedSize;
 
-                    var compressedBytesSpan = compressedBytes.AsSpan(0, compressedSize);
-                    var uncompressedBytesSpan = uncompressedBytes.AsSpan(0, uncompressedSize);
+                            var compressedBytes = ArrayPool<byte>.Shared.Rent(compressedSize);
+                            var uncompressedBytes = ArrayPool<byte>.Shared.Rent(uncompressedSize);
 
-                    var numWrite = LZ4.Decompress(compressedBytesSpan, uncompressedBytesSpan);
-                    if (numWrite != uncompressedSize)
-                    {
-                        throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
-                    }
+                            try
+                            {
+                                var compressedBytesSpan = compressedBytes.AsSpan(0, compressedSize);
+                                var uncompressedBytesSpan = uncompressedBytes.AsSpan(0, uncompressedSize);
 
-                    blocksStream.Write(uncompressedBytes, 0, uncompressedSize);
-                }
-                finally
-                {
-                    ArrayPool<byte>.Shared.Return(compressedBytes, true);
-                    ArrayPool<byte>.Shared.Return(uncompressedBytes, true);
+                                reader.Read(compressedBytesSpan);
+                                var numWrite = LZ4.Decompress(compressedBytesSpan, uncompressedBytesSpan);
+                                if (numWrite != uncompressedSize)
+                                {
+                                    throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
+                                }
+                                blocksStream.Write(uncompressedBytesSpan);
+                            }
+                            finally
+                            {
+                                ArrayPool<byte>.Shared.Return(compressedBytes, true);
+                                ArrayPool<byte>.Shared.Return(uncompressedBytes, true);
+                            }
+                            break;
+                        }
+                    default:
+                        throw new IOException($"Unsupported compression type {compressionType}");
                 }
             }
         }
