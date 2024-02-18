@@ -548,7 +548,7 @@ namespace AssetStudio.GUI
                         case AssetGroupOption.ByContainer: //container path
                             if (!string.IsNullOrEmpty(asset.Container))
                             {
-                                exportPath = Path.Combine(savePath, Path.GetDirectoryName(asset.Container));
+                                exportPath = Path.HasExtension(asset.Container) ? Path.Combine(savePath, Path.GetDirectoryName(asset.Container)) : Path.Combine(savePath, asset.Container);
                             }
                             else
                             {
