@@ -403,11 +403,13 @@ namespace AssetStudio
                             case ClassIDType.Animator when ClassIDType.Animator.CanParse():
                                 var component = new PPtr<Object>(objectReader);
                                 animators.Add((component, asset));
+                                asset.Name = objectReader.type.ToString();
                                 exportable = ClassIDType.Animator.CanExport();
                                 break;
                             case ClassIDType.MiHoYoBinData when ClassIDType.MiHoYoBinData.CanParse():
                                 var MiHoYoBinData = new MiHoYoBinData(objectReader);
                                 obj = MiHoYoBinData;
+                                asset.Name = objectReader.type.ToString();
                                 exportable = ClassIDType.MiHoYoBinData.CanExport();
                                 break;
                             case ClassIDType.IndexObject when ClassIDType.IndexObject.CanParse():
