@@ -488,18 +488,21 @@ namespace AssetStudio
                     else asset.Name = $"BinFile #{asset.PathID}";
                 }
             }
-            foreach ((var pptr, var container) in containers)
+            if (!containerFilters.IsNullOrEmpty())
             {
-                if (pptr.TryGet(out var obj))
+                foreach ((var pptr, var container) in containers)
                 {
-                    var item = objectAssetItemDic[obj];
-                    if (containerFilters.IsNullOrEmpty() || containerFilters.Any(x => x.IsMatch(container)))
+                    if (pptr.TryGet(out var obj))
                     {
-                        item.Container = container;
-                    }
-                    else
-                    {
-                        assets.Remove(item);
+                        var item = objectAssetItemDic[obj];
+                        if (containerFilters.Any(x => x.IsMatch(container)))
+                        {
+                            item.Container = container;
+                        }
+                        else
+                        {
+                            assets.Remove(item);
+                        }
                     }
                 }
             }

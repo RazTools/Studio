@@ -5,6 +5,7 @@ using System.CommandLine;
 using System.CommandLine.Binding;
 using System.CommandLine.Parsing;
 using System.Text.RegularExpressions;
+using System.Collections.Generic;
 
 namespace AssetStudio.CLI
 {
@@ -93,8 +94,68 @@ namespace AssetStudio.CLI
             Silent = new Option<bool>("--silent", "Hide log messages.");
             LoggerFlags = new Option<LoggerEvent[]>("--logger_flags", "Flags to control toggle log events.") { AllowMultipleArgumentsPerToken = true, ArgumentHelpName = "Verbose|Debug|Info|etc.." };
             TypeFilter = new Option<string[]>("--types", "Specify unity class type(s)") { AllowMultipleArgumentsPerToken = true, ArgumentHelpName = "Texture2D|Shader:Parse|Sprite:Both|etc.." };
-            NameFilter = new Option<Regex[]>("--names", result => result.Tokens.Select(x => new Regex(x.Value, RegexOptions.IgnoreCase)).ToArray(), false, "Specify name regex filter(s).") { AllowMultipleArgumentsPerToken = true };
-            ContainerFilter = new Option<Regex[]>("--containers", result => result.Tokens.Select(x => new Regex(x.Value, RegexOptions.IgnoreCase)).ToArray(), false, "Specify container regex filter(s).") { AllowMultipleArgumentsPerToken = true };
+            NameFilter = new Option<Regex[]>("--names", result => 
+            {
+                var items = new List<Regex>();
+                var value = result.Tokens.Single().Value;
+                if (File.Exists(value))
+                {
+                    var lines = File.ReadLines(value);
+                    foreach (var line in lines)
+                    {
+                        if (string.IsNullOrWhiteSpace(line))
+                        {
+                            continue;
+                        }
+
+                        try
+                        {
+                            items.Add(new Regex(line, RegexOptions.IgnoreCase));
+                        }
+                        catch (ArgumentException e)
+                        {
+                            continue;
+                        }
+                    }
+                }
+                else
+                {
+                    items.AddRange(result.Tokens.Select(x => new Regex(x.Value, RegexOptions.IgnoreCase)).ToArray());
+                }
+
+                return items.ToArray();
+            }, false, "Specify name regex filter(s).") { AllowMultipleArgumentsPerToken = true };
+            ContainerFilter = new Option<Regex[]>("--containers", result =>
+            {
+                var items = new List<Regex>();
+                var value = result.Tokens.Single().Value;
+                if (File.Exists(value))
+                {
+                    var lines = File.ReadLines(value);
+                    foreach(var line in lines)
+                    {
+                        if (string.IsNullOrWhiteSpace(line))
+                        {
+                            continue;
+                        }
+
+                        try
+                        {
+                            items.Add(new Regex(line, RegexOptions.IgnoreCase));
+                        }
+                        catch (ArgumentException e)
+                        {
+                            continue;
+                        }
+                    }
+                }
+                else
+                {
+                    items.AddRange(result.Tokens.Select(x => new Regex(x.Value, RegexOptions.IgnoreCase)).ToArray());
+                }
+
+                return items.ToArray();
+            }, false, "Specify container regex filter(s).") { AllowMultipleArgumentsPerToken = true };
             GameName = new Option<string>("--game", $"Specify Game.") { IsRequired = true };
             KeyIndex = new Option<int>("--key_index", "Specify key index.") { ArgumentHelpName = UnityCNManager.ToString() };
             MapOp = new Option<MapOpType>("--map_op", "Specify which map to build.");
@@ -110,16 +171,7 @@ namespace AssetStudio.CLI
 
             Key = new Option<byte>("--key", result =>
             {
-                var value = result.Tokens.Single().Value;
-                if (value.StartsWith("0x"))
-                {
-                    value = value[2..];
-                    return Convert.ToByte(value, 0x10);
-                }
-                else
-                {
-                    return byte.Parse(value);
-                }
+                return ParseKey(result.Tokens.Single().Value);
             }, false, "XOR key to decrypt MiHoYoBinData.");
 
             LoggerFlags.AddValidator(FilterValidator);
@@ -131,15 +183,7 @@ namespace AssetStudio.CLI
                 var value = result.Tokens.Single().Value;
                 try
                 {
-                    if (value.StartsWith("0x"))
-                    {
-                        value = value.Substring(2);
-                        Convert.ToByte(value, 0x10);
-                    }
-                    else
-                    {
-                        byte.Parse(value);
-                    }
+                    ParseKey(value);
                 }
                 catch (Exception e)
                 {
@@ -155,6 +199,19 @@ namespace AssetStudio.CLI
             MapOp.SetDefaultValue(MapOpType.None);
             MapType.SetDefaultValue(ExportListType.XML);
             KeyIndex.SetDefaultValue(0);
+        }
+        
+        public byte ParseKey(string value)
+        {
+            if (value.StartsWith("0x"))
+            {
+                value = value[2..];
+                return Convert.ToByte(value, 0x10);
+            }
+            else
+            {
+                return byte.Parse(value);
+            }
         }
 
         public void FilterValidator(OptionResult result)
