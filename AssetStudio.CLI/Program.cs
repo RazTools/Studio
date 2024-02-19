@@ -152,10 +152,6 @@ namespace AssetStudio.CLI
                     }
                     else
                     {
-                        if (files.Length == 1)
-                        {
-                            throw new Exception("Unable to build AssetMap with input_path as a file !!");
-                        }
                         Task.Run(() => AssetsHelper.BuildAssetMap(files, o.MapName, game, o.Output.FullName, o.MapType, classTypeFilter, o.NameFilter, o.ContainerFilter)).Wait();
                     }
                 }

@@ -2218,7 +2218,7 @@ namespace AssetStudio.GUI
             InvokeUpdate(miscToolStripMenuItem, true);
         }
 
-        private async Task buildBothToolStripMenuItem_Click(object sender, EventArgs e)
+        private async void buildBothToolStripMenuItem_Click(object sender, EventArgs e)
         {
             miscToolStripMenuItem.DropDown.Visible = false;
             InvokeUpdate(miscToolStripMenuItem, false);
@@ -2406,7 +2406,7 @@ namespace AssetStudio.GUI
             Console.Clear();
         }
 
-        private async Task buildAssetMapToolStripMenuItem_Click(object sender, EventArgs e)
+        private async void buildAssetMapToolStripMenuItem_Click(object sender, EventArgs e)
         {
             miscToolStripMenuItem.DropDown.Visible = false;
             InvokeUpdate(miscToolStripMenuItem, false);
