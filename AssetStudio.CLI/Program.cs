@@ -51,6 +51,8 @@ namespace AssetStudio.CLI
                 var classTypeFilter = Array.Empty<ClassIDType>();
                 if (!o.TypeFilter.IsNullOrEmpty())
                 {
+                    var exportTexture2D = false;
+                    var exportMaterial = false;
                     var classTypeFilterList = new List<ClassIDType>();
                     for (int i = 0; i < o.TypeFilter.Length; i++)
                     {
@@ -70,6 +72,15 @@ namespace AssetStudio.CLI
                             }
                     
                             type = (ClassIDType)Enum.Parse(typeof(ClassIDType), typeStr, true);
+
+                            if (type == ClassIDType.Texture2D)
+                            {
+                                exportTexture2D = flag.HasFlag(TypeFlag.Export);
+                            }
+                            else if (type == ClassIDType.Material)
+                            {
+                                exportMaterial = flag.HasFlag(TypeFlag.Export);
+                            }
                     
                             TypeFlags.SetType(type, flag.HasFlag(TypeFlag.Parse), flag.HasFlag(TypeFlag.Export));
                     
@@ -86,10 +97,10 @@ namespace AssetStudio.CLI
 
                     if (ClassIDType.GameObject.CanExport() || ClassIDType.Animator.CanExport())
                     {
-                        TypeFlags.SetType(ClassIDType.Texture2D, true, false);
+                        TypeFlags.SetType(ClassIDType.Texture2D, true, exportTexture2D);
                         if (Settings.Default.exportMaterials)
                         {
-                            TypeFlags.SetType(ClassIDType.Material, true, false);
+                            TypeFlags.SetType(ClassIDType.Material, true, exportMaterial);
                         }
                         if (ClassIDType.GameObject.CanExport())
                         {
