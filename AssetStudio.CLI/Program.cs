@@ -64,12 +64,12 @@ namespace AssetStudio.CLI
                             {
                                 var param = typeStr.Split(':');
                     
-                                flag = (TypeFlag)Enum.Parse(typeof(TypeFlag), param[1]);
+                                flag = (TypeFlag)Enum.Parse(typeof(TypeFlag), param[1], true);
                     
                                 typeStr = param[0];
                             }
                     
-                            type = (ClassIDType)Enum.Parse(typeof(ClassIDType), typeStr);
+                            type = (ClassIDType)Enum.Parse(typeof(ClassIDType), typeStr, true);
                     
                             TypeFlags.SetType(type, flag.HasFlag(TypeFlag.Parse), flag.HasFlag(TypeFlag.Export));
                     
