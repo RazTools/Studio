@@ -126,7 +126,7 @@ namespace AssetStudio.GUI
             {
                 foreach (var asset in assetsFile.Objects)
                 {
-                    ProcessAssetData(asset, exportableAssets, entries, objectAssetItemDic, mihoyoBinDataNames, containers);
+                    ProcessAssetData(asset, exportableAssets, objectAssetItemDic, mihoyoBinDataNames, containers);
                 }
             }
             foreach ((var pptr, var name) in mihoyoBinDataNames)
@@ -151,16 +151,12 @@ namespace AssetStudio.GUI
                 }
             }
             containers.Clear();
-            for (int i = exportableAssets.Count - 1; i >= 0; i--)
-            {
-                var asset = exportableAssets[i];
-                if (!entries.Any(x => x.Container == asset.Container && x.Name == asset.Text && x.Type == asset.Type && x.PathID == asset.m_PathID))
-                {
-                    exportableAssets.Remove(asset);
-                }
-            }
+
+            var matches = exportableAssets.Where(asset => entries.Any(x => x.Container == asset.Container && x.Name == asset.Text && x.Type == asset.Type && x.PathID == asset.m_PathID)).ToArray();
+            exportableAssets.Clear();
+            exportableAssets.AddRange(matches);
         }
-        private void ProcessAssetData(Object asset, List<AssetItem> exportableAssets, AssetEntry[] entries, Dictionary<Object, AssetItem> objectAssetItemDic, List<(PPtr<Object>, string)> mihoyoBinDataNames, List<(PPtr<Object>, string)> containers)
+        private void ProcessAssetData(Object asset, List<AssetItem> exportableAssets, Dictionary<Object, AssetItem> objectAssetItemDic, List<(PPtr<Object>, string)> mihoyoBinDataNames, List<(PPtr<Object>, string)> containers)
         {
             var assetItem = new AssetItem(asset);
             objectAssetItemDic.Add(asset, assetItem);
@@ -231,12 +227,13 @@ namespace AssetStudio.GUI
                     exportable = true;
                     break;
             }
+
             if (assetItem.Text == "")
             {
                 assetItem.Text = assetItem.TypeString + assetItem.UniqueID;
             }
 
-            if (entries.Any(x => x.Name == assetItem.Text && x.Type == assetItem.Type) && exportable)
+            if (exportable)
             {
                 exportableAssets.Add(assetItem);
             }

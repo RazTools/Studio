@@ -339,6 +339,7 @@ namespace AssetStudio
 
         private static void BuildAssetMap(string file, List<AssetEntry> assets, ClassIDType[] typeFilters = null, Regex[] nameFilters = null, Regex[] containerFilters = null)
         {
+            var matches = new List<AssetEntry>();
             var containers = new List<(PPtr<Object>, string)>();
             var mihoyoBinDataNames = new List<(PPtr<Object>, string)>();
             var objectAssetItemDic = new Dictionary<Object, AssetEntry>();
@@ -457,25 +458,18 @@ namespace AssetStudio
                         objectAssetItemDic.Add(obj, asset);
                         assetsFile.AddObject(obj);
                     }
-                    var isMatchRegex = nameFilters.IsNullOrEmpty() || nameFilters.Any(x => x.IsMatch(asset.Name) || asset.Type == ClassIDType.Animator);
-                    var isFilteredType = typeFilters.IsNullOrEmpty() || typeFilters.Contains(asset.Type) || asset.Type == ClassIDType.Animator;
-                    if (isMatchRegex && isFilteredType && exportable)
+                    if (exportable)
                     {
-                        assets.Add(asset);
+                        matches.Add(asset);
                     }
                 }
             }
             foreach ((var pptr, var asset) in animators)
             {
-                if (pptr.TryGet<GameObject>(out var gameObject) && (nameFilters.IsNullOrEmpty() || nameFilters.Any(x => x.IsMatch(gameObject.m_Name))) && (typeFilters.IsNullOrEmpty() || typeFilters.Contains(asset.Type)))
+                if (pptr.TryGet<GameObject>(out var gameObject))
                 {
                     asset.Name = gameObject.m_Name;
                 }
-                else
-                {
-                    assets.Remove(asset);
-                }
-
             }
             foreach ((var pptr, var name) in mihoyoBinDataNames)
             {
@@ -490,24 +484,21 @@ namespace AssetStudio
                     else asset.Name = $"BinFile #{asset.PathID}";
                 }
             }
-            if (!containerFilters.IsNullOrEmpty())
+            foreach ((var pptr, var container) in containers)
             {
-                foreach ((var pptr, var container) in containers)
+                if (pptr.TryGet(out var obj))
                 {
-                    if (pptr.TryGet(out var obj))
-                    {
-                        var item = objectAssetItemDic[obj];
-                        if (containerFilters.Any(x => x.IsMatch(container)))
-                        {
-                            item.Container = container;
-                        }
-                        else
-                        {
-                            assets.Remove(item);
-                        }
-                    }
+                    objectAssetItemDic[obj].Container = container;
                 }
             }
+
+            assets.AddRange(matches.Where(x =>
+            {
+                var isMatchRegex = nameFilters.IsNullOrEmpty() || nameFilters.Any(y => y.IsMatch(x.Name));
+                var isFilteredType = typeFilters.IsNullOrEmpty() || typeFilters.Contains(x.Type);
+                var isContainerMatch = containerFilters.IsNullOrEmpty() || containerFilters.Any(y => y.IsMatch(x.Container));
+                return isMatchRegex && isFilteredType && isContainerMatch;
+            }));
         }
 
         public static string[] ParseAssetMap(string mapName, ExportListType mapType, ClassIDType[] typeFilter, Regex[] nameFilter, Regex[] containerFilter)
