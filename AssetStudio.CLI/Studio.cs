@@ -235,7 +235,7 @@ namespace AssetStudio.CLI
             {
                 foreach (var asset in assetsFile.Objects)
                 {
-                    ProcessAssetData(asset, typeFilters, nameFilters, objectAssetItemDic, mihoyoBinDataNames, containers, ref i);
+                    ProcessAssetData(asset, objectAssetItemDic, mihoyoBinDataNames, containers, ref i);
                 }
             }
             foreach ((var pptr, var name) in mihoyoBinDataNames)
@@ -257,15 +257,7 @@ namespace AssetStudio.CLI
                 {
                     if (pptr.TryGet(out var obj))
                     {
-                        var item = objectAssetItemDic[obj];
-                        if (containerFilters.IsNullOrEmpty() || containerFilters.Any(x => x.IsMatch(container)))
-                        {
-                            item.Container = container;
-                        }
-                        else
-                        {
-                            exportableAssets.Remove(item);
-                        }
+                        objectAssetItemDic[obj].Container = container;
                     }
                 }
                 containers.Clear();
@@ -274,9 +266,19 @@ namespace AssetStudio.CLI
                     UpdateContainers();
                 }
             }
+
+            var matches = exportableAssets.Where(x =>
+            {
+                var isMatchRegex = nameFilters.IsNullOrEmpty() || nameFilters.Any(y => y.IsMatch(x.Text));
+                var isFilteredType = typeFilters.IsNullOrEmpty() || typeFilters.Contains(x.Type);
+                var isContainerMatch = containerFilters.IsNullOrEmpty() || containerFilters.Any(y => y.IsMatch(x.Container));
+                return isMatchRegex && isFilteredType && isContainerMatch;
+            }).ToArray();
+            exportableAssets.Clear();
+            exportableAssets.AddRange(matches);
         }
 
-        public static void ProcessAssetData(Object asset, ClassIDType[] typeFilters, Regex[] nameFilters, Dictionary<Object, AssetItem> objectAssetItemDic, List<(PPtr<Object>, string)> mihoyoBinDataNames, List<(PPtr<Object>, string)> containers, ref int i) 
+        public static void ProcessAssetData(Object asset, Dictionary<Object, AssetItem> objectAssetItemDic, List<(PPtr<Object>, string)> mihoyoBinDataNames, List<(PPtr<Object>, string)> containers, ref int i) 
         {
             var assetItem = new AssetItem(asset);
             objectAssetItemDic.Add(asset, assetItem);
@@ -352,10 +354,8 @@ namespace AssetStudio.CLI
             {
                 assetItem.Text = assetItem.TypeString + assetItem.UniqueID;
             }
-            
-            var isMatchRegex = nameFilters.IsNullOrEmpty() || nameFilters.Any(x => x.IsMatch(assetItem.Text));
-            var isFilteredType = typeFilters.IsNullOrEmpty() || typeFilters.Contains(assetItem.Type);
-            if (isMatchRegex && isFilteredType && exportable)
+
+            if (exportable)
             {
                 exportableAssets.Add(assetItem);
             }
