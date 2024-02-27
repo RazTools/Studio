@@ -904,7 +904,7 @@ namespace AssetStudio.GUI
             treeSearch.ForeColor = System.Drawing.SystemColors.WindowText;
             treeSearch.Location = new System.Drawing.Point(0, 0);
             treeSearch.Name = "treeSearch";
-            treeSearch.PlaceholderText = "Search (with Ctrl to check result, with Shift for all)";
+            treeSearch.PlaceholderText = "Search (with Ctrl to check result, with Shift for all, alt for parent nodes)";
             treeSearch.Size = new System.Drawing.Size(472, 23);
             treeSearch.TabIndex = 0;
             treeSearch.TextChanged += treeSearch_TextChanged;
