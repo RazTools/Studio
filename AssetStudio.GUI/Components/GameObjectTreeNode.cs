@@ -10,6 +10,10 @@ namespace AssetStudio.GUI
         {
             this.gameObject = gameObject;
             Text = gameObject.m_Name;
+            if (gameObject.HasModel())
+            {
+                BackColor = System.Drawing.Color.LightBlue;
+            }
         }
     }
 }
