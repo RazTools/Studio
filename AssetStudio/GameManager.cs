@@ -48,6 +48,8 @@ namespace AssetStudio
             Games.Add(index++, new Game(GameType.PartyAnimals));
             Games.Add(index++, new Game(GameType.LoveAndDeepspace));
             Games.Add(index++, new Game(GameType.SchoolGirlStrikers));
+            Games.Add(index++, new Game(GameType.ExAstris));
+            Games.Add(index++, new Game(GameType.PerpetualNovelty));
         }
         public static Game GetGame(GameType gameType) => GetGame((int)gameType);
         public static Game GetGame(int index)
@@ -167,6 +169,8 @@ namespace AssetStudio
         PartyAnimals,
         LoveAndDeepspace,
         SchoolGirlStrikers,
+        ExAstris,
+        PerpetualNovelty,
     }
 
     public static class GameTypes
@@ -191,6 +195,8 @@ namespace AssetStudio
         public static bool IsNetEase(this GameType type) => type == GameType.NetEase;
         public static bool IsArknightsEndfield(this GameType type) => type == GameType.ArknightsEndfield;
         public static bool IsLoveAndDeepspace(this GameType type) => type == GameType.LoveAndDeepspace;
+        public static bool IsExAstris(this GameType type) => type == GameType.ExAstris;
+        public static bool IsPerpetualNovelty(this GameType type) => type == GameType.PerpetualNovelty;
         public static bool IsGIGroup(this GameType type) => type switch
         {
             GameType.GI or GameType.GI_Pack or GameType.GI_CB1 or GameType.GI_CB2 or GameType.GI_CB3 or GameType.GI_CB3Pre => true,

@@ -37,7 +37,9 @@ namespace AssetStudio
         Lzham,
         Lz4Mr0k,
         Lz4Inv = 5,
-        Zstd = 5
+        Zstd = 5,
+        Lz4Lit4 = 4,
+        Lz4Lit5 = 5,
     }
 
     public class BundleFile
@@ -450,7 +452,15 @@ namespace AssetStudio
                         try
                         {
                             var uncompressedBytesSpan = uncompressedBytes.AsSpan(0, (int)uncompressedSize);
-                            var numWrite = LZ4.Decompress(blocksInfoBytesSpan, uncompressedBytesSpan);
+                            if (Game.Type.IsPerpetualNovelty())
+                            {
+                                var key = blocksInfoBytesSpan[1];
+                                for (int j = 0; j < Math.Min(0x32, blocksInfoBytesSpan.Length); j++)
+                                {
+                                    blocksInfoBytesSpan[j] ^= key;
+                                }
+                            }
+                            var numWrite = LZ4.Instance.Decompress(blocksInfoBytesSpan, uncompressedBytesSpan);
                             if (numWrite != uncompressedSize)
                             {
                                 throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
@@ -584,7 +594,7 @@ namespace AssetStudio
                                 {
                                     OPFPUtils.Decrypt(compressedBytesSpan, reader.FullPath);
                                 }
-                                var numWrite = LZ4.Decompress(compressedBytesSpan, uncompressedBytesSpan);
+                                var numWrite = LZ4.Instance.Decompress(compressedBytesSpan, uncompressedBytesSpan);
                                 if (numWrite != uncompressedSize)
                                 {
                                     throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
@@ -615,9 +625,37 @@ namespace AssetStudio
                                 if (i == 0)
                                 {
                                     FairGuardUtils.Decrypt(compressedBytesSpan);
-
                                 }
-                                var numWrite = LZ4Inv.Decompress(compressedBytesSpan, uncompressedBytesSpan);
+
+                                var numWrite = LZ4Inv.Instance.Decompress(compressedBytesSpan, uncompressedBytesSpan);
+                                if (numWrite != uncompressedSize)
+                                {
+                                    throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");
+                                }
+                                blocksStream.Write(uncompressedBytesSpan);
+                            }
+                            finally
+                            {
+                                ArrayPool<byte>.Shared.Return(compressedBytes, true);
+                                ArrayPool<byte>.Shared.Return(uncompressedBytes, true);
+                            }
+                            break;
+                        }
+                    case CompressionType.Lz4Lit4 or CompressionType.Lz4Lit5 when Game.Type.IsExAstris():
+                        {
+                            var compressedSize = (int)blockInfo.compressedSize;
+                            var uncompressedSize = (int)blockInfo.uncompressedSize;
+
+                            var compressedBytes = ArrayPool<byte>.Shared.Rent(compressedSize);
+                            var uncompressedBytes = ArrayPool<byte>.Shared.Rent(uncompressedSize);
+
+                            var compressedBytesSpan = compressedBytes.AsSpan(0, compressedSize);
+                            var uncompressedBytesSpan = uncompressedBytes.AsSpan(0, uncompressedSize);
+
+                            try
+                            {
+                                reader.Read(compressedBytesSpan);
+                                var numWrite = LZ4Lit.Instance.Decompress(compressedBytesSpan, uncompressedBytesSpan);
                                 if (numWrite != uncompressedSize)
                                 {
                                     throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {uncompressedSize} bytes");

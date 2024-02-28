@@ -20,7 +20,7 @@ namespace AssetStudio
             if (shader.m_SubProgramBlob != null) //5.3 - 5.4
             {
                 var decompressedBytes = new byte[shader.decompressedSize];
-                var numWrite = LZ4.Decompress(shader.m_SubProgramBlob, decompressedBytes);
+                var numWrite = LZ4.Instance.Decompress(shader.m_SubProgramBlob, decompressedBytes);
                 if (numWrite != shader.decompressedSize)
                 {
                     throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {shader.decompressedSize} bytes");
@@ -59,7 +59,7 @@ namespace AssetStudio
                     }
                     else
                     {
-                        var numWrite = LZ4.Decompress(shader.compressedBlob.AsSpan().Slice((int)offset, (int)compressedLength), decompressedBytes.AsSpan().Slice(0, (int)decompressedLength));
+                        var numWrite = LZ4.Instance.Decompress(shader.compressedBlob.AsSpan().Slice((int)offset, (int)compressedLength), decompressedBytes.AsSpan().Slice(0, (int)decompressedLength));
                         if (numWrite != decompressedLength)
                         {
                             throw new IOException($"Lz4 decompression error, write {numWrite} bytes but expected {decompressedLength} bytes");
