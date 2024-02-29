@@ -252,108 +252,108 @@ namespace AssetStudio
             }
         }
 
-        public bool[] ReadBooleanArray(int length = 0)
+        public bool[] ReadBooleanArray(int length = -1)
         {
-            if (length == 0)
+            if (length == -1)
             {
                 length = ReadInt32();
             }
             return ReadArray(ReadBoolean, length);
         }
 
-        public byte[] ReadUInt8Array(int length = 0)
+        public byte[] ReadUInt8Array(int length = -1)
         {
-            if (length == 0)
+            if (length == -1)
             {
                 length = ReadInt32();
             }
             return ReadBytes(length);
         }
 
-        public short[] ReadInt16Array(int length = 0)
+        public short[] ReadInt16Array(int length = -1)
         {
-            if (length == 0)
+            if (length == -1)
             {
                 length = ReadInt32();
             }
             return ReadArray(ReadInt16, length);
         }
 
-        public ushort[] ReadUInt16Array(int length = 0)
+        public ushort[] ReadUInt16Array(int length = -1)
         {
-            if (length == 0)
+            if (length == -1)
             {
                 length = ReadInt32();
             }
             return ReadArray(ReadUInt16, length);
         }
 
-        public int[] ReadInt32Array(int length = 0)
+        public int[] ReadInt32Array(int length = -1)
         {
-            if (length == 0)
+            if (length == -1)
             {
                 length = ReadInt32();
             }
             return ReadArray(ReadInt32, length);
         }
 
-        public uint[] ReadUInt32Array(int length = 0)
+        public uint[] ReadUInt32Array(int length = -1)
         {
-            if (length == 0)
+            if (length == -1)
             {
                 length = ReadInt32();
             }
             return ReadArray(ReadUInt32, length);
         }
 
-        public uint[][] ReadUInt32ArrayArray(int length = 0)
+        public uint[][] ReadUInt32ArrayArray(int length = -1)
         {
-            if (length == 0)
+            if (length == -1)
             {
                 length = ReadInt32();
             }
             return ReadArray(() => ReadUInt32Array(), length);
         }
 
-        public float[] ReadSingleArray(int length = 0)
+        public float[] ReadSingleArray(int length = -1)
         {
-            if (length == 0)
+            if (length == -1)
             {
                 length = ReadInt32();
             }
             return ReadArray(ReadSingle, length);
         }
 
-        public string[] ReadStringArray(int length = 0)
+        public string[] ReadStringArray(int length = -1)
         {
-            if (length == 0)
+            if (length == -1)
             {
                 length = ReadInt32();
             }
             return ReadArray(ReadAlignedString, length);
         }
 
-        public Vector2[] ReadVector2Array(int length = 0)
+        public Vector2[] ReadVector2Array(int length = -1)
         {
-            if (length == 0)
+            if (length == -1)
             {
                 length = ReadInt32();
             }
             return ReadArray(ReadVector2, length);
         }
 
-        public Vector4[] ReadVector4Array(int length = 0)
+        public Vector4[] ReadVector4Array(int length = -1)
         {
-            if (length == 0)
+            if (length == -1)
             {
                 length = ReadInt32();
             }
             return ReadArray(ReadVector4, length);
         }
 
-        public Matrix4x4[] ReadMatrixArray(int length = 0)
+        public Matrix4x4[] ReadMatrixArray(int length = -1)
         {
-            if (length == 0)
+            if (length == -1)
             {
                 length = ReadInt32();
             }
