@@ -762,8 +762,8 @@ namespace AssetStudio
             if (version[0] > 5 || (version[0] == 5 && version[1] >= 2))//5.2 and up
             {
                 m_TDoFArray = reader.ReadVector3Array();
-                }
             }
+        }
 
         public static HumanPose ParseGI(ObjectReader reader)
         {
@@ -1118,7 +1118,7 @@ namespace AssetStudio
             return denseClip;
         }
     }
-    public class ArkDenseClip : DenseClip
+    public class ACLDenseClip : DenseClip
     {
         public int m_ACLType;
         public byte[] m_ACLArray;
@@ -1130,21 +1130,38 @@ namespace AssetStudio
         public uint m_nRotationCurves;
         public uint m_nEulerCurves;
         public uint m_nScaleCurves;
+        public uint m_nGenericCurves;
 
-        public ArkDenseClip(ObjectReader reader) : base(reader)
+        public ACLDenseClip(ObjectReader reader) : base(reader)
         {
             m_ACLType = reader.ReadInt32();
-            m_ACLArray = reader.ReadUInt8Array();
-            reader.AlignStream();
-            m_PositionFactor = reader.ReadSingle();
-            m_EulerFactor = reader.ReadSingle();
-            m_ScaleFactor = reader.ReadSingle();
-            m_FloatFactor = reader.ReadSingle();
-            m_nPositionCurves = reader.ReadUInt32();
-            m_nRotationCurves = reader.ReadUInt32();
-            m_nEulerCurves = reader.ReadUInt32();
-            m_nScaleCurves = reader.ReadUInt32();
-
+            if (reader.Game.Type.IsArknightsEndfield())
+            {
+                m_ACLArray = reader.ReadUInt8Array();
+                reader.AlignStream();
+                m_PositionFactor = reader.ReadSingle();
+                m_EulerFactor = reader.ReadSingle();
+                m_ScaleFactor = reader.ReadSingle();
+                m_FloatFactor = reader.ReadSingle();
+                m_nPositionCurves = reader.ReadUInt32();
+                m_nRotationCurves = reader.ReadUInt32();
+                m_nEulerCurves = reader.ReadUInt32();
+                m_nScaleCurves = reader.ReadUInt32();
+            }
+            else if (reader.Game.Type.IsExAstris())
+            {
+                m_nPositionCurves = reader.ReadUInt32();
+                m_nRotationCurves = reader.ReadUInt32();
+                m_nEulerCurves = reader.ReadUInt32();
+                m_nScaleCurves = reader.ReadUInt32();
+                m_nGenericCurves = reader.ReadUInt32();
+                m_PositionFactor = reader.ReadSingle();
+                m_EulerFactor = reader.ReadSingle();
+                m_ScaleFactor = reader.ReadSingle();
+                m_FloatFactor = reader.ReadSingle();
+                m_ACLArray = reader.ReadUInt8Array();
+                reader.AlignStream();
+            }
             Process();
         }
 
@@ -1181,7 +1198,7 @@ namespace AssetStudio
                 {
                     sampleArray.Add(ReadCurve(aclSpan, m_ScaleFactor, ref index));
                 }
-                var m_nFloatCurves = m_CurveCount - (m_nPositionCurves + m_nRotationCurves + m_nEulerCurves + m_nScaleCurves);
+                var m_nFloatCurves = m_CurveCount - (m_nPositionCurves + m_nRotationCurves + m_nEulerCurves + m_nScaleCurves + m_nGenericCurves);
                 for (int j = 0; j < m_nFloatCurves; j++)
                 {
                     sampleArray.Add(ReadCurve(aclSpan, m_FloatFactor, ref index));
@@ -1299,9 +1316,9 @@ namespace AssetStudio
         {
             var version = reader.version;
             m_StreamedClip = new StreamedClip(reader);
-            if (reader.Game.Type.IsArknightsEndfield())
+            if (reader.Game.Type.IsArknightsEndfield() || reader.Game.Type.IsExAstris())
             {
-                m_DenseClip = new ArkDenseClip(reader);
+                m_DenseClip = new ACLDenseClip(reader);
             }
             else
             {
@@ -1864,6 +1881,11 @@ namespace AssetStudio
             for (int i = 0; i < numCRCurves; i++)
             {
                 m_CompressedRotationCurves.Add(new CompressedAnimationCurve(reader));
+            }
+
+            if (reader.Game.Type.IsExAstris())
+            {
+                var m_aclType = reader.ReadInt32();
             }
 
             if (version[0] > 5 || (version[0] == 5 && version[1] >= 3))//5.3 and up

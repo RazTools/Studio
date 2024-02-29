@@ -39,6 +39,10 @@ namespace AssetStudio
             m_FilterMode = reader.ReadInt32();
             m_Aniso = reader.ReadInt32();
             m_MipBias = reader.ReadSingle();
+            if (reader.Game.Type.IsExAstris())
+            {
+                var m_TextureGroup = reader.ReadInt32();
+            }
             if (version[0] >= 2017)//2017.x and up
             {
                 m_WrapMode = reader.ReadInt32(); //m_WrapU

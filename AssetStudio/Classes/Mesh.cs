@@ -155,7 +155,7 @@ namespace AssetStudio
                 m_Streams = new List<StreamInfo>();
                 for (int i = 0; i < numStreams; i++)
                 {
-                    m_Streams[i] = new StreamInfo(reader);
+                    m_Streams.Add(new StreamInfo(reader));
                 }
 
                 if (version[0] < 4) //4.0 down
@@ -704,6 +704,11 @@ namespace AssetStudio
                 int m_CollisionTriangles_size = reader.ReadInt32();
                 reader.Position += m_CollisionTriangles_size * 4; //UInt32 indices
                 int m_CollisionVertexCount = reader.ReadInt32();
+            }
+
+            if (reader.Game.Type.IsExAstris())
+            {
+                var m_ColliderType = reader.ReadInt32();
             }
 
             int m_MeshUsageFlags = reader.ReadInt32();
