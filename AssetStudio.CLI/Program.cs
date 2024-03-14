@@ -117,7 +117,11 @@ namespace AssetStudio.CLI
                 {
                     TypeFlags.SetType(ClassIDType.AssetBundle, true, false);
                 }
-
+                if (o.LuaScriptPath != null)
+                {
+                    assetsManager.EnableLuaScript = true;
+                    assetsManager.LuaScript = File.ReadAllText(o.LuaScriptPath);
+                }
                 assetsManager.Silent = o.Silent;
                 assetsManager.Game = game;
                 assetsManager.SpecifyUnityVersion = o.UnityVersion;

@@ -6,6 +6,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using NLua;
 using static AssetStudio.ImportHelper;
 
 namespace AssetStudio
@@ -13,6 +14,22 @@ namespace AssetStudio
     public class AssetsManager
     {
         public Game Game;
+        private bool enableLuaScript = false;
+
+        public bool EnableLuaScript
+        {
+            get => enableLuaScript; 
+            set 
+            {
+                enableLuaScript = value;
+                if (value)
+                {
+                    InitLuaEnv();
+                }
+            }
+        }
+        private Lua luaEnvironment = new Lua();
+        public string LuaScript = "";
         public bool Silent = false;
         public bool SkipProcess = false;
         public bool ResolveDependencies = false;        
@@ -27,6 +44,16 @@ namespace AssetStudio
         internal HashSet<string> importFilesHash = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         internal HashSet<string> noexistFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         internal HashSet<string> assetsFileListHash = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        private void InitLuaEnv()
+        {
+            var luaMethods = new LuaMethods();
+            var methods = typeof(LuaMethods).GetMethods();
+            foreach (var method in methods)
+            {
+                luaEnvironment.RegisterFunction(method.Name, luaMethods, method);
+            }
+        }
 
         public void LoadFiles(params string[] files)
         {
@@ -107,7 +134,26 @@ namespace AssetStudio
 
         private void LoadFile(string fullName)
         {
-            var reader = new FileReader(fullName);
+            FileReader reader = null;
+            if (!EnableLuaScript)
+            {
+                reader = new FileReader(fullName);
+            }
+            else
+            {
+                luaEnvironment["filepath"] = fullName;
+                luaEnvironment["filename"] = Path.GetFileName(fullName);
+                try
+                {
+                    var result = luaEnvironment.DoString(LuaScript);
+                    Stream fs = (Stream)result[0];
+                    reader = new FileReader(fullName, fs);
+                }
+                catch (Exception e)
+                {
+                    Logger.Error($"Error while reading file {fullName} with lua", e);
+                }
+            }
             reader = reader.PreProcessing(Game);
             LoadFile(reader);
         }

@@ -110,6 +110,7 @@ namespace AssetStudio.GUI
             MiHoYoBinData.Encrypted = Properties.Settings.Default.encrypted;
             MiHoYoBinData.Key = Properties.Settings.Default.key;
             AssetsHelper.Minimal = Properties.Settings.Default.minimalAssetMap;
+            enableLuaScripts.Checked = Properties.Settings.Default.enableLuaScripts;
         }
 
         private void InitializeLogger()
@@ -2955,5 +2956,27 @@ namespace AssetStudio.GUI
             }
         }
         #endregion
+
+        private void enableLua_CheckedChanged(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.enableLuaScripts = enableLuaScripts.Checked;
+            Properties.Settings.Default.Save();
+            assetsManager.EnableLuaScript = enableLuaScripts.Checked;
+        }
+
+        private void loadLuaTemplate_Click(object sender, EventArgs e)
+        {
+            
+            var openFileDialog = new OpenFileDialog() { Multiselect = false, Filter = "Lua Script|*.lua" };
+            if (openFileDialog.ShowDialog(this) == DialogResult.OK)
+            {
+                var path = openFileDialog.FileName;
+                Logger.Info($"Loading Lua Script...");
+                if (File.Exists(path) && Path.GetExtension(path) == ".lua")
+                {
+                    assetsManager.LuaScript = File.ReadAllText(path);
+                }
+            }
+        }
     }
 }

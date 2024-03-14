@@ -174,6 +174,9 @@ namespace AssetStudio.GUI
             exportAnimatorwithselectedAnimationClipMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             goToSceneHierarchyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             showOriginalFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            luaToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            enableLuaScripts = new System.Windows.Forms.ToolStripMenuItem();
+            luaTemplates = new System.Windows.Forms.ToolStripMenuItem();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
@@ -197,7 +200,7 @@ namespace AssetStudio.GUI
             // 
             // menuStrip1
             // 
-            menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { fileToolStripMenuItem, optionsToolStripMenuItem, modelToolStripMenuItem, exportToolStripMenuItem, filterTypeToolStripMenuItem, debugMenuItem, miscToolStripMenuItem });
+            menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { fileToolStripMenuItem, optionsToolStripMenuItem, modelToolStripMenuItem, exportToolStripMenuItem, filterTypeToolStripMenuItem, debugMenuItem, miscToolStripMenuItem, luaToolStripMenuItem });
             menuStrip1.Location = new System.Drawing.Point(0, 0);
             menuStrip1.Name = "menuStrip1";
             menuStrip1.Size = new System.Drawing.Size(1264, 24);
@@ -1362,6 +1365,30 @@ namespace AssetStudio.GUI
             showOriginalFileToolStripMenuItem.Visible = false;
             showOriginalFileToolStripMenuItem.Click += showOriginalFileToolStripMenuItem_Click;
             // 
+            // luaToolStripMenuItem
+            // 
+            luaToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { enableLuaScripts, luaTemplates });
+            luaToolStripMenuItem.Name = "luaToolStripMenuItem";
+            luaToolStripMenuItem.Size = new System.Drawing.Size(48, 24);
+            luaToolStripMenuItem.Text = "Lua";
+            // 
+            // enableLuaScripts
+            // 
+            enableLuaScripts.CheckOnClick = true;
+            enableLuaScripts.Name = "enableLuaScripts";
+            enableLuaScripts.Size = new System.Drawing.Size(250, 26);
+            enableLuaScripts.ToolTipText = "Enable processing files with Lua Scripts";
+            enableLuaScripts.Text = "Enable Lua Scripts";
+            enableLuaScripts.CheckedChanged += enableLua_CheckedChanged;
+            // 
+            // luaTemplates
+            // 
+            luaTemplates.Name = "loadLuaTemplate";
+            luaTemplates.Size = new System.Drawing.Size(250, 26);
+            luaTemplates.ToolTipText = "Load Lua Template";
+            luaTemplates.Text = "Load Lua Template";
+            luaTemplates.Click += loadLuaTemplate_Click;
+            // 
             // MainForm
             // 
             AllowDrop = true;
@@ -1553,6 +1580,9 @@ namespace AssetStudio.GUI
         private System.Windows.Forms.ToolStripMenuItem assetMapTypeMenuItem;
         private System.Windows.Forms.ToolStripMenuItem loadCABMapToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem allowDuplicates;
+        private System.Windows.Forms.ToolStripMenuItem luaToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem enableLuaScripts;
+        private System.Windows.Forms.ToolStripMenuItem luaTemplates;
     }
 }
 

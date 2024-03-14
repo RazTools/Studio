@@ -38,7 +38,8 @@ namespace AssetStudio.CLI
                 optionsBinder.AIFile,
                 optionsBinder.DummyDllFolder,
                 optionsBinder.Input,
-                optionsBinder.Output
+                optionsBinder.Output,
+                optionsBinder.LuaScriptPath
             };
 
             rootCommand.SetHandler(Program.Run, optionsBinder);
@@ -66,6 +67,7 @@ namespace AssetStudio.CLI
         public DirectoryInfo DummyDllFolder { get; set; }
         public FileInfo Input { get; set; }
         public DirectoryInfo Output { get; set; }
+        public String LuaScriptPath { get; set; }
     }
 
     public class OptionsBinder : BinderBase<Options>
@@ -88,6 +90,7 @@ namespace AssetStudio.CLI
         public readonly Option<DirectoryInfo> DummyDllFolder;
         public readonly Argument<FileInfo> Input;
         public readonly Argument<DirectoryInfo> Output;
+        public readonly Option<string> LuaScriptPath;
 
         public OptionsBinder()
         {
@@ -168,7 +171,8 @@ namespace AssetStudio.CLI
             DummyDllFolder = new Option<DirectoryInfo>("--dummy_dlls", "Specify DummyDll path.").LegalFilePathsOnly();
             Input = new Argument<FileInfo>("input_path", "Input file/folder.").LegalFilePathsOnly();
             Output = new Argument<DirectoryInfo>("output_path", "Output folder.").LegalFilePathsOnly();
-
+            LuaScriptPath = new Option<string>("--lua_script", "Specify Lua script path.");
+            
             Key = new Option<byte>("--key", result =>
             {
                 return ParseKey(result.Tokens.Single().Value);
@@ -257,7 +261,8 @@ namespace AssetStudio.CLI
             AIFile = bindingContext.ParseResult.GetValueForOption(AIFile),
             DummyDllFolder = bindingContext.ParseResult.GetValueForOption(DummyDllFolder),
             Input = bindingContext.ParseResult.GetValueForArgument(Input),
-            Output = bindingContext.ParseResult.GetValueForArgument(Output)
+            Output = bindingContext.ParseResult.GetValueForArgument(Output),
+            LuaScriptPath = bindingContext.ParseResult.GetValueForOption(LuaScriptPath)
         };
     }
 }

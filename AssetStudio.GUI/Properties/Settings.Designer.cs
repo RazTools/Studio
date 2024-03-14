@@ -34,7 +34,22 @@ namespace AssetStudio.GUI.Properties {
                 this["displayAll"] = value;
             }
         }
-        
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool enableLuaScripts
+        {
+            get
+            {
+                return ((bool)(this["enableLuaScripts"]));
+            }
+            set
+            {
+                this["enableLuaScripts"] = value;
+            }
+        }
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
