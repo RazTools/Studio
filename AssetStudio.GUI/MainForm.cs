@@ -37,6 +37,7 @@ namespace AssetStudio.GUI
         private FMOD.MODE loopMode = FMOD.MODE.LOOP_OFF;
         private uint FMODlenms;
         private float FMODVolume = 0.8f;
+        private Point MouseDownLocation;
 
         #region TexControl
         private static char[] textureChannelNames = new[] { 'B', 'G', 'R', 'A' };
@@ -482,12 +483,11 @@ namespace AssetStudio.GUI
                         {
                             if (enablePreview.Checked && imageTexture != null)
                             {
-                                previewPanel.BackgroundImage = imageTexture.Bitmap;
+                                imgPreviewBox.Image = imageTexture.Bitmap;
                             }
                             else
                             {
-                                previewPanel.BackgroundImage = Properties.Resources.preview;
-                                previewPanel.BackgroundImageLayout = ImageLayout.Center;
+                                imgPreviewBox.Image = null;
                             }
                         }
                         break;
@@ -767,12 +767,12 @@ namespace AssetStudio.GUI
 
         private void selectAsset(object sender, ListViewItemSelectionChangedEventArgs e)
         {
-            previewPanel.BackgroundImage = Properties.Resources.preview;
-            previewPanel.BackgroundImageLayout = ImageLayout.Center;
+            imgPreviewBox.Image = null;
             classTextBox.Visible = false;
             assetInfoLabel.Visible = false;
             assetInfoLabel.Text = null;
             textPreviewBox.Visible = false;
+            imgPreviewBox.Visible = false;
             fontPreviewBox.Visible = false;
             FMODpanel.Visible = false;
             glControl.Visible = false;
@@ -806,6 +806,7 @@ namespace AssetStudio.GUI
             assetInfoLabel.Visible = false;
             assetInfoLabel.Text = null;
             textPreviewBox.Visible = false;
+            imgPreviewBox.Visible = false;
             fontPreviewBox.Visible = false;
             FMODpanel.Visible = false;
             glControl.Visible = false;
@@ -1441,13 +1442,52 @@ namespace AssetStudio.GUI
 
         private void PreviewTexture(DirectBitmap bitmap)
         {
+            imgPreviewBox.Visible = true;
             imageTexture?.Dispose();
             imageTexture = bitmap;
-            previewPanel.BackgroundImage = imageTexture.Bitmap;
-            if (imageTexture.Width > previewPanel.Width || imageTexture.Height > previewPanel.Height)
-                previewPanel.BackgroundImageLayout = ImageLayout.Zoom;
+            imgPreviewBox.Image = imageTexture.Bitmap;
+            imgPreviewBox.SizeMode = PictureBoxSizeMode.Zoom;
+        }
+        
+        private void imgPreviewBox_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == System.Windows.Forms.MouseButtons.Left)
+            {
+                MouseDownLocation = e.Location;
+            }
+        }
+
+        private void imgPreviewBox_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                imgPreviewBox.Left = e.X + imgPreviewBox.Left - MouseDownLocation.X;
+                imgPreviewBox.Top = e.Y + imgPreviewBox.Top - MouseDownLocation.Y;
+            }
+        }
+
+        private void imgPreviewBox_MouseWheel(object sender, MouseEventArgs e)
+        {
+            if (e.Delta > 0)
+            {
+                // Zoom in
+                imgPreviewBox.Width = (int)(imgPreviewBox.Width * 1.25);
+                imgPreviewBox.Height = (int)(imgPreviewBox.Height * 1.25);
+            }
             else
-                previewPanel.BackgroundImageLayout = ImageLayout.Center;
+            {
+                // Zoom out
+                imgPreviewBox.Width = (int)(imgPreviewBox.Width / 1.25);
+                imgPreviewBox.Height = (int)(imgPreviewBox.Height / 1.25);
+            }
+        }
+        
+        private void imgPreviewBox_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                imgPreviewBox.Location = new Point(e.X + imgPreviewBox.Left - MouseDownLocation.X, e.Y + imgPreviewBox.Top - MouseDownLocation.Y);
+            }
         }
 
         private void PreviewText(string text)
@@ -1495,13 +1535,13 @@ namespace AssetStudio.GUI
             assetListView.Items.Clear();
             classesListView.Items.Clear();
             classesListView.Groups.Clear();
-            previewPanel.BackgroundImage = Properties.Resources.preview;
+            imgPreviewBox.Image = null;
             imageTexture?.Dispose();
             imageTexture = null;
-            previewPanel.BackgroundImageLayout = ImageLayout.Center;
             assetInfoLabel.Visible = false;
             assetInfoLabel.Text = null;
             textPreviewBox.Visible = false;
+            imgPreviewBox.Visible = false;
             fontPreviewBox.Visible = false;
             glControl.Visible = false;
             lastSelectedItem = null;

@@ -161,6 +161,7 @@ namespace AssetStudio.GUI
             fontPreviewBox = new System.Windows.Forms.RichTextBox();
             glControl = new OpenTK.WinForms.GLControl();
             textPreviewBox = new System.Windows.Forms.TextBox();
+            imgPreviewBox = new System.Windows.Forms.PictureBox();
             classTextBox = new System.Windows.Forms.TextBox();
             tabPage5 = new System.Windows.Forms.TabPage();
             dumpTextBox = new System.Windows.Forms.TextBox();
@@ -1065,6 +1066,7 @@ namespace AssetStudio.GUI
             previewPanel.Controls.Add(glControl);
             previewPanel.Controls.Add(textPreviewBox);
             previewPanel.Controls.Add(classTextBox);
+            previewPanel.Controls.Add(imgPreviewBox);
             previewPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             previewPanel.Location = new System.Drawing.Point(0, 0);
             previewPanel.Name = "previewPanel";
@@ -1254,6 +1256,19 @@ namespace AssetStudio.GUI
             textPreviewBox.TabIndex = 2;
             textPreviewBox.Visible = false;
             textPreviewBox.WordWrap = false;
+            //
+            // imgPreviewBox
+            //
+            imgPreviewBox.Location = new System.Drawing.Point(0, 0);
+            imgPreviewBox.Name = "imgPreviewBox";
+            imgPreviewBox.Size = new System.Drawing.Size(768, 605);
+            imgPreviewBox.TabIndex = 2;
+            imgPreviewBox.TabStop = false;
+            imgPreviewBox.Visible = false;
+            imgPreviewBox.MouseDown += imgPreviewBox_MouseDown;
+            imgPreviewBox.MouseMove += imgPreviewBox_MouseMove;
+            imgPreviewBox.MouseUp += imgPreviewBox_MouseUp;
+            imgPreviewBox.MouseWheel += imgPreviewBox_MouseWheel;
             // 
             // classTextBox
             // 
@@ -1464,6 +1479,7 @@ namespace AssetStudio.GUI
         private System.Windows.Forms.ToolStripMenuItem modelToolStripMenuItem;
         private System.Windows.Forms.Label assetInfoLabel;
         private System.Windows.Forms.TextBox textPreviewBox;
+        private System.Windows.Forms.PictureBox imgPreviewBox;
         private System.Windows.Forms.RichTextBox fontPreviewBox;
         private System.Windows.Forms.Panel FMODpanel;
         private System.Windows.Forms.TrackBar FMODvolumeBar;
