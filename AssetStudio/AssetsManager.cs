@@ -29,7 +29,7 @@ namespace AssetStudio
             }
         }
         private Lua luaEnvironment = new Lua();
-        public string LuaScript = "";
+        public string LuaScript = "local fs = CreateFileStream(filepath)\nreturn fs";
         public bool Silent = false;
         public bool SkipProcess = false;
         public bool ResolveDependencies = false;        
