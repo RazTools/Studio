@@ -163,12 +163,22 @@ namespace AssetStudio.CLI
                     }
                     else
                     {
-                        Task.Run(() => AssetsHelper.BuildAssetMap(files, o.MapName, game, o.Output.FullName, o.MapType, classTypeFilter, o.NameFilter, o.ContainerFilter)).Wait();
+                        Task.Run(() => AssetsHelper.BuildAssetMap(
+                            files, o.MapName, game, o.Output.FullName, o.MapType,
+                            classTypeFilter.Length > 0 ? classTypeFilter : null,
+                            o.NameFilter.Length > 0 ? o.NameFilter : null,
+                            o.ContainerFilter.Length > 0 ? o.ContainerFilter : null
+                           )).Wait();
                     }
                 }
                 if (o.MapOp.HasFlag(MapOpType.Both))
                 {
-                    Task.Run(() => AssetsHelper.BuildBoth(files, o.MapName, o.Input.FullName, game, o.Output.FullName, o.MapType, classTypeFilter, o.NameFilter, o.ContainerFilter)).Wait();
+                    Task.Run(() => AssetsHelper.BuildBoth(
+                        files, o.MapName, o.Input.FullName, game, o.Output.FullName, o.MapType,
+                        classTypeFilter.Length > 0 ? classTypeFilter : null,
+                        o.NameFilter.Length > 0 ? o.NameFilter : null,
+                        o.ContainerFilter.Length > 0 ? o.ContainerFilter : null
+                     )).Wait();
                 }
                 if (o.MapOp.Equals(MapOpType.None) || o.MapOp.HasFlag(MapOpType.Load))
                 {
