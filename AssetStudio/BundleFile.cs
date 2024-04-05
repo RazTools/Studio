@@ -377,6 +377,13 @@ namespace AssetStudio
                     m_Header.compressedBlocksInfoSize -= 0xB4;
                     m_Header.uncompressedBlocksInfoSize -= 0xAA;
                 }
+                else if (sizeOffset == 0x14)
+                {
+                    m_Header.compressedBlocksInfoSize -= 0xA4;
+                    m_Header.uncompressedBlocksInfoSize -= 0x9C;
+                    m_Header.flags -= 0x03;
+                    reader.ReadUInt16();
+                }
                 else
                 {
                     Logger.Warning($"Unknown size offset: {sizeOffset}");
@@ -497,11 +504,18 @@ namespace AssetStudio
                 Logger.Verbose($"Blocks count: {blocksInfoCount}");
                 for (int i = 0; i < blocksInfoCount; i++)
                 {
+                    UInt32 blockUncompressedSize = blocksInfoReader.ReadUInt32();
+                    UInt32 blockCompressedSize = blocksInfoReader.ReadUInt32();
+                    UInt16 blockFlags = blocksInfoReader.ReadUInt16();
+                    if (Game.Type.IsNaraka() && blockFlags == 0x06)
+                    {
+                        blockFlags -= 0x03;
+                    }
                     m_BlocksInfo.Add(new StorageBlock
                     {
-                        uncompressedSize = blocksInfoReader.ReadUInt32(),
-                        compressedSize = blocksInfoReader.ReadUInt32(),
-                        flags = (StorageBlockFlags)blocksInfoReader.ReadUInt16()
+                        uncompressedSize = blockUncompressedSize,
+                        compressedSize = blockCompressedSize,
+                        flags = (StorageBlockFlags)blockFlags
                     });
 
                     Logger.Verbose($"Block {i} Info: {m_BlocksInfo[i]}");
