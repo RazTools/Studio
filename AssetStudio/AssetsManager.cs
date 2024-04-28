@@ -429,8 +429,8 @@ namespace AssetStudio
                         case FileType.BundleFile:
                             LoadBundleFile(subReader, reader.FullPath, offset, false);
                             break;
-                        case FileType.BlbFile:
-                            LoadBlbFile(subReader, reader.FullPath, offset, false);
+                        case FileType.Blb3File:
+                            LoadBlb3File(subReader, reader.FullPath, offset, false);
                             break;
                         case FileType.MhyFile:
                             LoadMhyFile(subReader, reader.FullPath, offset, false);
@@ -528,7 +528,7 @@ namespace AssetStudio
             }
         }
         
-        private void LoadBlbFile(FileReader reader, string originalPath = null, long originalOffset = 0, bool log = true)
+        private void LoadBlb3File(FileReader reader, string originalPath = null, long originalOffset = 0, bool log = true)
         {
             if (log)
             {
@@ -536,7 +536,7 @@ namespace AssetStudio
             }
             try
             {
-                var blbFile = new BlbFile(reader, reader.FullPath);
+                var blbFile = new Blb3File(reader, reader.FullPath);
                 foreach (var file in blbFile.fileList)
                 {
                     var dummyPath = Path.Combine(Path.GetDirectoryName(reader.FullPath), file.fileName);

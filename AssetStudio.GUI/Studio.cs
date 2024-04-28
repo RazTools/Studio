@@ -73,11 +73,31 @@ namespace AssetStudio.GUI
                 extractedCount += ExtractBlkFile(reader, savePath);
             else if (reader.FileType == FileType.BlockFile)
                 extractedCount += ExtractBlockFile(reader, savePath);
+            else if (reader.FileType == FileType.Blb3File)
+                extractedCount += ExtractBlb3File(reader, savePath);
             else
                 reader.Dispose();
             return extractedCount;
         }
-
+        private static int ExtractBlb3File(FileReader reader, string savePath)
+        {
+            StatusStripUpdate($"Decompressing {reader.FileName} ...");
+            try
+            {
+                var bundleFile = new Blb3File(reader, reader.FullPath);
+                reader.Dispose();
+                if (bundleFile.fileList.Count > 0)
+                {
+                    var extractPath = Path.Combine(savePath, reader.FileName + "_unpacked");
+                    return ExtractStreamFile(extractPath, bundleFile.fileList);
+                }
+            }
+            catch (InvalidCastException)
+            {
+                Logger.Error($"Game type mismatch, Expected {nameof(Mr0k)} but got {Game.Name} ({Game.GetType().Name}) !!");
+            }
+            return 0;
+        }
         private static int ExtractBundleFile(FileReader reader, string savePath)
         {
             StatusStripUpdate($"Decompressing {reader.FileName} ...");

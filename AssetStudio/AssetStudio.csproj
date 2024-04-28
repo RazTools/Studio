@@ -19,6 +19,12 @@
   	<None Update="Keys.json">
   		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
   	</None>
+  	<None Update="oo2core_9_win64.dll">
+  	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+  	</None>
+  	<None Update="UnityPlayer.dll">
+  	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+  	</None>
   </ItemGroup>
 	
 </Project>

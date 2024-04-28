@@ -17,7 +17,8 @@ namespace AssetStudio
         ZipFile,
         BlkFile,
         MhyFile,
-        BlbFile,
+        Blb2File,
+        Blb3File,
         ENCRFile,
         BlockFile
     }

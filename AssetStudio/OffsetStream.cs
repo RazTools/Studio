@@ -8,7 +8,6 @@ namespace AssetStudio
 {
     public class OffsetStream : Stream
     {
-        private const int BufferSize = 0x10000;
 
         private readonly Stream _baseStream;
         private long _offset;
@@ -81,15 +80,35 @@ namespace AssetStudio
             }
             else
             {
+                using var reader = new FileReader(path, this, true);
+                var signature = reader.FileType switch
+                {
+                    FileType.BundleFile => "UnityFS\x00",
+                    FileType.MhyFile => "mhy",
+                    FileType.Blb3File => "Blb\x03",
+                    _ => throw new InvalidOperationException()
+                };
+
+                Logger.Verbose($"Parsed signature: {signature}");
+
+                var signatureBytes = Encoding.UTF8.GetBytes(signature);
+                var buffer = ArrayPool<byte>.Shared.Rent((int)reader.Length);
                 while (Remaining > 0)
                 {
-                    Offset = AbsolutePosition;
-                    yield return AbsolutePosition;
-                    if (Offset == AbsolutePosition)
+                    var index = 0;
+                    var absOffset = AbsolutePosition;
+                    var read = Read(buffer);
+                    while (index < read)
                     {
-                        break;
+                        index = buffer.AsSpan(0, read).Search(signatureBytes, index);
+                        if (index == -1) break;
+                        var offset = absOffset + index;
+                        Offset = offset;
+                        yield return offset;
+                        index++;
                     }
                 }
+                ArrayPool<byte>.Shared.Return(buffer);
             }
         }
     }

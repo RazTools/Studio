@@ -40,6 +40,7 @@ namespace AssetStudio
         Zstd = 5,
         Lz4Lit4 = 4,
         Lz4Lit5 = 5,
+        Oodle = 9,
     }
 
     public class BundleFile
