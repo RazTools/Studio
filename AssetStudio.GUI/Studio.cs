@@ -304,9 +304,18 @@ namespace AssetStudio.GUI
                                     var preloadIndex = m_Container.Value.preloadIndex;
                                     var preloadSize = m_Container.Value.preloadSize;
                                     var preloadEnd = preloadIndex + preloadSize;
-                                    for (int k = preloadIndex; k < preloadEnd; k++)
+
+                                    switch(preloadIndex)
                                     {
-                                        containers.Add((m_AssetBundle.m_PreloadTable[k], m_Container.Key));
+                                        case int n when n < 0:
+                                            Logger.Warning($"preloadIndex {preloadIndex} is out of preloadTable range");
+                                            break;
+                                        default:
+                                            for (int k = preloadIndex; k < preloadEnd; k++)
+                                            {
+                                                containers.Add((m_AssetBundle.m_PreloadTable[k], m_Container.Key));
+                                            }
+                                            break;
                                     }
                                 }
                             }
