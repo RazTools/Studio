@@ -361,6 +361,7 @@ namespace AssetStudio
             m_Header.compressedBlocksInfoSize = reader.ReadUInt32();
             m_Header.uncompressedBlocksInfoSize = reader.ReadUInt32();
             m_Header.flags = (ArchiveFlags)reader.ReadUInt32();
+
             if (m_Header.signature != "UnityFS" && !Game.Type.IsSRGroup())
             {
                 reader.ReadByte();
@@ -368,7 +369,9 @@ namespace AssetStudio
 
             if (Game.Type.IsNaraka())
             {
+                Logger.Verbose($"Before Size: {m_Header.size} compressedBlocksInfoSize: {m_Header.compressedBlocksInfoSize} uncompressedBlocksInfoSize: {m_Header.uncompressedBlocksInfoSize} flags: {m_Header.flags}");
                 long sizeOffset = m_Header.size - reader.BaseStream.Length;
+                Logger.Verbose($"sizeOffset: {sizeOffset}");
                 if (sizeOffset == 0x16)
                 {
                     m_Header.compressedBlocksInfoSize -= 0xCA;
@@ -381,8 +384,8 @@ namespace AssetStudio
                 }
                 else if (sizeOffset == 0x14)
                 {
-                    m_Header.compressedBlocksInfoSize -= 0xA4;
-                    m_Header.uncompressedBlocksInfoSize -= 0x9C;
+                    m_Header.compressedBlocksInfoSize -= 0xAA;
+                    m_Header.uncompressedBlocksInfoSize -= 0xBE;
                     m_Header.flags -= 0x03;
                     reader.ReadUInt16();
                 }
@@ -390,6 +393,7 @@ namespace AssetStudio
                 {
                     Logger.Warning($"Unknown size offset: {sizeOffset}");
                 }
+                Logger.Verbose($"After Size: {m_Header.size} compressedBlocksInfoSize: {m_Header.compressedBlocksInfoSize} uncompressedBlocksInfoSize: {m_Header.uncompressedBlocksInfoSize} flags: {m_Header.flags}");
             }
 
             Logger.Verbose($"Bundle header Info: {m_Header}");
