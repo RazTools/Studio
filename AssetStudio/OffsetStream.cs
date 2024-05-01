@@ -8,7 +8,6 @@ namespace AssetStudio
 {
     public class OffsetStream : Stream
     {
-
         private readonly Stream _baseStream;
         private long _offset;
 
@@ -81,34 +80,59 @@ namespace AssetStudio
             else
             {
                 using var reader = new FileReader(path, this, true);
-                var signature = reader.FileType switch
-                {
-                    FileType.BundleFile => "UnityFS\x00",
-                    FileType.MhyFile => "mhy",
-                    FileType.Blb3File => "Blb\x03",
-                    _ => throw new InvalidOperationException()
-                };
 
-                Logger.Verbose($"Parsed signature: {signature}");
+                var readSignature = reader.FileType;
+                var signature = "";
 
-                var signatureBytes = Encoding.UTF8.GetBytes(signature);
-                var buffer = ArrayPool<byte>.Shared.Rent((int)reader.Length);
-                while (Remaining > 0)
+                if (readSignature == FileType.BundleFile ||
+                    readSignature == FileType.MhyFile ||
+                    readSignature == FileType.Blb3File)
                 {
-                    var index = 0;
-                    var absOffset = AbsolutePosition;
-                    var read = Read(buffer);
-                    while (index < read)
+                    switch (reader.FileType)
                     {
-                        index = buffer.AsSpan(0, read).Search(signatureBytes, index);
-                        if (index == -1) break;
-                        var offset = absOffset + index;
-                        Offset = offset;
-                        yield return offset;
-                        index++;
+                        case FileType.BundleFile:
+                            signature = "UnityFS\x00";
+                            break;
+                        case FileType.MhyFile:
+                            signature = "mhy";
+                            break;
+                        case FileType.Blb3File:
+                            signature = "Blb\x03";
+                            break;
+                    }
+
+                    Logger.Verbose($"Parsed signature: {signature}");
+
+                    var signatureBytes = Encoding.UTF8.GetBytes(signature);
+                    var buffer = ArrayPool<byte>.Shared.Rent((int)reader.Length);
+                    while (Remaining > 0)
+                    {
+                        var index = 0;
+                        var absOffset = AbsolutePosition;
+                        var read = Read(buffer);
+                        while (index < read)
+                        {
+                            index = buffer.AsSpan(0, read).Search(signatureBytes, index);
+                            if (index == -1) break;
+                            var offset = absOffset + index;
+                            Offset = offset;
+                            yield return offset;
+                            index++;
+                        }
+                    }
+                    ArrayPool<byte>.Shared.Return(buffer);
+                } else
+                {
+                    while (Remaining > 0)
+                    {
+                        Offset = AbsolutePosition;
+                        yield return AbsolutePosition;
+                        if (Offset == AbsolutePosition)
+                        {
+                            break;
+                        }
                     }
                 }
-                ArrayPool<byte>.Shared.Return(buffer);
             }
         }
     }
