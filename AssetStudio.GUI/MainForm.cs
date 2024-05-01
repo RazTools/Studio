@@ -85,7 +85,7 @@ namespace AssetStudio.GUI
         {
             Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
             InitializeComponent();
-            Text = $"YarikStudio v{Application.ProductVersion}";
+            Text = $"Studio v{Application.ProductVersion}";
             InitializeExportOptions();
             InitializeProgressBar();
             InitializeLogger();
@@ -308,7 +308,7 @@ namespace AssetStudio.GUI
                 }
             }
 
-            Text = $"YarikStudio v{Application.ProductVersion} - {productName} - {assetsManager.assetsFileList[0].unityVersion} - {assetsManager.assetsFileList[0].m_TargetPlatform}";
+            Text = $"Studio v{Application.ProductVersion} - {productName} - {assetsManager.assetsFileList[0].unityVersion} - {assetsManager.assetsFileList[0].m_TargetPlatform}";
 
             assetListView.VirtualListSize = visibleAssets.Count;
 
@@ -1484,7 +1484,7 @@ namespace AssetStudio.GUI
 
         public void ResetForm()
         {
-            Text = $"YarikStudio v{Application.ProductVersion}";
+            Text = $"Studio v{Application.ProductVersion}";
             assetsManager.Clear();
             assemblyLoader.Clear();
             exportableAssets.Clear();
