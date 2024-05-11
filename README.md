@@ -1,4 +1,7 @@
 # Studio
+
+# NOTICE: Project has been temporarily suspended till further notice.
+
 Check out the [original AssetStudio project](https://github.com/Perfare/AssetStudio) for more information.
 
 Note: Requires Internet connection to fetch asset_index jsons.
